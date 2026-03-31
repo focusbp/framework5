@@ -1,6 +1,6 @@
-# app-framework5
+# Focus Business Platform Ver.5
 
-`app-framework5` is a framework designed **specifically for AI coding (agent-driven development)**.  
+Focus Business Platform Ver.5` is a framework designed **specifically for AI coding (agent-driven development)**.  
 It prioritizes safe implementation, verification, and operation by coding agents over manual workflows.
 
 ## Must Read First
