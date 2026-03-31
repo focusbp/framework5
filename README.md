@@ -4,10 +4,10 @@
 
 ## AI builds your business system.
 
+Build real business apps in hours — not weeks.
+
 FBP is not a framework for developers.  
 It is a framework for AI to build business applications.
-
-
 
 ## Why FBP
 
@@ -25,15 +25,10 @@ It gives AI a **structure to build safely and consistently**.
 
 ## Concept
 
-AI (engine)
-   ↓
-FBP (body & steering)
-   ↓
-Business Application (ready to use)
+AI (engine) -> FBP (body & steering) -> Business Application (ready to use)
 
 AI alone is powerful but hard to control.  
 FBP makes AI usable for real business.
-
 
 
 ## What makes FBP different
@@ -99,6 +94,14 @@ Then start building with AI.
 - Internal workflow tools
 - LINE Bot automation
 
+## Example
+
+- Customer Management System
+- Built in 1 day
+- Includes:
+  - Database
+  - Dashboard
+  - Search
 
 
 ## Philosophy
@@ -148,8 +151,6 @@ A framework where AI becomes the builder.
 
 The MIT License (MIT)
 
-
-
 ## Final Message
 
 Morning: You explain your business.  
@@ -159,3 +160,11 @@ This is not the future.
 
 This is now.
 
+
+## Get Started
+
+Try building your first app now.
+
+→ Clone this repo  
+→ Follow Quick Start  
+→ See your system running today
