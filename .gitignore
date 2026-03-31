@@ -18,6 +18,9 @@ nbproject/private/
 .env.*
 *.local
 
+classes/app/*
+!classes/app/.gitkeep
+
 fbp/data/*
 fbp/datadir/*
 fbp/upload/*
