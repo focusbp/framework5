@@ -1,0 +1,10 @@
+id,24,N
+status,1,N
+login_id,255,T
+password,255,T
+flg_password_change_required,1,N
+name,255,T
+type,1,N
+email,255,T
+developer_permission,1,N
+data_manager_permission,1,N

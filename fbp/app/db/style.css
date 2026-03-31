@@ -1,0 +1,263 @@
+th {
+    text-align: left;
+}
+
+
+.flex-around {
+	display: flex;
+	justify-content: space-around;
+}
+
+.flex-between {
+	display: flex;
+    justify-content: space-between;
+}
+
+.btn {
+    padding: 8px;
+    /* display: block; */
+    background-color: #064683;
+    border-radius: 5px;
+    color: #FFF;
+    padding: 10px 30px;
+    /* transition: 0.2s; */
+    border: none;
+    /* margin-top: 20px; */
+    margin-right: 20px;
+    cursor: pointer;
+}
+
+.alert {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    padding: 5px;
+    /* padding-bottom: 5px; */
+    background: #e9efed;
+    color: black;
+}
+
+.alert .close {
+    float: right;
+    margin-top: 5px;
+    cursor: pointer;
+}
+
+.hidden {
+    display: none;
+}
+
+.search-form {
+    background: #c8dffb;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.disable{
+    pointer-events:none;
+    background:#d7c9c9;
+}
+
+.btn-cancel {
+    background-color: gray;
+}
+
+.table-head {
+	background:#f3f3f3;
+	font-weight: normal;
+}
+
+DIV.table {
+    display:table;
+    width: 100%;
+    margin-top: 10px;
+}
+
+FORM.tr {
+    display:table-row;
+    border: solid black 1px;
+    background-color: white;
+}
+
+DIV.tr {
+    display:table-row;
+    background: #064683;
+    width: 100%;
+    color: white;
+}
+
+SPAN.td {
+    display:table-cell;
+    padding: 5px;
+}
+
+.tbody {
+    display: table-row-group;
+}
+
+/* codegen combine */
+.codegen-combine-parents {
+    display:flex;
+    justify-content:space-between;
+    padding:10px;
+    font-size:20px;
+}
+
+.codegen-combine-childs {
+    display:flex;
+    flex-wrap:wrap;
+    background:#c8dffb;
+    margin:5px;
+    border-radius:5px;
+    min-height: 100px;
+}
+
+.codegen-combine-child {
+    padding: 10px;
+    margin:10px;
+    background: white;
+    border-radius:5px;
+    position: relative;
+    padding-right: 40px;
+    padding-bottom: 20px;
+    height: min-content;
+}
+
+.codegen-combine-child-action {
+    position: absolute;
+    right: 0;
+    top: 0px;
+}
+
+.dragable-item{
+    background: #fff;
+}
+
+.col_handle {
+	cursor: pointer;
+}
+
+.sort_parameters tr {
+	background: #FFF;
+}
+
+.recommended_length {
+	color:#4ba3ff;
+}
+
+.edit_100 {
+	width: 100%;
+	overflow: hidden;
+}
+
+.edit_left {
+	width: calc(80% - 10px);
+	float:left;
+}
+
+.edit_right {
+	width:20%;
+	float:left;
+	padding:10px;
+	margin-left:10px;
+	border:1px #ccc solid;
+}
+
+.screen_field {
+	border-bottom:1px #ccc solid;
+	background: #FFF;
+	display: block;
+	width:100%;
+	overflow:hidden;
+}
+
+.screen_field:first-child {
+	margin-top:10px;
+	border-top:1px #ccc solid;
+}
+
+.screen_field_handle {
+	cursor: pointer;
+}
+
+.screen_field_delete {
+	float: right;
+    background: #ccc;
+    border-radius: 20px;
+    font-size: 10px;
+    margin-top: 5px;
+    display: block;
+    width: 15px;
+    height: 15px;
+    text-align: center;
+	cursor: pointer;
+	transition: 0.5s;
+}
+
+.screen_field_delete:hover {
+	background: #4BA3FF;
+	color:#FFF;
+}
+
+.new_screen {
+	margin: 0 auto;
+    color: #4BA3FF;
+    cursor: pointer;
+}
+
+
+.delete_screen_link {
+	color:#ccc;
+	font-size:12px;
+	text-decoration: underline;
+	cursor: pointer;
+	text-align: right;
+	margin-top:10px;
+}
+
+.edit_flex {
+	display: flex;
+	justify-content: flex-start;
+}
+
+.edit_flex div {
+	margin-left:10px;
+}
+
+.edit_flex div:first-child {
+	margin-left:0px;
+}
+
+.add_login_fields_button {
+	float: right;
+    margin-right: 20px;
+    margin-top: 15px;
+    color: #4ba3ff;
+    text-decoration: underline;
+}
+
+
+
+.custom_events_table td, .custom_events_table th {
+	font-size:12px;
+}
+
+.code_td {
+	font-size: 12px;
+    word-break: unset;
+    white-space: pre;
+}
+
+.option_list_in_row {
+	color:#3a9aff;
+}
+
+code {
+    word-break: break-all;
+    overflow: hidden;
+    display: block;
+    background: black;
+    white-space: break-spaces;
+    color: #FFF;
+    padding: 10px;
+    border-radius: 10px;
+}

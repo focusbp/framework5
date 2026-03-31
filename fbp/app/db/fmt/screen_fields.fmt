@@ -1,0 +1,6 @@
+id,24,N
+tb_name,255,T
+screen_name,255,T
+parameter_name,255,T
+db_fields_id,24,N
+sort,24,T

@@ -1,0 +1,200 @@
+<?php
+
+class public_pages_registry {
+
+	private $fmt_registry;
+	private $enabled_opt = [
+		0 => "Hide",
+		1 => "Show",
+	];
+	private $menu_opt = [
+		0 => "Hide",
+		1 => "Show",
+	];
+
+	function __construct(Controller $ctl) {
+		$this->fmt_registry = $ctl->db("public_pages_registry", "public_pages_registry");
+		$ctl->assign("enabled_opt", $this->enabled_opt);
+		$ctl->assign("menu_opt", $this->menu_opt);
+	}
+
+	function page(Controller $ctl) {
+		$items = $this->fmt_registry->getall("sort", SORT_ASC);
+		foreach ($items as &$item) {
+			$function_name = trim((string) ($item["function_name"] ?? ""));
+			$item["route_url"] = $function_name !== "" ? $ctl->get_APP_URL("public_pages", $function_name) : "";
+		}
+		unset($item);
+		$ctl->assign("items", $items);
+		$ctl->reload_area("#tabs-public-pages", "index.tpl");
+	}
+
+	function add(Controller $ctl) {
+		$post = $ctl->POST();
+		if (!isset($post["enabled"])) {
+			$post["enabled"] = 1;
+		}
+		$ctl->assign("post", $post);
+		$ctl->show_multi_dialog("public_pages_registry_add", "add.tpl", "Add Public Page", 920, true, true);
+	}
+
+	function add_exe(Controller $ctl) {
+		$post = $this->normalize_post($ctl->POST());
+		$errors = $this->validate_registry($ctl, $post, "add");
+		if (count($errors) > 0) {
+			$ctl->clear_error_message();
+			foreach ($errors as $field => $message) {
+				$ctl->res_error_message($field, $message);
+			}
+			return;
+		}
+
+		$post["sort"] = $this->next_sort();
+		$post["menu_sort"] = $this->normalize_menu_sort($post["menu_sort"] ?? null);
+		$post["updated_at"] = time();
+		$this->fmt_registry->insert($post);
+
+		$ctl->close_multi_dialog("public_pages_registry_add");
+		$this->page($ctl);
+	}
+
+	function edit(Controller $ctl) {
+		$id = (int) $ctl->POST("id");
+		$data = $this->fmt_registry->get($id);
+		$ctl->assign("data", $data);
+		$ctl->show_multi_dialog("public_pages_registry_edit_" . $id, "edit.tpl", "Edit Public Page", 920, true, true);
+	}
+
+	function edit_exe(Controller $ctl) {
+		$post = $this->normalize_post($ctl->POST());
+		$id = (int) ($post["id"] ?? 0);
+		$errors = $this->validate_registry($ctl, $post, "edit");
+		if (count($errors) > 0) {
+			$ctl->clear_error_message();
+			foreach ($errors as $field => $message) {
+				$ctl->res_error_message($field, $message);
+			}
+			return;
+		}
+
+		$data = $this->fmt_registry->get($id);
+		if (empty($data)) {
+			return;
+		}
+		$data["function_name"] = $post["function_name"];
+		$data["title"] = $post["title"];
+		$data["template_name"] = $post["template_name"];
+		$data["route_type"] = "standard";
+		$data["uses_common_layout"] = 1;
+		$data["generated_by_wizard"] = 0;
+		$data["delete_allowed"] = 1;
+		$data["enabled"] = (int) $post["enabled"];
+		$data["show_in_menu"] = (int) $post["show_in_menu"];
+		$data["menu_label"] = $post["menu_label"];
+		$data["menu_sort"] = $this->normalize_menu_sort($post["menu_sort"] ?? null);
+		$data["notes"] = "";
+		$data["updated_at"] = time();
+		$this->fmt_registry->update($data);
+
+		$ctl->close_multi_dialog("public_pages_registry_edit_" . $id);
+		$this->page($ctl);
+	}
+
+	function delete(Controller $ctl) {
+		$id = (int) $ctl->POST("id");
+		$data = $this->fmt_registry->get($id);
+		$ctl->assign("data", $data);
+		$ctl->show_multi_dialog("public_pages_registry_delete_" . $id, "delete.tpl", "Delete Public Page", 520, true, true);
+	}
+
+	function delete_exe(Controller $ctl) {
+		$id = (int) $ctl->POST("id");
+		$this->fmt_registry->delete($id);
+		$ctl->close_multi_dialog("public_pages_registry_delete_" . $id);
+		$this->page($ctl);
+	}
+
+	function sort(Controller $ctl) {
+		$post = $ctl->POST();
+		$logArr = explode(',', (string) $post["log"]);
+		$c = 0;
+		foreach ($logArr as $id) {
+			$id = (int) $id;
+			if ($id <= 0) {
+				continue;
+			}
+			$d = $this->fmt_registry->get($id);
+			if (empty($d)) {
+				continue;
+			}
+			$d["sort"] = $c;
+			$d["updated_at"] = time();
+			$this->fmt_registry->update($d);
+			$c++;
+		}
+	}
+
+	private function validate_registry(Controller $ctl, array $post, string $mode): array {
+		$errors = [];
+		$id = (int) ($post["id"] ?? 0);
+		$function_name = trim((string) ($post["function_name"] ?? ""));
+		$title = trim((string) ($post["title"] ?? ""));
+
+		if ($function_name === "") {
+			$errors["function_name"] = "Function name is required.";
+		} elseif (!preg_match('/^[a-zA-Z][a-zA-Z0-9_]*$/', $function_name)) {
+			$errors["function_name"] = "Use letters, numbers, and underscore. Start with a letter.";
+		}
+		$is_unique = $ctl->validate_duplicate(
+			"public_pages_registry",
+			["function_name"],
+			[$function_name],
+			$mode === "edit" ? $id : 0,
+			"public_pages_registry"
+		);
+		if (!$is_unique) {
+			$errors["function_name"] = "Function name already exists.";
+		}
+		if ($title === "") {
+			$errors["title"] = "Title is required.";
+		}
+		$menu_sort = $this->normalize_menu_sort($post["menu_sort"] ?? null);
+		if ($menu_sort < 0) {
+			$errors["menu_sort"] = "Menu sort must be 0 or greater.";
+		}
+		return $errors;
+	}
+
+	private function normalize_post(array $post): array {
+		return [
+			"id" => (int) ($post["id"] ?? 0),
+			"function_name" => trim((string) ($post["function_name"] ?? "")),
+			"title" => trim((string) ($post["title"] ?? "")),
+			"template_name" => trim((string) ($post["template_name"] ?? "")),
+			"route_type" => "standard",
+			"uses_common_layout" => 1,
+			"generated_by_wizard" => 0,
+			"delete_allowed" => 1,
+			"enabled" => isset($post["enabled"]) ? (int) $post["enabled"] : 1,
+			"show_in_menu" => isset($post["show_in_menu"]) ? (int) $post["show_in_menu"] : 0,
+			"menu_label" => trim((string) ($post["menu_label"] ?? "")),
+			"menu_sort" => $this->normalize_menu_sort($post["menu_sort"] ?? null),
+			"notes" => "",
+		];
+	}
+
+	private function next_sort(): int {
+		$list = $this->fmt_registry->getall("sort", SORT_DESC);
+		if (count($list) === 0) {
+			return 0;
+		}
+		return (int) ($list[0]["sort"] ?? 0) + 1;
+	}
+
+	private function normalize_menu_sort($value): int {
+		if ($value === null || $value === "") {
+			return $this->next_sort();
+		}
+		return max(0, (int) $value);
+	}
+}

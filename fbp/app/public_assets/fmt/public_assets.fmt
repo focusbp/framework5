@@ -1,0 +1,9 @@
+id,24,N
+asset_key,128,T
+title,255,T
+stored_filename,255,T
+original_filename,255,T
+mime_type,128,T
+enabled,1,N
+sort,24,N
+updated_at,24,N

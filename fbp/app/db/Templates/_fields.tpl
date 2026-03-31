@@ -1,0 +1,58 @@
+
+<div style="float:right;margin-bottom: 8px;">
+	<button class="ajax-link lang" data-class="{$class}" data-function="add_fields" data-id="{$data.id}">Add Field</button>
+	<button class="ajax-link lang" data-class="{$class}" data-function="text_fields" data-id="{$data.id}">Text</button>
+	<button class="download-link lang" data-class="{$class}" data-function="pdf_fields" data-id="{$data.id}" data-filename="{$data.tb_name}.pdf" data-open_new_tab="true">PDF</button>
+</div>
+
+<div style="clear:both;"></div>
+<table>
+	<thead>
+		<tr class="table-head">
+			<th></th>
+			<th class="lang">Field Name</th>
+			<th class="lang">Field Title</th>
+			<th class="lang">Type</th>
+			<th class="lang">Length</th>
+			<th class="lang">Options</th>
+			<th></th>
+		</tr>
+	</thead>
+
+	<tbody class="sort_parameters">
+		{foreach $parameters as $item}
+			<tr id="{$item.id}">
+
+				<td><div class="col col_handle"><span class="material-symbols-outlined handle">swap_vert</span></div></td>
+				<td>{$item.parameter_name}</td>
+				<td
+				{if $item.title_color|default:'' != ''}
+				  style="color: {$item.title_color|escape};"
+				{/if}
+			  >{$item.parameter_title}</td>
+				<td>{$item.type}</td>
+				<td>{$item.length}</td>
+				<td>{$item.constant_array_name}
+					<span class="option_list_in_row">
+						{foreach $item.option_list as $v=>$t}
+							<p>{$v} : {$t}</p>
+						{/foreach}
+					</span>
+				</td>
+
+				
+				
+				<td>
+				    {if $item.parameter_name != 'parent_id'}
+					<div class="ajax-link" data-class="{$class}" data-function="add_to_screen" data-id="{$item.id}" data-tb_name="{$data.tb_name}" data-db_id="{$data.id}" style="float:right;color:black;"><span class="material-symbols-outlined" style="color:#4BA3FF;margin-top:4px;cursor: pointer;">arrow_right_alt</span></div>
+
+					<button class="ajax-link listbutton" data-class="{$class}" data-function="delete_fiedls" data-id="{$item.id}" style="float:right;color:black;margin-right:5px;"><span class="ui-icon ui-icon-trash"></span></button>
+
+					<button class="ajax-link listbutton" data-class="{$class}" data-function="edit_fields" data-id="{$item.id}" style="float:right;color:black;"><span class="ui-icon ui-icon-pencil"></span></button>
+					
+				    {/if}
+				</td>
+			</tr>
+		{/foreach}
+	</tbody>
+</table>

@@ -1,0 +1,1 @@
+/home/nakama/.codex/AGENTS.md

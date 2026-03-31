@@ -1,0 +1,16 @@
+id,24,N
+tb_name,255,T
+button_title,255,T
+class_name,255,T
+function_name,255,T
+place,1,N
+code_type,255,A
+reload,1,N
+user_request,4000,T
+databases,255,A
+close_button,1,N
+sort,24,N
+ui_mode,1,N
+show_button,1,N
+dialog_width,24,N
+button_type,1,N

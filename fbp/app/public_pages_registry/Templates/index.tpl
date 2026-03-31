@@ -1,0 +1,54 @@
+<div>
+	<div style="float:right;margin-bottom:8px;">
+		<button class="ajax-link" data-class="{$class}" data-function="add">Add Public Page</button>
+	</div>
+	<p style="margin:0;color:#4b5563;font-size:12px;">public_pages の管理メタデータを登録します。共通メニューはこの一覧の menu 設定から描画する前提です。</p>
+</div>
+<div style="clear:both;"></div>
+
+<table class="moredata" style="margin-top:10px;">
+	<thead>
+		<tr class="table-head">
+			<th style="width:5%;"></th>
+			<th style="width:20%;">Title</th>
+			<th style="width:12%;">Menu</th>
+			<th style="width:18%;">Menu Label</th>
+			<th style="width:25%;">Route URL</th>
+			<th style="width:8%;">Status</th>
+			<th style="width:8%;"></th>
+		</tr>
+	</thead>
+	<tbody class="public-pages-registry-sort">
+		{foreach $items as $item}
+			<tr id="{$item.id}" style="background:#FFF;">
+				<td><span class="ui-icon ui-icon-arrowthick-2-n-s ppr-handle"></span></td>
+				<td>{$item.title|escape}</td>
+				<td>{if $item.show_in_menu == 1}Show{else}Hide{/if}</td>
+				<td>{if $item.menu_label|default:'' != ''}{$item.menu_label|escape}{else}<span style="color:#6b7280;">-</span>{/if}</td>
+				<td style="font-size:11px;word-break:break-all;">{if $item.route_url != ''}<a href="{$item.route_url|escape}" target="_blank" rel="noopener noreferrer">{$item.route_url|escape}</a>{/if}</td>
+				<td>{if $item.enabled == 1}Show{else}Hide{/if}</td>
+				<td>
+					<button class="ajax-link listbutton" data-class="{$class}" data-function="delete" data-id="{$item.id}" style="float:right;color:black;margin-right:5px;"><span class="ui-icon ui-icon-trash"></span></button>
+					<button class="ajax-link listbutton" data-class="{$class}" data-function="edit" data-id="{$item.id}" style="float:right;color:black;"><span class="ui-icon ui-icon-pencil"></span></button>
+				</td>
+			</tr>
+		{/foreach}
+	</tbody>
+</table>
+
+<script>
+$(function () {
+	$(".public-pages-registry-sort").sortable({
+		handle: ".ppr-handle",
+		axis: "y",
+		update: function () {
+			var log = $(this).sortable("toArray");
+			var fd = new FormData();
+			fd.append('class', '{$class}');
+			fd.append('function', 'sort');
+			fd.append('log', log);
+			appcon('app.php', fd);
+		}
+	});
+});
+</script>

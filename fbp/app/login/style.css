@@ -1,0 +1,55 @@
+
+.logoarea img {
+	width:40px;
+}
+
+.login_user_name {
+    line-height: 40px;
+    border-radius: 5px;
+	float:right;
+}
+
+#login_area {
+	width:50%;
+	max-width: 500px;
+	display: block;
+	margin: 0 auto;
+	margin-top:50px;
+}
+
+#login_area img {
+	width:100%;
+	display: block;
+	margin:0 auto;
+	margin-bottom:30px;
+}
+
+#login_area #testserverradio {
+	margin-top:20px;
+}
+
+#login_area input[type="text"], #login_area input[type="password"]{
+    width: 100%;
+    border: 5px #f6f6f6 solid;
+    padding: 8px;
+    background: #FFF;
+	font-size:20px;
+}
+
+#login_area button {
+	opacity: 0.8;
+}
+
+@media (max-width: 700px) {
+	#login_area {
+		width:90%;
+		max-width: inherit;
+	}
+}
+
+
+.first_account {
+	font-size:30px;
+    line-height: 30px;
+    font-weight: bold;
+}

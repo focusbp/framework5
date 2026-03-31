@@ -1,0 +1,7 @@
+id,24,N
+user_id,24,N
+operation_name,255,T
+record_data,255,T
+sort,24,N
+created_at,255,T
+updated_at,255,T

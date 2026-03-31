@@ -1,0 +1,158 @@
+th {
+    text-align: left;
+}
+
+
+
+.flex-around {
+	display: flex;
+	justify-content: space-around;
+}
+
+.flex-between {
+	display: flex;
+    justify-content: space-between;
+}
+
+.btn {
+    padding: 8px;
+    /* display: block; */
+    background-color: #064683;
+    border-radius: 5px;
+    color: #FFF;
+    padding: 10px 30px;
+    /* transition: 0.2s; */
+    border: none;
+    /* margin-top: 20px; */
+    margin-right: 20px;
+    cursor: pointer;
+}
+
+.alert {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    padding: 5px;
+    /* padding-bottom: 5px; */
+    background: #e9efed;
+    color: black;
+}
+
+.alert .close {
+    float: right;
+    margin-top: 5px;
+    cursor: pointer;
+}
+
+.hidden {
+    display: none;
+}
+
+.search-form {
+    background: #c8dffb;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.disable{
+    pointer-events:none;
+    background:#d7c9c9;
+}
+
+.btn-cancel {
+    background-color: gray;
+}
+
+.table-head {
+	background:#f3f3f3;
+	font-weight: normal;
+}
+
+DIV.table {
+    display:table;
+    width: 100%;
+    margin-top: 10px;
+}
+
+FORM.tr {
+    display:table-row;
+    border: solid black 1px;
+    background-color: white;
+}
+
+DIV.tr {
+    display:table-row;
+    background: #064683;
+    width: 100%;
+    color: white;
+}
+
+SPAN.td {
+    display:table-cell;
+    padding: 5px;
+}
+
+.tbody {
+    display: table-row-group;
+}
+
+/* codegen combine */
+.codegen-combine-parents {
+    display:flex;
+    justify-content:space-between;
+    padding:10px;
+    font-size:20px;
+}
+
+.codegen-combine-childs {
+    display:flex;
+    flex-wrap:wrap;
+    background:#c8dffb;
+    margin:5px;
+    border-radius:5px;
+    min-height: 100px;
+}
+
+.codegen-combine-child {
+    padding: 10px;
+    margin:10px;
+    background: white;
+    border-radius:5px;
+    position: relative;
+    padding-right: 40px;
+    padding-bottom: 20px;
+    height: min-content;
+}
+
+.codegen-combine-child-action {
+    position: absolute;
+    right: 0;
+    top: 0px;
+}
+
+.btn_blue_style{
+    border: 1px solid #003eff;
+    background: #007fff;
+    height: 40px;
+}
+
+.btn_gray_style{
+    border: 1px solid #efefef;
+    background: #efefef;
+    color:#000;
+    height: 40px;
+}
+
+.edit_left {
+	width:70%;
+	float:left;
+}
+
+.emailformat_edit_right {
+	width:30%;
+	float:left;
+	padding:10px;
+}
+
+.table_name {
+	color:#00b23b;
+}

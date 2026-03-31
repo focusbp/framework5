@@ -1,0 +1,228 @@
+
+.previous_table_link span {
+	display: inline;
+	cursor: pointer;
+	color:#4ba3ff;
+}
+
+tr{
+	background: #FFF;
+}
+
+.handle {
+	cursor: pointer;
+}
+
+
+.change_week_button {
+	float:left;
+}
+
+.calendar {
+	margin-top:20px;
+}
+
+.calendar_datepicker_area {
+	display: block;
+    margin-left: 15px;
+    float: left;
+    margin-top: 9px;
+	width: 300px;
+}
+
+.calendar_datepicker_area input, .calendar_datepicker_area button{
+	float:left;
+}
+
+.calendar_datepicker_area button {
+	margin-top:0px;
+}
+
+.calendar {
+	display: flex;
+	width:100%;
+	margin-top:10px;
+}
+
+.calendar .calendar_day_bar {
+	border-top:#ccc solid 1px;
+}
+
+.calendar_box {
+	border-bottom:1px #ccc solid;
+	padding:2px;
+}
+
+.calendar_title .month {
+	margin-left:10px;
+}
+
+.calendar_title .date {
+	font-size:24px;
+	line-height: 1em;
+}
+
+.calendar_box .task{
+	border: 2px #4ba3ff solid;
+    border-radius: 3px;
+    padding: 2px;
+	background: #FFF;
+	overflow: hidden;
+}
+
+.calendar_box .task .time {
+	font-size: 14px;
+    display: block;
+    float: left;
+    font-weight: bold;
+}
+
+.calendar_box .task .ui-icon {
+	float:right;
+	margin-top:1px;
+	margin-right:1px;
+}
+
+.calendar_box .task .task_message {
+	font-size:14px;
+	display: block;
+	width:100%;
+	clear:both;
+}
+
+.timezone_area{
+	display: block;
+    float: left;
+    color: #2d2d2d;
+	margin-top:18px;
+}
+
+.timezone_area span {
+	display: inline;
+}
+
+.calendar_box .task .handle {
+	float:left;
+	margin-top: 4px;
+    margin-left: 1px;
+}
+
+.calendar_box .task .controlbox{
+	display: block;
+	height:0px;
+	transition: height 0.2s;
+	overflow: hidden;
+}
+
+.calendar_box .task:hover .controlbox {
+	height:30px;
+}
+
+.calendar_box .task .controlbox button {
+	float:right;
+}
+
+.occupied_travel {
+	background:#fff8cc;
+}
+
+.occupied {
+	background:#E6F1FF;
+}
+
+.unassigned_tasks {
+	display: block;
+    width: 100%;
+    min-height: 30px;
+    padding: 20px;
+	border-bottom:0px;
+}
+
+
+.unassigned_tasks .task {
+	width: 100%;
+    float: left;
+	margin-bottom:10px;
+}
+
+.unassigned_tasks .task .controlbox {
+	height:30px;
+}
+
+.unassigned_tasks .task .time {
+	display: none;
+}
+
+.dragging {
+  position: fixed;
+  z-index: 1000;
+}
+
+.indicator_active {
+	border: 4px #feca40 solid !important;
+}
+
+.checkbox_ul {
+		
+}
+
+.checkbox_ul li{
+	
+}
+
+.download-btn-file_editscreen {
+	background: #FFF;
+    border: 0px;
+    color: #4ba3ff;
+    text-decoration: underline;
+    float: left;
+    width: 100%;
+    text-align: left;
+    margin-left: 0px;
+    padding-left: 0px;
+	cursor: pointer;
+}
+
+.db_edit_button_area{
+	float:left;
+}
+
+.db_edit_button_area button {
+	background: #FFF;
+	color:#666;
+	padding:0px;
+	width:inherit;
+}
+
+.db_edit_button_area button span {
+	font-size:33px;
+	width:inherit;
+}
+
+.hide_button50 {
+	opacity: 0.3;
+}
+
+.hide_button {
+	display: none;
+}
+
+.calendar_box .travel_marker {
+	font-size: 12px;
+	font-weight: bold;
+	color: #7a6800;
+	background: rgba(255,255,255,0.65);
+	border: 1px solid #e5d98e;
+	border-radius: 3px;
+	padding: 1px 4px;
+	margin: 2px 0;
+}
+
+/* Weekly calendar task body: compact dropdown badge */
+.calendar_box .task .row_value .item_viewer_dropdown_badge {
+	padding: 2px !important;
+}
+
+.row_value_id {
+	white-space: nowrap;
+}

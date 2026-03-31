@@ -1,0 +1,7 @@
+id,24,N
+filename,255,T
+path,255,T
+path_th,255,T
+table_identifer,255,T
+row_id,24,N
+vs_file_id,255,T

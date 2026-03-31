@@ -1,0 +1,45 @@
+---
+name: fbp-db
+description: Manage FBP DB schema using CLI (db tables/fields), relation setup, and screen_fields reflection requirements.
+---
+
+# fbp-db
+
+## trigger conditions
+- テーブル/フィールドの追加・編集・削除を行う
+- 親子relation、list_type、manual sortの設定が必要
+- DB変更時の画面反映漏れを防ぎたい
+
+## workflow
+1. `db_schema` と `db_tables_list` で現状確認。
+2. `db_tables_*` / `db_fields_*` でスキーマ変更。
+3. 変更後に `screen_fields` を `list/add/edit/delete`（必要なら `list_on_side`）へ反映。
+4. `data_*` で実データ確認。
+
+## terminology
+- `メニュー画面`: `show_sidemenu()` で開く UI。DOM は `#sidemenu`。
+- `サイド画面`: `show_second_work_area()` で開く UI。DOM は `#work_area_second`。
+- 両者は別UIとして扱い、スクロール検知・`ajax-auto`・閉じる処理を分離して実装する。
+
+## table width policy
+- `db_tables_add` / `db_tables_edit` では `list_width`（Side Panel Width）と `edit_width`（Dialog Width）を必ず明示設定する。
+- 幅は px の実数値として扱い、最小 `600`、最大 `1200`、`clamp(600, auto_calculated_width, 1200)` で決定する。
+- 自動決定の目安:
+  - 項目数・情報量が少ない: `600`
+  - 中程度: `800`〜`1000`
+  - 項目数・情報量が多い: `1200`
+- `9` などの1桁/異常に小さい値は入力・更新しない。既存値が異常な場合は `600` 以上へ補正してから作業を継続する。
+
+## date field policy
+- 日付項目（年月日を表す項目）は `db_fields.type = date` を必須とする。
+- `text + format_check=date_yyyy_mm_dd` での日付実装は新規作成で禁止する。
+- 既存が `text` の場合は、改修時に `date` へ移行可否を確認し、不可の場合のみ理由を作業ログに明記して暫定維持する。
+
+## constraints
+- DB追加後の画面反映漏れを禁止。
+- 型依存値（date/datetime等）は仕様どおりに扱う。
+- `type=checkbox` は値を配列として扱う前提で実装する（単一値文字列前提で判定しない）。
+- checkbox の有無判定は `count($value ?? [])` ベースで行い、必要なら `is_array` ガードを入れる。
+- `db_tables_list` の結果で対象テーブルの `list_width` / `edit_width` が `600`〜`1200` に入っていることを確認する。
+- 日付項目を `text` 型で新規追加しない（必ず `type=date` を使う）。
+- メニューリンク追加で `/common/menu.tpl` は使わない。メニュー追加は DB追加 / Dashboard登録 / 設定の「ホームページを表示」で行う。

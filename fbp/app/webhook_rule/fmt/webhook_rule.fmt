@@ -1,0 +1,9 @@
+id,24,N
+channel,32,T
+keyword,255,T
+match_type,32,T
+action_class,255,T
+enabled,1,N
+sort,24,N
+reply_template,4000,T
+updated_at,24,N

@@ -1,0 +1,5 @@
+id,24,N
+key,255,T
+template_name,255,T
+subject,255,T
+body,8000,T

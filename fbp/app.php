@@ -1,0 +1,532 @@
+<?php
+
+ini_set('display_errors', 1);
+error_reporting(E_ALL & ~E_NOTICE);
+mb_internal_encoding("UTF-8");
+
+// ブラウザによる途中中断禁止
+ignore_user_abort(true);
+
+// Session Start
+session_start();
+
+// アップロードデータ容量のチェック
+if(isUploadMaxFilesizeExceeded() || isPostMaxSizeExceeded()) {
+	$error = [
+	    "error" => '<div style="background:red;border-radius:10px;text-align:center;color:#FFF;padding:20px;">' . 
+	    '<span class="lang">The request payload exceeds the server\'s maximum allowed size.</span>'
+	    . "<br /> post_max_size: " 
+	    . ini_get('post_max_size') . " upload_max_filesize: " . ini_get("upload_max_filesize")
+	    . '</div>',
+	];
+	echo json_encode($error);
+	return;
+}
+
+include "lib_ext/smarty-4.3.1/libs/Smarty.class.php";
+$smarty = new Smarty();
+
+include("lib/fixed_file_manager/fixed_file_manager.php");
+include("interface/Controller.php");
+include("lib/Controller_class.php");
+include("interface/CodegenActionInterface.php");
+if (version_compare(PHP_VERSION, '8.0.0', '<')) {
+	include('lib_ext/stream_filter/Stream_Filter_Mbstring7.php');
+}else{
+	include('lib_ext/stream_filter/Stream_Filter_Mbstring8.php');
+}
+include("lib/Dirs.php");
+include("interface/vimeo/Vimeo.php");
+include("lib/Vimeo_class.php");
+include("interface/linebot/linebot.php");
+include("lib/linebot/Linebot_class.php");
+include("lib/pdfmaker/pdfmaker_class.php");
+
+header("Cache-Control:no-cache,no-store,must-revalidate,max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma:no-cache");
+
+// デフォルトでエスケープ（エスケープを解除するには、{$var nofilter}のようにする
+// テキストの改行は {$var|escape|nl2br nofilter}
+$smarty->escape_html  = true;
+
+//エラー設定
+$smarty->error_reporting =E_ALL & ~E_NOTICE & ~E_WARNING;
+
+//Add a dir for Original Smarty Plugin
+$smarty->addPluginsDir(dirname(__FILE__) . "/lib/smarty_plugins_org/");
+$smarty->registerPlugin('modifier', 'is_numeric', 'is_numeric');
+
+//-----------------------------------------------------
+// DIRS
+//-----------------------------------------------------
+$dir = new Dirs();
+
+//------------
+// windowcodeのパラメーターのあるものは除く（過去の仕様）
+//------------
+check_url_windowcode();
+
+//-------------
+// appcodeのセット
+//-------------
+$url_ex = explode(".",$_SERVER['HTTP_HOST']);
+$url_ex2 = explode("-",$url_ex[0],2);
+if($url_ex2[0] == "test" || $url_ex2[0] == "192"){
+	$testserver = true;
+}else{
+	$testserver = false;
+}
+if(isset($url_ex2[1])){
+	$appcode = $url_ex2[1];
+	$smarty->assign("appcode",$appcode);
+}else{
+	$appcode = "";
+}
+$smarty->assign("hostname",$url_ex[0]);
+
+//---------------------
+// class と function の取得
+//---------------------
+if(isset($_GET["class"])){
+	$class = $_GET["class"];
+}else{
+	$class="";
+}
+if(isset($_GET["function"])){
+	$function = $_GET["function"];
+}else{
+	$function="";
+}
+if ($_SERVER["REQUEST_METHOD"] == "GET") {
+	$class = $_GET["class"];
+	if(!empty($_GET["function"])){
+		$function = $_GET["function"];
+	}else{
+		$function = "page";
+	}
+}else{
+	if(empty($class)){
+		$class = $_POST["class"];
+	}
+	if(empty($function)){
+		$function = $_POST["function"];
+	}
+}
+if(empty($class) || empty($function)){
+	$class = "login";
+	$function = "page";
+}
+
+$smarty->assign("class",$class);
+$smarty->assign("css_class",$class); // Default
+
+// Lang
+if(!empty($_COOKIE["lang"])){
+	$lang = $_COOKIE["lang"];
+}else{
+	$lang = "en";
+}
+$smarty->assign("lang",$lang);
+$smarty->assign("arr_lang",["en"=>"English","jp"=>"Japanese"]);
+
+// ベースのテンプレートディレクトリ指定
+$base_template_dir = dirname(__FILE__) . "/Templates";
+$smarty->assign("base_template_dir",$base_template_dir);
+
+//画像強制更新用タイムスタンプ
+$smarty->assign("timestamp", strtotime("now"));
+
+// SETTING
+$setting_fmt_dir = $dir->appdir_fw . "/setting/fmt";
+$setting_data_dir = $dir->datadir  . "/setting/";
+$ffm_setting = new fixed_file_manager("setting", $setting_data_dir,$setting_fmt_dir);
+$setting = $ffm_setting->get(1);
+if(empty($setting)){
+	$d = array();
+	$d["force_testmode"] = 1;
+	$ffm_setting->insert($d);
+	$setting = $ffm_setting->get(1);
+}
+if(empty($setting["secret"])){
+	$setting["secret"] = substr(str_shuffle('1234567890abcdefghijklmnopqrstuvwxyz!@#$%^&*()-_|{}[];:<>?/'), 0, 18);
+	$ffm_setting->update($setting);	
+}
+if(empty($setting["iv"])){
+	$setting["iv"] = substr(str_shuffle('1234567890abcdefghijklmnopqrstuvwxyz!@#$%^&*()-_|{}[];:<>?/'), 0, 16);
+	$ffm_setting->update($setting);
+}
+if (empty($setting["timezone"])){
+	$setting["timezone"] = 'Asia/Tokyo';
+	$ffm_setting->update($setting);
+}
+date_default_timezone_set($setting["timezone"]);
+
+$ffm_setting->close();  //この後使わないのでクローズ
+
+
+// 強制テストモード
+if($setting["force_testmode"] == 1){
+	$testserver = true;
+}
+
+//Viewport デフォルト
+if(empty($setting["viewport_public"])){
+	$smarty->assign("viewport_public","width=600,viewport-fit=cover");
+}else{
+	$smarty->assign("viewport_public",$setting["viewport_public"]);
+}
+if(empty($setting["viewport_base"])){
+	$smarty->assign("viewport_base","width=device-width");
+}else{
+	$smarty->assign("viewport_base",$setting["viewport_base"]);
+}
+
+// Smartyにアサイン
+$smarty->assign("testserver",$testserver);
+$smarty->assign("arr_lang",["en"=>"English","jp"=>"Japanese"]);
+if(!empty($_COOKIE["lang"])){
+	$smarty->assign("lang",$_COOKIE["lang"]);
+}
+$smarty->assign("setting",$setting);
+
+//コントローラーを作成
+if(startsWith($class, "_")){
+	$ctl = new Controller_class();
+}else{
+	// クラスファイルのディレクトリ決定
+	$ctl = new Controller_class($class,$smarty);
+	
+	// smartyにControllerをアサインしておく（自作プラグインで使用する）
+	$smarty->assign("_ctl",$ctl);
+}
+
+
+try{
+
+	// Windowcodeの生成
+	if(!empty($_COOKIE["windowID"])){
+		$windowcode = $_COOKIE["windowID"];
+	}else{
+		$windowcode = uniqid("WID_");
+		$ctl->assign("new_windowID",$windowcode);
+	}
+	$ctl->set_windowcode($windowcode);
+	$smarty->assign("windowcode",$windowcode);
+
+	// 新しいタブが開かれた場合は、古いセッションのデータをコピーする
+	// Public側でページが変わったときにセッションデータの引き継ぎが必要
+	if(!empty($_COOKIE["old_windowID"])){
+		$old_windowID = $_COOKIE["old_windowID"];
+		// Copy cookie
+		if(!empty($_SESSION[$old_windowID])){
+			$old_session = $_SESSION[$old_windowID];
+			if(is_array($old_session)){
+				foreach($old_session as $key=>$val){
+					$ctl->set_session($key, $val);
+				}
+			}
+		}
+		// Remove cookie;
+		setcookie("old_windowID","",time() - 3600, cookie_path());
+		unset($_COOKIE["old_windowID"]);
+	}
+	
+	$ctl->set_session("class",$class);
+	$ctl->set_session("appcode",$appcode);
+	$ctl->set_session("testserver",$testserver);
+	$ctl->set_session("setting",$setting);
+	$ctl->set_check_login(true); //デフォルトを設定
+	$ctl->set_called_function($function);
+	$ctl->set_called_parameters();
+	$ctl->set_userdir($dir->appdir_user);
+	$ctl->assign("ctl",$ctl);
+
+	// 強制Display(ajaxからの呼び出しで $ctl->display() を使った場合の動作
+	$display_html = $ctl->get_session("_DISPLAY");
+	if(!empty($display_html)){
+		$ctl->set_session("_DISPLAY",null);
+		echo $display_html;
+		exit;
+	}
+	if($class=="_DISPLAY" && $function="_ARR"){
+		$arr = $_SESSION["_DISPLAY_ARR"];
+		if($arr != null){
+			echo json_encode($arr);
+			unset($_SESSION["_DISPLAY_ARR"]);
+		}
+		exit;
+	}
+
+	// Vimeo thumbnail
+	if($class=="_VIMEO" && $function="_THUMBNAIL"){
+		$vimeo_id = $ctl->POST("vimeo_id");
+		$url = $ctl->get_vimeo_thumbnail($vimeo_id);
+		echo json_encode(["url"=>$url]);
+		exit;
+	}
+
+	// 選択肢の自動セット（Table情報以外）
+	$constant_names = $ctl->get_all_constant_array_names(false,false);
+	$smarty->assign("constant_array_name",$constant_names);
+	foreach ($constant_names as $key => $arr_name) {
+	    $constant_values = $ctl->get_constant_array($arr_name,false);
+	    $smarty->assign($arr_name , $constant_values );
+
+	    $constant_colors = $ctl->get_constant_array_color($arr_name);
+	    $smarty->assign($arr_name. "_colors" , $constant_colors );
+	}
+	
+	// 設定の読み込みなどで使用したDBを開放
+	$ctl->close_all_db();
+
+	//クラスを読み込み
+	$appobj = getClassObject($ctl,$class,$dir);
+	if($appobj == null){
+		$ctl->res();
+		exit;
+	}
+
+	//init関数を実行（過去互換）
+	if(method_exists($appobj,"init")){
+		$appobj->init($ctl);
+	}
+
+	// SQUAREの読み込み           <--自動で読み込むように変更2024.8.19
+	//if($ctl->get_square()){
+	//	include("mysquare.php");
+	//}
+
+	// コンストラクタ内で停止が指示された場合
+	if($ctl->flg_stop_executing_function){
+		if(!$ctl->display_flg){
+			$ctl->res();
+		}
+		$ctl->assign("add_css_public",$ctl->add_css_public);
+		exit;
+	}
+
+	//$user_type_opt_colors[$user.type]
+	//ログインチェック
+	if($ctl->get_check_login()){
+		// ログインが必要
+
+		if(!$ctl->get_session("login")){
+			if($_SERVER["REQUEST_METHOD"] == "GET"){
+				header("Location: app.php?class=login");
+			}else{
+				if($_POST["class"] == "lang"){
+					$arr = array();
+					echo json_encode($arr);
+				}else{
+					$arr = ["location"=>"app.php?class=login"];
+					echo json_encode($arr);
+				}
+			}
+		}else{
+			//ログインが必要なクラスを実行
+			if(method_exists($appobj,$function)){
+				$appobj->$function($ctl);
+			}else{
+				if($_POST["_call_from"] != "appcon"){
+					header("HTTP/1.1 404 " . "Class \"$class\" does not have a function \"$function\" in $class/$class.php.");
+				}
+			}
+			if($ctl->stop_res == false){
+				$ctl->res();
+			}
+		}
+
+	}else{
+		//ログイン不要の場合
+		if(method_exists($appobj, $function)){
+			$appobj->$function($ctl);
+		}
+		if(!$ctl->display_flg){
+			$ctl->res();
+		}
+	}
+	
+	exit;
+	
+}catch(Exception $e){
+	$trace = $e->getTraceAsString();
+	$trace_lines = explode("\n", $trace);  // 改行でスタックトレースを分割
+	$formatted_trace = '';
+
+	foreach ($trace_lines as $line) {
+	    $formatted_trace .= "<p style=\"margin-top:10px;\">" . htmlspecialchars($line) . "</p>";  // 各行に<p>を追加
+	}
+	
+	$error = $e->getMessage() . "\n" . $formatted_trace;
+	
+	show_error($error);
+}
+
+function show_error($error){
+	if($_POST["_call_from"] == "appcon"){
+		$md = [];
+		$md["dialog_name"] = "Exception";
+		$md["html"] = "<div class=\"error\">" . $error . "</div>";
+		$md["title"] = "Exception";
+		//$md["testserver"] = $ctl->get_session("testserver");
+		$md["post"] = $_POST;
+		$md["multi_dialog_zindex"] = $_POST["multi_dialog_zindex"];
+
+		$mdset[] = $md;
+		$json = json_encode(["multi_dialog"=>$mdset]);
+		echo $json;
+		exit;
+	}else{
+		header("HTTP/1.1 404 ");
+		echo $error;
+		exit;
+	}	
+}
+
+
+function getClassObject(Controller $ctl,$class,Dirs $dir){
+	
+	//クラスを動的読み出し
+	try{
+		$classfile = $dir->get_class_dir($class) . "/$class.php";
+	}catch(Exception $e){
+		return null;
+	}
+
+	include_once($classfile);
+
+	// リフレクションクラスのインスタンスを作成
+	$reflectionClass = new ReflectionClass($class);
+
+	// コンストラクタを取得
+	$constructor = $reflectionClass->getConstructor();
+
+	// コンストラクタが存在するかチェック
+	if ($constructor) {
+	    // コンストラクタのパラメータを取得
+	    $params = $constructor->getParameters();
+
+	    // パラメータがあるかチェック
+	    if (count($params) > 0) {
+		// パラメータがある場合
+		$appobj = new $class($ctl);
+	    } else {
+		// パラメータがない場合
+		$appobj = new $class;
+	    }
+	} else {
+	    // コンストラクタが存在しない場合
+	    $appobj = new $class;
+	}
+
+	return $appobj;
+
+}
+
+function check_url_windowcode(){
+	// 現在のURLを取得
+	$current_url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+
+	// URLのクエリパラメータを解析
+	$parsed_url = parse_url($current_url);
+	parse_str($parsed_url['query'] ?? '', $query_params);
+
+	// 'windowcode'パラメータが存在するか確認
+	if (isset($query_params['windowcode'])) {
+	    // 404エラーヘッダーを送信
+	    header("HTTP/1.1 404 Not Found");
+
+	    // 'windowcode'パラメータを取り除いたURLを構築
+	    unset($query_params['windowcode']);
+	    $new_query = http_build_query($query_params);
+	    $new_url = $parsed_url['scheme'] . '://' . $parsed_url['host'] . $parsed_url['path'];
+	    if (!empty($new_query)) {
+		$new_url .= '?' . $new_query;
+	    }
+
+	    // リダイレクト
+	    header("Location: $new_url");
+	    exit();
+	}
+}
+
+function startsWith($haystack, $needle) {
+	$length = strlen($needle);
+	return (substr($haystack, 0, $length) === $needle);
+}
+
+function endsWith($haystack, $needle) {
+	$length = strlen($needle);
+	if ($length == 0) {
+		return true;
+	}
+
+	return (substr($haystack, -$length) === $needle);
+}
+
+function cookie_path(){
+	$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
+	$dir = rtrim(dirname($path), '/');   // 例: /miclub/fbp  or  /miclub  or ''
+	$dir = preg_replace('#/fbp$#', '', $dir);
+	$cookiePath = ($dir === '' || $dir === '/') ? '/' : $dir . '/';
+	return $cookiePath;
+}
+
+function iniSizeToBytes($val) {
+    $val = trim($val);
+    $last = strtolower(substr($val, -1));
+    $num  = (int)$val;
+
+    switch ($last) {
+        case 'g':
+            $num *= 1024;
+            // no break
+        case 'm':
+            $num *= 1024;
+            // no break
+        case 'k':
+            $num *= 1024;
+    }
+    return $num;
+}
+
+function isPostMaxSizeExceeded() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return false;
+    }
+
+    $contentLength = isset($_SERVER['CONTENT_LENGTH']) ? (int)$_SERVER['CONTENT_LENGTH'] : 0;
+    if ($contentLength <= 0) {
+        return false;
+    }
+
+    $limit = iniSizeToBytes(ini_get('post_max_size'));
+
+    // POST なのに $_POST / $_FILES が空＋Content-Length が post_max_size を超えている
+    if ($contentLength > $limit && empty($_POST) && empty($_FILES)) {
+        return true;
+    }
+
+    return false;
+}
+
+function isUploadMaxFilesizeExceeded(): bool {
+    foreach ($_FILES as $info) {
+
+        // multiple の場合
+        if (is_array($info['error'])) {
+            foreach ($info['error'] as $err) {
+                if ($err === UPLOAD_ERR_INI_SIZE) {
+                    return true;
+                }
+            }
+        } else {
+            // 単一ファイル
+            if ($info['error'] === UPLOAD_ERR_INI_SIZE) {
+                return true;
+            }
+        }
+    }
+    return false;
+}

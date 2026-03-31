@@ -1,0 +1,5 @@
+id,24,N
+time_created,24,N
+filename,255,T
+pathname,255,T
+

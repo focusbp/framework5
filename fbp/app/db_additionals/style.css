@@ -1,0 +1,25 @@
+code {
+    word-break: break-all;
+    overflow: hidden;
+    display: block;
+    background: black;
+    white-space: break-spaces;
+    color: #FFF;
+    padding: 10px;
+    border-radius: 10px;
+	font-size:12px;
+}
+
+.sort_button {
+	border: 1px #ccc solid;
+    display: block;
+    width: 100%;
+    padding: 5px 10px;
+    border-radius: 5px;
+	float:right;
+	background:#FFF;
+	margin-bottom:10px;
+}
+
+#button_sort {
+}

@@ -1,0 +1,11 @@
+id,24,N
+title,255,T
+class_name,255,T
+function_name,255,T
+sort,24,N
+last_log,1000,T
+min,100,A
+hour,100,A
+day,100,A
+month,100,A
+weekday,100,A

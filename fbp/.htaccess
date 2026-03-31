@@ -1,0 +1,6 @@
+DirectoryIndex app.php
+
+<Files "cli.php">
+	Require all denied
+	Deny from all
+</Files>

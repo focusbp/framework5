@@ -1,0 +1,33 @@
+
+<script src="js/jquery-3.6.4.min.js"></script>
+<script src="js/jquery-ui.min.js"></script>
+<script src="js/jquery-asColor.min.js"></script>
+<script src="js/jquery-asGradient.min.js"></script>
+<script src="js/jquery-asColorPicker.min.js"></script>
+<script src="js/chart.min.js"></script>
+<script src="js/select2.min.js"></script>
+<script src="js/js.cookie.js"></script>
+<script src="js/jquery.timepicker.min.js"></script>
+<script src="js/player.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css">
+<script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit/lib/xterm-addon-fit.min.js"></script>
+<script src="js/codex_terminal.js"></script>
+
+<!-- SQUARE -->
+{if $testserver }
+	<script type="text/javascript" src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+{else}
+	<script type="text/javascript" src="https://web.squarecdn.com/v1/square.js"></script>
+{/if}
+
+<!-- google map -->
+{if $setting.api_key_map != ""}
+	<script>
+		status_map=0;
+		function initMap(){
+			status_map=1;
+		}
+	</script>
+	<script src="https://maps.googleapis.com/maps/api/js?key={$setting.api_key_map}&libraries=geometry,places&callback=initMap&loading=async"></script>
+{/if}

@@ -1,0 +1,79 @@
+
+
+.index-icon .material-symbols-outlined{
+    float: right;
+    margin-left: 20px;
+    color: gray;
+    font-size: 30px;
+    width: 30px;
+    margin-top: 10px;
+}
+
+.ui-widget button {
+	font-family: inherit;
+	font-size:16px;
+}
+
+.ui-tabs-panel {
+  transition: none !important;
+  animation: none !important;
+}
+
+.cron_code {
+	background-color: #f4f4f4;
+    border: 1px solid #ccc;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 90%;
+    color: #333;
+    display: block;
+    word-break: break-all;
+}
+
+.code_td {
+	font-size: 12px;
+    word-break: unset;
+    white-space: pre;
+}
+
+code {
+    word-break: break-all;
+    overflow: hidden;
+    display: block;
+    background: black;
+    white-space: break-spaces;
+    color: #FFF;
+    padding: 10px;
+    border-radius: 10px;
+	font-size:9px;
+}
+
+#copy_code {
+	display: block;
+    position: absolute;
+    right: 20px;
+    background: #FFF;
+    border-radius: 5px;
+    font-size: 10px;
+    margin-top: 10px;
+    padding: 5px;
+}
+
+.result_success {
+	background: #1576d3;
+	color:#FFF;
+	padding:10px;
+}
+
+.result_fail {
+	background: #860000;
+	color:#FFF;
+	padding:10px;
+}
+
+.result_message {
+	margin-top:20px;
+	font-size:10px;
+	color:#111827;
+}
