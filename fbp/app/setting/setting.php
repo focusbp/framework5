@@ -8,6 +8,19 @@
 class setting {
 
 	private $ffm;
+	private $sensitive_keys = [
+		"api_key",
+		"api_secret",
+		"api_key_map",
+		"chatgpt_api_key",
+		"chatgpt_coding_key",
+		"line_accesstoken",
+		"line_channel_secret",
+		"smtp_password",
+		"square_access_token",
+		"vimeo_access_token",
+		"vimeo_client_secret",
+	];
 	private $arr_display_errors = [0 => "On Console", 1 => "Display to Window"];
 	private $arr_smtp_secure = [0 => "false", 1 => "tls", 2 => "ssl"];
 	private $arr_lang_priority = [0 => "Browser", 1 => "Default Language"];
@@ -48,6 +61,9 @@ class setting {
 			$this->ffm->insert($setting);
 		}
 		foreach ($ctl->POST() as $key => $val) {
+			if (in_array($key, $this->sensitive_keys, true) && trim((string) $val) === "") {
+				continue;
+			}
 			$setting[$key] = $val;
 		}
 		if (empty($setting["rewrite_rule_root"])) {
@@ -131,34 +147,22 @@ class setting {
 		}
 
 		$ctl->assign("setting", $setting);
+		$ctl->assign("masked_setting", $this->mask_sensitive_setting($setting));
 		$ctl->assign("line_webhook_url", $ctl->get_APP_URL("webhook_line", "receive"));
 
 		$ctl->show_multi_dialog("setting", "index.tpl", "Setting", 800, "_edit_button.tpl");
 	}
 
 	function json_upload(Controller $ctl) {
-		$ctl->show_multi_dialog("upload", "upload.tpl", "Setting JSON Upload", 600, true, true);
+		$ctl->deny_forbidden_access();
 	}
 
 	function json_upload_exe(Controller $ctl) {
-
-		$save_filename = 'system_setting.json';
-		$ctl->save_posted_file('file', $save_filename);
-
-		//get saved file path
-		$file_path = $ctl->get_saved_filepath($save_filename);
-
-		$json = file_get_contents($file_path);
-		$setting = json_decode($json, true);
-		$this->ffm->update($setting);
-
-		$ctl->close_multi_dialog("upload");
-		$this->page($ctl);
+		$ctl->deny_forbidden_access();
 	}
 
 	function json_download(Controller $ctl) {
-		$setting = $this->ffm->get(1);
-		$ctl->res_json($setting, $post['filename']);
+		$ctl->deny_forbidden_access();
 	}
 
 	function delete_login_logo(Controller $ctl) {
@@ -218,4 +222,24 @@ class setting {
 			$ctl->show_square_dialog("square_sample", "pay", $param, $e->getMessage());
 		}
 	}
+
+	private function mask_sensitive_setting($setting) {
+		if (!is_array($setting)) {
+			return [];
+		}
+		foreach ($this->sensitive_keys as $key) {
+			if (isset($setting[$key])) {
+				$setting[$key] = $this->mask_secret_value((string) $setting[$key]);
+			}
+		}
+		return $setting;
+	}
+
+	private function mask_secret_value(string $value): string {
+		if ($value === "") {
+			return "";
+		}
+		return "Configured";
+	}
+
 }

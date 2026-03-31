@@ -228,7 +228,7 @@ try{
 			}
 		}
 		// Remove cookie;
-		setcookie("old_windowID","",time() - 3600, cookie_path());
+		app_setcookie("old_windowID", "", time() - 3600);
 		unset($_COOKIE["old_windowID"]);
 	}
 	
@@ -326,6 +326,9 @@ try{
 		}else{
 			//ログインが必要なクラスを実行
 			if(method_exists($appobj,$function)){
+				if (!$ctl->authorize_management_access((string) $class, (string) $function)) {
+					$ctl->deny_forbidden_access();
+				}
 				$appobj->$function($ctl);
 			}else{
 				if($_POST["_call_from"] != "appcon"){
@@ -471,6 +474,18 @@ function cookie_path(){
 	$dir = preg_replace('#/fbp$#', '', $dir);
 	$cookiePath = ($dir === '' || $dir === '/') ? '/' : $dir . '/';
 	return $cookiePath;
+}
+
+function app_setcookie(string $name, string $value, int $expires): bool {
+	$isSecure = (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off");
+	$options = [
+		"expires" => $expires,
+		"path" => cookie_path(),
+		"secure" => $isSecure,
+		"httponly" => true,
+		"samesite" => "Lax",
+	];
+	return setcookie($name, $value, $options);
 }
 
 function iniSizeToBytes($val) {

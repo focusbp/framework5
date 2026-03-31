@@ -86,11 +86,6 @@ class login {
 		}else{
 			$cookie_login_id = "";
 		}
-		if(!empty($_COOKIE["password"])){
-			$cookie_password = $_COOKIE["password"];
-		}else{
-			$cookie_password = "";
-		}
 		if(!empty($_COOKIE[$this->remember_me_cookie_name])){
 			$cookie_remember_me = $_COOKIE[$this->remember_me_cookie_name];
 		}else{
@@ -114,17 +109,10 @@ class login {
 		// 持っていない場合は、ログインフォームを表示
 		// -------------
 		$login_id = $ctl->decrypt($cookie_login_id);
-		$password = $ctl->decrypt($cookie_password);
+		$password = "";
 		$user = null;
 
-		if ($cookie_login_status == "logined" && $login_id !== "" && $password !== "") {
-			$user = $this->find_user_by_credentials($login_id, $password);
-			if (is_array($user)) {
-				// Migrate legacy auto-login cookie to remember-me cookie.
-				setcookie("password", "", time() - 3600, cookie_path());
-			}
-		}
-		if (!is_array($user) && $cookie_login_status == "logined" && $cookie_remember_me !== "") {
+		if ($cookie_login_status == "logined" && $cookie_remember_me !== "") {
 			$remember_login_id = $this->decode_remember_me_cookie($ctl, $cookie_remember_me);
 			if ($remember_login_id !== "") {
 				$user = $this->find_user_by_login_id($remember_login_id);
@@ -185,8 +173,8 @@ class login {
 		//---------------
 		// Cookie処理
 		//---------------
-		setcookie("login_id", $ctl->encrypt($login_id), strtotime('+30 days'), cookie_path());
-		setcookie("login_status", "logined", strtotime('+30 days'), cookie_path());
+		app_setcookie("login_id", $ctl->encrypt($login_id), strtotime('+30 days'));
+		app_setcookie("login_status", "logined", strtotime('+30 days'));
 		$this->set_remember_me_cookie($ctl, $login_id);
 		
 		if ((int) ($user["flg_password_change_required"] ?? 0) === 1) {
@@ -208,10 +196,10 @@ class login {
 	function logout(Controller $ctl) {
 		$windowcode = $ctl->get_windowcode();
 		$_SESSION[$windowcode] = [];
-		setcookie("login_id", "",time() - 3600, cookie_path());
-		setcookie("password", "",time() - 3600, cookie_path());
-		setcookie($this->remember_me_cookie_name, "",time() - 3600, cookie_path());
-		setcookie("login_status", "",time() - 3600, cookie_path());
+		app_setcookie("login_id", "",time() - 3600);
+		app_setcookie("password", "",time() - 3600);
+		app_setcookie($this->remember_me_cookie_name, "",time() - 3600);
+		app_setcookie("login_status", "",time() - 3600);
 		$ctl->res_redirect("app.php?class=login");
 	}
 
@@ -272,7 +260,7 @@ class login {
 			return;
 		}
 		$token = $ctl->encrypt($payload);
-		setcookie($this->remember_me_cookie_name, $token, $exp, cookie_path());
+		app_setcookie($this->remember_me_cookie_name, $token, $exp);
 	}
 
 	private function decode_remember_me_cookie(Controller $ctl, $cookie) {

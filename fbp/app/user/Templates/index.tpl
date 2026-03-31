@@ -22,7 +22,7 @@
 			<td>{$data.login_id}<br />
 			</td>
 			<td>
-				<button class="ajax-link lang" data-class="user" data-function="password_reset" data-id="{$data.id}">Password Reset</button>
+				<button class="ajax-link lang" data-class="user" data-function="password_reset" data-id="{$data.id}">Send Reset Link</button>
 			</td>
 			
 			<td>

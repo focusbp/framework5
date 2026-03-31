@@ -14,6 +14,7 @@ class user {
 	    0 => "Not Allowed",
 	    1 => "Data Manager Permission",
 	];
+	private $password_reset_token_ttl = 259200;
 	private $ffm;
 	private $fmt_constant_array;
 	private $fmt_values;
@@ -46,11 +47,6 @@ class user {
 			$ctl->assign("err_login_id", "You needs a loging ID.");
 		}
 
-		if (empty($c["password"])) {
-			$flg = false;
-			$ctl->assign("err_password", "You needs the password.");
-		}
-
 		if (!filter_var($c['email'], FILTER_VALIDATE_EMAIL)) {
 			$flg = false;
 			$ctl->assign("err_email", "Invalid email format.");
@@ -69,15 +65,14 @@ class user {
 		}
 
 		if ($flg) {
-			$plain_password = (string) $c["password"];
 			$insert_data = $c;
-			$insert_data["password"] = $this->hash_password($plain_password);
+			$insert_data["password"] = $this->create_placeholder_password_hash();
 			$insert_data["flg_password_change_required"] = 1;
-			$this->ffm->insert($insert_data);
-			$url = $ctl->get_APP_URL("login","page");
-			$ctl->assign("url", $url);
-			$ctl->assign("data", $c);
-			$ctl->send_mail_prepared_format($c['email'], 'account_created');
+			$insert_data["password_reset_token_hash"] = "";
+			$insert_data["password_reset_token_expires_at"] = 0;
+			$insert_data["password_reset_token_sent_at"] = 0;
+			$id = $this->ffm->insert($insert_data);
+			$this->send_account_invite($ctl, (int) $id);
 			$ctl->close_multi_dialog("user_add");
 			$this->page($ctl);
 		} else {
@@ -153,6 +148,15 @@ class user {
 		if (array_key_exists("flg_password_change_required", $d)) {
 			$d["flg_password_change_required"] = 0;
 		}
+		if (array_key_exists("password_reset_token_hash", $d)) {
+			$d["password_reset_token_hash"] = "";
+		}
+		if (array_key_exists("password_reset_token_expires_at", $d)) {
+			$d["password_reset_token_expires_at"] = 0;
+		}
+		if (array_key_exists("password_reset_token_sent_at", $d)) {
+			$d["password_reset_token_sent_at"] = 0;
+		}
 		$this->ffm->update($d);
 		$ctl->close_multi_dialog("change_password");
 	}
@@ -166,36 +170,14 @@ class user {
 
 	function password_reset_exe(Controller $ctl) {
 		$id = (int) $ctl->POST("id");
-		$password = (string) $ctl->POST("password");
-		$password_confirm = (string) $ctl->POST("password_confirm");
-		if ($password === "") {
-			$ctl->res_error_message("password", "Password is needed.");
-			return;
-		}
-		if ($password !== $password_confirm) {
-			$ctl->res_error_message("password_confirm", "Password confirmation does not match.");
-			return;
-		}
-
 		$data = $this->ffm->get($id);
 		if (!is_array($data) || empty($data["id"])) {
-			$ctl->res_error_message("password", "User not found.");
+			$ctl->res_error_message("id", "User not found.");
 			return;
 		}
-
-		$data["password"] = $this->hash_password($password);
-		if (array_key_exists("flg_password_change_required", $data)) {
-			$data["flg_password_change_required"] = 0;
-		}
-		$this->ffm->update($data);
+		$this->send_account_invite($ctl, (int) $data["id"]);
 		$ctl->close_multi_dialog("user_password_reset_" . $id);
-		$account = [
-			"login_id" => $data["login_id"],
-			"password" => $password,
-			"url" => $ctl->get_APP_URL("login","page"),
-		];
-		$ctl->assign("data", $account);
-		$ctl->show_multi_dialog("account_after_reset_" . $id, "account.tpl", "Account");
+		$ctl->show_notification_text("Password setup link has been sent.");
 	}
 
 	function page(Controller $ctl) {
@@ -306,8 +288,7 @@ class user {
 			$rec = [
 			    "errors" => $errors,
 			    "name" => $row[0],
-			    "email" => $row[1],
-			    "password" => rand(111111, 999999)
+			    "email" => $row[1]
 			];
 			
 			if(count($errors)>0){
@@ -335,29 +316,24 @@ class user {
 		$list = $ctl->get_session("userlist");
 
 		foreach($list as $rec){
-			$plain_password = (string) $rec["password"];
 			$insert_data=[
 				'name'=>$rec["name"],
 				'email'=>$rec["email"],
 				'status' => 0,
 				'login_id' => $rec["email"],
-				'password' => $this->hash_password($plain_password),
+				'password' => $this->create_placeholder_password_hash(),
 				'flg_password_change_required' => 1,
 				'type' => 1, //member
 				'date_join' => date('Y/m/d'),
-				'created_at' => time()
+				'created_at' => time(),
+				'password_reset_token_hash' => "",
+				'password_reset_token_expires_at' => 0,
+				'password_reset_token_sent_at' => 0,
 			];
-			$this->ffm->insert($insert_data);
+			$id = $this->ffm->insert($insert_data);
 
 			try{
-				$setting = $ctl->get_setting();
-				$mail_data = $insert_data;
-				$mail_data["password"] = $plain_password;
-				$ctl->assign("data", $mail_data);
-				$url = $ctl->get_APP_URL("login","page");
-				$ctl->assign("url", $url);
-				$ctl->assign("setting", $setting);
-				$ctl->send_mail_prepared_format($insert_data['email'], 'account_created');
+				$this->send_account_invite($ctl, (int) $id);
 			}catch(Exception $e){
 				echo $e;
 			}
@@ -374,6 +350,42 @@ class user {
 			throw new Exception("Failed to hash password.");
 		}
 		return $hash;
+	}
+
+	private function create_placeholder_password_hash(): string {
+		return $this->hash_password(bin2hex(random_bytes(24)));
+	}
+
+	private function send_account_invite(Controller $ctl, int $id): void {
+		$data = $this->ffm->get($id);
+		if (!is_array($data) || empty($data["id"])) {
+			throw new Exception("User not found.");
+		}
+		if (empty($data["email"]) || !filter_var($data["email"], FILTER_VALIDATE_EMAIL)) {
+			throw new Exception("Valid email is required.");
+		}
+
+		$token = bin2hex(random_bytes(24));
+		$expires_at = time() + (int) $this->password_reset_token_ttl;
+		$data["password_reset_token_hash"] = hash("sha256", $token);
+		$data["password_reset_token_expires_at"] = $expires_at;
+		$data["password_reset_token_sent_at"] = time();
+		$data["flg_password_change_required"] = 1;
+		$this->ffm->update($data);
+
+		$setting = $ctl->get_setting();
+		$mail_data = $data;
+		$mail_data["reset_url"] = $ctl->get_APP_URL("password_reset", "token_page", ["token" => $token]);
+		$mail_data["reset_expires_at"] = date("Y/m/d H:i", $expires_at);
+		$ctl->assign("data", $mail_data);
+		$ctl->assign("setting", $setting);
+		$ctl->send_mail_prepared_format(
+			(string) $data["email"],
+			"account_invite",
+			null,
+			"Set Up Your Account",
+			"default_account_invite.tpl"
+		);
 	}
 
 	private function current_origin() {

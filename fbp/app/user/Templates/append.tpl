@@ -13,9 +13,9 @@
             </td>
         </tr>
         <tr>
-            <td class="lang">Password</td>
-            <td><input type="text" name="password" value="{$data.password}" style="width:400px;">
-                <p class="error">{$err_password}</p>
+            <td class="lang">Password Setup</td>
+            <td>
+                <p class="lang" style="margin:0;">A password setup link will be sent by email.</p>
             </td>
         </tr>
 

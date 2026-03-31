@@ -1,2 +1,1 @@
-
-<p>{$count} <span class="lang">account has created.</span></p>
+<p>{$count} <span class="lang">account invitations have been sent.</span></p>

@@ -1,8 +1,4 @@
 
-
-<button class="ajax-link lang" data-class="{$class}" data-function="json_upload" style="margin-top: 0px;">JSON Upload</button>
-<button class="download-link lang" data-filename="system_setting.json" data-class="{$class}" data-function="json_download" style="margin-top: 0px;">JSON Download</button>  
-
 <form id="setting_form">
 	
 	<h5 style="margin-top:20px;">Releasing</h5>
@@ -107,7 +103,7 @@
 		</tr>
 		<tr>
 			<td>Mail Password</td>
-			<td><input type="text" name="smtp_password" value="{$setting.smtp_password}"></td>
+			<td><input type="password" name="smtp_password" value="" placeholder="{$masked_setting.smtp_password}"></td>
 		</tr>
 		<tr>
 			<td>SMTPSecure</td>
@@ -125,7 +121,7 @@
 	<table>
 		<tr>
 			<td>Access Token</td>
-			<td><input type="text" name="vimeo_access_token" value="{$setting.vimeo_access_token}"></td>
+			<td><input type="password" name="vimeo_access_token" value="" placeholder="{$masked_setting.vimeo_access_token}"></td>
 		</tr>
 	</table>
 
@@ -137,7 +133,7 @@
 		</tr>
 		<tr>
 			<td>Access Token</td>
-			<td><input type="text" name="square_access_token" value="{$setting.square_access_token}"></td>
+			<td><input type="password" name="square_access_token" value="" placeholder="{$masked_setting.square_access_token}"></td>
 		</tr>
 		<tr>
 			<td>Location ID</td>
@@ -155,7 +151,7 @@
 	<table>
 		<tr>
 			<td>API Key</td>
-			<td><input type="text" name="api_key_map" value="{$setting.api_key_map}"></td>
+			<td><input type="password" name="api_key_map" value="" placeholder="{$masked_setting.api_key_map}"></td>
 		</tr>
 	</table>
 
@@ -163,11 +159,11 @@
 	<table>
 		<tr>
 			<td>API Key</td>
-			<td><input type="text" name="api_key" value="{$setting.api_key}" readonly></td>
+			<td><input type="password" name="api_key" value="" placeholder="{$masked_setting.api_key}" readonly></td>
 		</tr>
 		<tr>
 			<td>API Secret</td>
-			<td><input type="text" name="api_secret" value="{$setting.api_secret}" readonly></td>
+			<td><input type="password" name="api_secret" value="" placeholder="{$masked_setting.api_secret}" readonly></td>
 		</tr>
 	</table>
 		
@@ -179,11 +175,11 @@
 		</tr>
 		<tr>
 			<td>Channel Secret</td>
-			<td><input type="text" name="line_channel_secret" value="{$setting.line_channel_secret}"></td>
+			<td><input type="password" name="line_channel_secret" value="" placeholder="{$masked_setting.line_channel_secret}"></td>
 		</tr>
 		<tr>
 			<td>Channel Access Token</td>
-			<td><input type="text" name="line_accesstoken" value="{$setting.line_accesstoken}"></td>
+			<td><input type="password" name="line_accesstoken" value="" placeholder="{$masked_setting.line_accesstoken}"></td>
 		</tr>
 		<tr>
 			<td>Log file path</td>
@@ -202,7 +198,7 @@
 	<table>
 		<tr>
 			<td>API Key</td>
-			<td><input type="text" name="chatgpt_api_key" value="{$setting.chatgpt_api_key}"></td>
+			<td><input type="password" name="chatgpt_api_key" value="" placeholder="{$masked_setting.chatgpt_api_key}"></td>
 		</tr>
 		<tr>
 			<td>Endpoint URL<br /><span style="font-size:10px;">For completions</span></td>
@@ -218,7 +214,7 @@
 	<table>
 		<tr>
 			<td>API Key</td>
-			<td><input type="text" name="chatgpt_coding_key" value="{$setting.chatgpt_coding_key}"></td>
+			<td><input type="password" name="chatgpt_coding_key" value="" placeholder="{$masked_setting.chatgpt_coding_key}"></td>
 		</tr>
 		<tr>
 			<td>Endpoint URL<br /><span style="font-size:10px;">For completions</span></td>

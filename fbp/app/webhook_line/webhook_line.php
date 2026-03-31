@@ -11,32 +11,7 @@ class webhook_line {
 			$this->receive_line($ctl);
 			return;
 		}
-		$this->receive_rule_check($ctl);
-	}
-
-	protected function receive_rule_check(Controller $ctl) {
-		$channel = $this->resolve_channel_from_request($ctl);
-
-		$text = trim((string) ($ctl->POST("text") ?? ""));
-		$rule = $this->find_rule_by_text($ctl, $channel, $text);
-		if ($rule == null) {
-			$ctl->res_json([
-				"ok" => true,
-				"matched" => false,
-				"channel" => $channel,
-			]);
-			return;
-		}
-
-		$result = [
-			"ok" => true,
-			"matched" => true,
-			"channel" => $channel,
-			"rule_id" => (int) ($rule["id"] ?? 0),
-			"action_class" => (string) ($rule["action_class"] ?? ""),
-			"action_function" => "run",
-		];
-		$ctl->res_json($result);
+		$ctl->deny_forbidden_access();
 	}
 
 	protected function is_line_webhook_request(): bool {

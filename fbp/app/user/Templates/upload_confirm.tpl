@@ -5,7 +5,6 @@
 			<td class="status"></td>
 			<td class="lang">Name</td>
 			<td class="lang">Email</td>
-			<td class="lang">Passsword</td>
 		</tr>
 		{foreach $list as $row}
 			<tr>
@@ -20,7 +19,6 @@
 				{/if}
 				<td>{$row.name}</td>
 				<td>{$row.email}</td>
-				<td>{$row.password}</td>
 			</tr>
 		{/foreach}
 
@@ -30,11 +28,11 @@
 
 
 <div>
+	<p class="lang">Password setup links will be sent by email after import.</p>
 	{if $next_flg}
 	<button class="ajax-link lang" data-class="{$class}" data-function="upload_csv_exe">Add</button>
 	{else}
 		<p class="error">There are errors, please fix it first.</p>
 	{/if}
 </div>
-
 

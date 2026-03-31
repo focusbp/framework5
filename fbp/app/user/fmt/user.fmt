@@ -8,3 +8,6 @@ type,1,N
 email,255,T
 developer_permission,1,N
 data_manager_permission,1,N
+password_reset_token_hash,255,T
+password_reset_token_expires_at,24,N
+password_reset_token_sent_at,24,N

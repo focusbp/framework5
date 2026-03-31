@@ -1684,6 +1684,78 @@ class Controller_class implements Controller {
 		return $_SESSION[$this->windowcode]["type"];
 	}
 
+	function is_app_admin(): bool {
+		return !empty($_SESSION[$this->windowcode]["app_admin"]);
+	}
+
+	function has_developer_permission(): bool {
+		return (int) ($_SESSION[$this->windowcode]["developer_permission"] ?? 0) === 1;
+	}
+
+	function has_data_manager_permission(): bool {
+		return (int) ($_SESSION[$this->windowcode]["data_manager_permission"] ?? 0) === 1;
+	}
+
+	function authorize_management_access(string $class, string $function): bool {
+		$admin_only_classes = [
+			"setting",
+			"user",
+		];
+		if (in_array($class, $admin_only_classes, true)) {
+			return $this->is_app_admin();
+		}
+
+		$developer_or_admin_classes = [
+			"cron",
+			"dashboard",
+			"db",
+			"db_additionals",
+			"email_format",
+			"embed_app",
+			"panel_constants",
+			"public_assets",
+			"public_pages_registry",
+			"release",
+			"webhook_rule",
+		];
+		if (in_array($class, $developer_or_admin_classes, true)) {
+			return $this->is_app_admin() || $this->has_developer_permission();
+		}
+
+		$data_manager_or_admin_classes = [
+			"restore",
+		];
+		if (in_array($class, $data_manager_or_admin_classes, true)) {
+			return $this->is_app_admin() || $this->has_data_manager_permission();
+		}
+
+		if ($class === "panel") {
+			if ($function === "release_backup") {
+				return $this->is_app_admin() || $this->has_data_manager_permission();
+			}
+			return $this->is_app_admin() || $this->has_developer_permission();
+		}
+
+		return true;
+	}
+
+	function deny_forbidden_access(): void {
+		http_response_code(403);
+		$message = "Forbidden";
+		if ($_SERVER["REQUEST_METHOD"] === "POST") {
+			header("Content-Type: application/json; charset=UTF-8");
+			echo json_encode([
+				"ok" => false,
+				"error" => $message,
+			], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+			exit;
+		}
+
+		header("Content-Type: text/plain; charset=UTF-8");
+		echo $message;
+		exit;
+	}
+
 	function get_user_db() {
 		return $this->db("user", "user");
 	}
