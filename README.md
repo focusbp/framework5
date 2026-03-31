@@ -7,7 +7,7 @@
 FBP is not a framework for developers.  
 It is a framework for AI to build business applications.
 
----
+
 
 ## Why FBP
 
@@ -21,7 +21,7 @@ FBP solves this.
 
 It gives AI a **structure to build safely and consistently**.
 
----
+
 
 ## Concept
 
@@ -34,7 +34,7 @@ Business Application (ready to use)
 AI alone is powerful but hard to control.  
 FBP makes AI usable for real business.
 
----
+
 
 ## What makes FBP different
 
@@ -45,7 +45,7 @@ Designed for AI from the ground up.
 - Predictable structure
 - Easy for AI to generate and modify
 
----
+
 
 ### 2. Built for business (not demos)
 
@@ -56,7 +56,7 @@ Designed for AI from the ground up.
 
 Real-world use, not prototypes.
 
----
+
 
 ### 3. Safe AI generation
 
@@ -64,7 +64,7 @@ Real-world use, not prototypes.
 - Controlled execution
 - Reduced prompt injection risk
 
----
+
 
 ## Demo (3 minutes)
 
@@ -79,7 +79,7 @@ Create a business app in minutes:
 
 → Ready to use
 
----
+
 
 ## Quick Start
 
@@ -90,7 +90,7 @@ Setup your environment (PHP 7.3+ recommended)
 
 Then start building with AI.
 
----
+
 
 ## Example Use Cases
 
@@ -99,7 +99,7 @@ Then start building with AI.
 - Internal workflow tools
 - LINE Bot automation
 
----
+
 
 ## Philosophy
 
@@ -110,7 +110,7 @@ But tools need structure.
 
 FBP provides that structure.
 
----
+
 
 ## Positioning
 
@@ -124,7 +124,7 @@ FBP is:
 
 A framework where AI becomes the builder.
 
----
+
 
 ## Roadmap
 
@@ -134,7 +134,7 @@ A framework where AI becomes the builder.
 - Public page generation
 - Embed apps
 
----
+
 
 ## Who is this for
 
@@ -142,13 +142,13 @@ A framework where AI becomes the builder.
 - Developers working with AI
 - Teams building internal tools
 
----
+
 
 ## License
 
 The MIT License (MIT)
 
----
+
 
 ## Final Message
 
