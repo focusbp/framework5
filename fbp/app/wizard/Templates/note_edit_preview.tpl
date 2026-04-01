@@ -25,13 +25,35 @@
 			<td style="border:1px solid #d5dbe5;padding:8px;">{$row.sort_order_label|escape}</td>
 		</tr>
 		<tr>
-			<th style="text-align:left;border:1px solid #d5dbe5;background:#f4f7fb;padding:8px;">{t key="wizard.note_edit.list_width"}</th>
-			<td style="border:1px solid #d5dbe5;padding:8px;">{$row.list_width|escape}px</td>
+			<th style="text-align:left;border:1px solid #d5dbe5;background:#f4f7fb;padding:8px;">{t key="db.list_type"}</th>
+			<td style="border:1px solid #d5dbe5;padding:8px;">{$row.list_type_label|escape}</td>
+		</tr>
+		<tr>
+			<th style="text-align:left;border:1px solid #d5dbe5;background:#f4f7fb;padding:8px;">{t key="db.duplicate_icon"}</th>
+			<td style="border:1px solid #d5dbe5;padding:8px;">{$row.show_duplicate_label|escape}</td>
+		</tr>
+		<tr>
+			<th style="text-align:left;border:1px solid #d5dbe5;background:#f4f7fb;padding:8px;">{t key="db.show_id_on_list"}</th>
+			<td style="border:1px solid #d5dbe5;padding:8px;">{$row.show_id_label|escape}</td>
 		</tr>
 		<tr>
 			<th style="text-align:left;border:1px solid #d5dbe5;background:#f4f7fb;padding:8px;">{t key="wizard.note_edit.edit_width"}</th>
 			<td style="border:1px solid #d5dbe5;padding:8px;">{$row.edit_width|escape}px</td>
 		</tr>
+		{if $row.has_parent_note}
+			<tr>
+				<th style="text-align:left;border:1px solid #d5dbe5;background:#f4f7fb;padding:8px;">{t key="db.side_panel_list_type"}</th>
+				<td style="border:1px solid #d5dbe5;padding:8px;">{$row.side_list_type_label|escape}</td>
+			</tr>
+			<tr>
+				<th style="text-align:left;border:1px solid #d5dbe5;background:#f4f7fb;padding:8px;">{t key="db.cascade_delete"}</th>
+				<td style="border:1px solid #d5dbe5;padding:8px;">{$row.cascade_delete_flag_label|escape}</td>
+			</tr>
+			<tr>
+				<th style="text-align:left;border:1px solid #d5dbe5;background:#f4f7fb;padding:8px;">{t key="db.show_icon_on_parent_list"}</th>
+				<td style="border:1px solid #d5dbe5;padding:8px;">{$row.show_icon_on_parent_list_label|escape}</td>
+			</tr>
+		{/if}
 	</table>
 
 	<p style="font-size:12px;color:#4b5563;margin:0 0 12px 0;">{t key="wizard.note_edit.preview.help"}</p>

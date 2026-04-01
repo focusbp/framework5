@@ -1,6 +1,8 @@
 <form id="wizard_embed_app_target_form">
 	{if $row.embed_action == 'delete'}
 		<p style="font-size:13px;color:#374151;margin:0 0 8px 0;">{t key="wizard.embed_app.target_delete.description"}</p>
+	{elseif $row.embed_action == 'show_code'}
+		<p style="font-size:13px;color:#374151;margin:0 0 8px 0;">{t key="wizard.embed_app.target_code.description"}</p>
 	{else}
 		<p style="font-size:13px;color:#374151;margin:0 0 8px 0;">{t key="wizard.embed_app.target.description"}</p>
 	{/if}

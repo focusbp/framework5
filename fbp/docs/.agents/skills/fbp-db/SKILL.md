@@ -20,6 +20,9 @@ description: Manage FBP DB schema using CLI (db tables/fields), relation setup, 
 - `メニュー画面`: `show_sidemenu()` で開く UI。DOM は `#sidemenu`。
 - `サイド画面`: `show_second_work_area()` で開く UI。DOM は `#work_area_second`。
 - 両者は別UIとして扱い、スクロール検知・`ajax-auto`・閉じる処理を分離して実装する。
+- 画面上でユーザー向けに `テーブル` を表現する場合は、原則 `ノート` と読む。実装・CLI・DB定義上の `table` / `tb_name` / `db_tables_*` とは区別して扱う。
+- 画面上でユーザー向けに `フィールド` を表現する場合は、原則 `項目` と読む。実装・CLI・DB定義上の `field` / `parameter_name` / `db_fields_*` とは区別して扱う。
+- 仕様確認・文言追加・UI実装では、ユーザー向け文言に `テーブル` / `フィールド` を不用意に出さず、既存画面に合わせて `ノート` / `項目` を優先する。
 
 ## table width policy
 - `db_tables_add` / `db_tables_edit` では `list_width`（Side Panel Width）と `edit_width`（Dialog Width）を必ず明示設定する。

@@ -10,14 +10,6 @@
 			</td>
 		</tr>
 		<tr>
-			<th style="text-align:left;border:1px solid #d5dbe5;background:#f4f7fb;padding:8px;">{t key="wizard.dashboard.basic.class_name"}</th>
-			<td style="border:1px solid #d5dbe5;padding:8px;">
-				<div style="padding:8px 10px;border:1px solid #d5dbe5;background:#f9fafb;border-radius:4px;color:#111827;">
-					{t key="wizard.dashboard.basic.class_name_help"} 例: <code style="font-size:11px;">dashboard_sales_summary / dashboard</code>
-				</div>
-			</td>
-		</tr>
-		<tr>
 			<th style="text-align:left;border:1px solid #d5dbe5;background:#f4f7fb;padding:8px;">{t key="wizard.dashboard.basic.width"}</th>
 			<td style="border:1px solid #d5dbe5;padding:8px;">
 				{html_options name="column_width" options=$dashboard_column_width_options selected=$row.column_width style="width:100%;"}

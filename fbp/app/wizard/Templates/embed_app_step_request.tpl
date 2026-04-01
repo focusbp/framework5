@@ -1,7 +1,9 @@
 <form id="wizard_embed_app_request_form">
 	<table class="moredata" style="margin-top:0px;margin-bottom:12px;">
 		<tr><th style="width:30%;">{t key="wizard.embed_app.basic.title"}</th><td>{$row.title|escape}</td></tr>
-		<tr><th>{t key="wizard.embed_app.basic.class_name"}</th><td><code style="display:inline;background:#111827;color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;">{$row.class_name|escape}</code></td></tr>
+		{if $row.embed_action == 'edit'}
+			<tr><th>{t key="wizard.embed_app.basic.class_name"}</th><td><code style="display:inline;background:#111827;color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;">{$row.class_name|escape}</code></td></tr>
+		{/if}
 	</table>
 
 	{if $row.embed_action == 'edit'}

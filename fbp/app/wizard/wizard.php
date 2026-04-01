@@ -57,6 +57,7 @@ class wizard {
 			"project_name" => $this->detect_current_project_name(),
 			"purpose" => "",
 			"note_title" => "",
+			"menu_name" => "",
 			"field_mode" => "auto",
 			"manual_fields_text" => "",
 			"create_mode" => "child",
@@ -101,8 +102,14 @@ class wizard {
 			"show_menu" => "1",
 			"sortkey" => "id",
 			"sort_order" => "4",
-			"list_width" => "800",
-			"edit_width" => "800"
+			"edit_width" => "800",
+			"list_type" => "0",
+			"show_duplicate" => "0",
+			"show_id" => "0",
+			"side_list_type" => "0",
+			"cascade_delete_flag" => "0",
+			"show_icon_on_parent_list" => "0",
+			"has_parent_note" => 0
 		];
 		$this->save_note_edit_state($ctl, $state);
 		$this->show_note_edit_step_table($ctl, $this->get_note_edit_state($ctl));
@@ -119,6 +126,13 @@ class wizard {
 			$ctl->res_error_message("target_tb_name", $ctl->t("wizard.validation.target_note_not_found"));
 			return;
 		}
+		$list_type = (string) ($db["list_type"] ?? "0");
+		if (!isset($this->get_note_list_type_options()[$list_type])) {
+			$list_type = "0";
+		}
+		if ((int) $list_type === 1) {
+			$this->ensure_note_edit_sort_field($ctl, (int) ($db["id"] ?? 0));
+		}
 		$state = [
 			"target_tb_name" => $tb_name,
 			"db_id" => $this->normalize_single_id($db["id"] ?? ""),
@@ -127,8 +141,14 @@ class wizard {
 			"show_menu" => (string) ($db["show_menu"] ?? "1"),
 			"sortkey" => trim((string) ($db["sortkey"] ?? "id")),
 			"sort_order" => (string) ($db["sort_order"] ?? "4"),
-			"list_width" => (string) ((int) ($db["list_width"] ?? 800)),
-			"edit_width" => (string) ((int) ($db["edit_width"] ?? 800))
+			"edit_width" => (string) ((int) ($db["edit_width"] ?? 800)),
+			"list_type" => $list_type,
+			"show_duplicate" => (string) ($db["show_duplicate"] ?? "0"),
+			"show_id" => (string) ($db["show_id"] ?? "0"),
+			"side_list_type" => (string) ($db["side_list_type"] ?? "0"),
+			"cascade_delete_flag" => (string) ($db["cascade_delete_flag"] ?? "0"),
+			"show_icon_on_parent_list" => (string) ($db["show_icon_on_parent_list"] ?? "0"),
+			"has_parent_note" => ((int) ($db["parent_tb_id"] ?? 0)) > 0 ? 1 : 0
 		];
 		$this->save_note_edit_state($ctl, $state);
 		$this->show_note_edit_step_basic($ctl, $this->get_note_edit_state($ctl));
@@ -164,11 +184,6 @@ class wizard {
 			$ctl->res_error_message("sort_order", $ctl->t("wizard.validation.sort_order_required"));
 			return;
 		}
-		$list_width = trim((string) $ctl->POST("list_width"));
-		if (!$this->is_valid_note_width($list_width)) {
-			$ctl->res_error_message("list_width", "一覧幅は 600 から 1200 の整数で入力してください。");
-			return;
-		}
 		$edit_width = trim((string) $ctl->POST("edit_width"));
 		if (!$this->is_valid_note_width($edit_width)) {
 			$ctl->res_error_message("edit_width", "ダイアログ幅は 600 から 1200 の整数で入力してください。");
@@ -179,11 +194,82 @@ class wizard {
 		$state["description"] = $description;
 		$state["show_menu"] = $show_menu;
 		$state["sortkey"] = $sortkey;
+		$list_type = (string) $ctl->POST("list_type");
+		if (!isset($this->get_note_list_type_options()[$list_type])) {
+			$ctl->res_error_message("list_type", "一覧タイプを選択してください。");
+			return;
+		}
+		$show_duplicate = (string) $ctl->POST("show_duplicate");
+		if (!isset($this->get_note_toggle_options()[$show_duplicate])) {
+			$ctl->res_error_message("show_duplicate", "複製アイコンを選択してください。");
+			return;
+		}
+		$show_id = (string) $ctl->POST("show_id");
+		if (!isset($this->get_note_toggle_options()[$show_id])) {
+			$ctl->res_error_message("show_id", "一覧に ID を表示するか選択してください。");
+			return;
+		}
 		$state["sort_order"] = $sort_order;
-		$state["list_width"] = $list_width;
 		$state["edit_width"] = $edit_width;
+		$state["list_type"] = $list_type;
+		$state["show_duplicate"] = $show_duplicate;
+		$state["show_id"] = $show_id;
+		if ((int) ($state["has_parent_note"] ?? 0) > 0) {
+			$side_list_type = (string) $ctl->POST("side_list_type");
+			if (!isset($this->get_note_side_list_type_options()[$side_list_type])) {
+				$ctl->res_error_message("side_list_type", "サイドパネル一覧タイプを選択してください。");
+				return;
+			}
+			$cascade_delete_flag = (string) $ctl->POST("cascade_delete_flag");
+			if (!isset($this->get_cascade_delete_flag_options()[$cascade_delete_flag])) {
+				$ctl->res_error_message("cascade_delete_flag", $ctl->t("wizard.validation.cascade_delete_required"));
+				return;
+			}
+			$show_icon_on_parent_list = (string) $ctl->POST("show_icon_on_parent_list");
+			if (!isset($this->get_note_parent_icon_options()[$show_icon_on_parent_list])) {
+				$ctl->res_error_message("show_icon_on_parent_list", "親のリストにアイコン表示するか選択してください。");
+				return;
+			}
+			$state["side_list_type"] = $side_list_type;
+			$state["cascade_delete_flag"] = $cascade_delete_flag;
+			$state["show_icon_on_parent_list"] = $show_icon_on_parent_list;
+		}
 		$this->save_note_edit_state($ctl, $state);
-		$this->show_note_edit_preview($ctl, $this->get_note_edit_state($ctl));
+		$db_id = $this->normalize_single_id($state["db_id"] ?? "");
+		if ($db_id === "") {
+			$ctl->show_notification_text("対象ノートを選び直してください。", 3);
+			return;
+		}
+		$db = $ctl->db("db", "db")->get((int) $db_id);
+		if (!is_array($db) || count($db) === 0) {
+			$ctl->show_notification_text($ctl->t("wizard.validation.target_note_not_found"), 3);
+			return;
+		}
+		$db["menu_name"] = $state["menu_name"];
+		$db["description"] = $state["description"];
+		$db["show_menu"] = (int) $state["show_menu"];
+		$db["sortkey"] = $state["sortkey"];
+		$db["sort_order"] = (int) $state["sort_order"];
+		$db["edit_width"] = (int) $state["edit_width"];
+		$db["list_type"] = (int) $state["list_type"];
+		$db["show_duplicate"] = (int) $state["show_duplicate"];
+		$db["show_id"] = (int) $state["show_id"];
+		if ((int) ($state["has_parent_note"] ?? 0) > 0) {
+			$db["side_list_type"] = (int) $state["side_list_type"];
+			$db["cascade_delete_flag"] = (int) $state["cascade_delete_flag"];
+			$db["show_icon_on_parent_list"] = (int) $state["show_icon_on_parent_list"];
+		}
+		$ctl->db("db", "db")->update($db);
+		if ((int) $db["list_type"] === 1) {
+			$this->ensure_note_edit_sort_field($ctl, (int) $db_id);
+			$db["sortkey"] = "sort";
+			$db["sort_order"] = 4;
+			$ctl->db("db", "db")->update($db);
+		}
+		if ((int) $db["list_type"] === 2) {
+			$this->ensure_note_edit_weekly_calendar_fields($ctl, (int) $db_id);
+		}
+		$this->reflesh_all_screen($ctl);
 	}
 
 	function back_to_note_select(Controller $ctl) {
@@ -317,8 +403,8 @@ class wizard {
 			return;
 		}
 		$list_width = trim((string) $ctl->POST("list_width"));
-		if (!$this->is_valid_note_width($list_width)) {
-			$ctl->res_error_message("list_width", "子テーブルのサイド画面幅は 600 から 1200 の整数で入力してください。");
+		if (!$this->is_valid_parent_child_side_width($list_width)) {
+			$ctl->res_error_message("list_width", "子テーブルのサイド画面幅は 100 以上の整数で入力してください。");
 			return;
 		}
 		$cascade_delete_flag = (string) $ctl->POST("cascade_delete_flag");
@@ -389,6 +475,7 @@ class wizard {
 			"project_name" => $this->detect_current_project_name(),
 			"purpose" => "",
 			"note_title" => "",
+			"menu_name" => "",
 			"field_mode" => "auto",
 			"manual_fields_text" => ""
 		];
@@ -409,13 +496,14 @@ class wizard {
 	}
 
 	function submit_table_next(Controller $ctl) {
-		$note_title = trim((string) $ctl->POST("note_title"));
-		if ($note_title === "") {
-			$ctl->res_error_message("note_title", "ノート名を入力してください。");
+		$menu_name = trim((string) $ctl->POST("menu_name"));
+		if ($menu_name === "") {
+			$ctl->res_error_message("menu_name", "ノート名を入力してください。");
 			return;
 		}
 		$state = $this->get_table_create_state($ctl);
-		$state["note_title"] = $note_title;
+		$state["note_title"] = $menu_name;
+		$state["menu_name"] = $menu_name;
 		$this->save_table_create_state($ctl, $state);
 		$this->show_step_fields($ctl, $state);
 	}
@@ -1216,6 +1304,10 @@ class wizard {
 			$this->show_cron_step_target($ctl, $state);
 			return;
 		}
+		if ($action === "start") {
+			$this->show_cron_step_start($ctl, $state);
+			return;
+		}
 		$ctl->show_notification_text($ctl->t("wizard.notification.cron_preparing"), 3);
 	}
 
@@ -1234,7 +1326,11 @@ class wizard {
 		}
 		$state = $this->get_cron_state($ctl);
 		if ((string) ($state["cron_action"] ?? "") === "delete") {
-			$ctl->db("cron", "cron")->delete((int) $cron_id);
+			$deleted = $ctl->db("cron", "cron")->delete((int) $cron_id);
+			if ((int) $deleted === 0) {
+				$ctl->res_error_message("cron_id", $ctl->t("wizard.validation.cron_delete_target_not_found"));
+				return;
+			}
 			$ctl->cron_set();
 			$this->save_cron_state($ctl, []);
 			$this->reflesh_all_screen($ctl);
@@ -1257,48 +1353,27 @@ class wizard {
 		$this->show_cron_step_timing($ctl, $state);
 	}
 
+	function submit_cron_start_exe(Controller $ctl) {
+		$ctl->cron_set();
+		$this->save_cron_state($ctl, []);
+		$this->reflesh_all_screen($ctl);
+	}
+
 	function submit_cron_timing_next(Controller $ctl) {
 		$timing_text = trim((string) $ctl->POST("timing_text"));
 		if ($timing_text === "") {
 			$ctl->res_error_message("timing_text", "実行のタイミングを入力してください。");
 			return;
 		}
-		$state = $this->get_cron_state($ctl);
-		$state["timing_text"] = $timing_text;
-		$this->save_cron_state($ctl, $state);
-		$this->show_cron_step_request($ctl, $state);
-	}
-
-	function submit_cron_request_next(Controller $ctl) {
 		$request_text = trim((string) $ctl->POST("request_text"));
 		if ($request_text === "") {
 			$ctl->res_error_message("request_text", "自然文で実行内容を入力してください。");
 			return;
 		}
 		$state = $this->get_cron_state($ctl);
+		$state["timing_text"] = $timing_text;
 		$state["request_text"] = $request_text;
-		$parsed = $this->infer_cron_suggestions($ctl, (string) ($state["timing_text"] ?? ""), $request_text);
-		$state["title"] = trim((string) ($parsed["title"] ?? ""));
-		$state["class_name"] = trim((string) ($parsed["class_name"] ?? ""));
-		$state["function_name"] = trim((string) ($parsed["function_name"] ?? ""));
-		$state["min"] = $this->normalize_cron_component_list($parsed["min"] ?? null);
-		$state["hour"] = $this->normalize_cron_component_list($parsed["hour"] ?? null);
-		$state["day"] = $this->normalize_cron_component_list($parsed["day"] ?? null);
-		$state["month"] = $this->normalize_cron_component_list($parsed["month"] ?? null);
-		$state["weekday"] = $this->normalize_cron_component_list($parsed["weekday"] ?? null);
-		$state["summary"] = trim((string) ($parsed["summary"] ?? $request_text));
-		if ($state["title"] === "") {
-			$ctl->res_error_message("request_text", "定期処理名を解釈できませんでした。もう少し具体的に入力してください。");
-			return;
-		}
-		if ($state["class_name"] === "" || $state["function_name"] === "") {
-			$ctl->res_error_message("request_text", "class/function を解釈できませんでした。処理内容をもう少し具体的に入力してください。");
-			return;
-		}
-		if (!$this->has_valid_cron_schedule($state)) {
-			$ctl->res_error_message("request_text", "実行タイミングを解釈できませんでした。例: 毎日午前9時 / 毎週月曜8時 / 10分おき。");
-			return;
-		}
+		$state["summary"] = $request_text;
 		$this->save_cron_state($ctl, $state);
 		$prompt = ((string) ($state["cron_action"] ?? "")) === "edit"
 			? $this->build_cron_edit_prompt_text($state)
@@ -1309,11 +1384,6 @@ class wizard {
 		$ctl->set_session("codex_terminal_initial_input", $prompt);
 		$ctl->close_multi_dialog("wizard");
 		$ctl->invoke("run", [], "codex_terminal");
-	}
-
-	function back_to_cron_timing(Controller $ctl) {
-		$state = $this->get_cron_state($ctl);
-		$this->show_cron_step_timing($ctl, $state);
 	}
 
 	function back_to_cron_select(Controller $ctl) {
@@ -1416,9 +1486,9 @@ class wizard {
 		$state["template_name"] = trim((string) ($row["template_name"] ?? ""));
 		$this->save_public_pages_state($ctl, $state);
 		if ((string) ($state["page_action"] ?? "") === "delete") {
-			$prompt = $this->build_public_pages_delete_prompt_text($state);
-			$ctl->set_session("wizard_current_prompt", $prompt);
-			$this->open_codex_terminal_with_prompt($ctl);
+			$ctl->db("public_pages_registry", "public_pages_registry")->delete((int) $registry_id);
+			$this->save_public_pages_state($ctl, []);
+			$this->reflesh_all_screen($ctl);
 			return;
 		}
 		$this->show_public_pages_step_assets($ctl, $state);
@@ -1518,7 +1588,8 @@ class wizard {
 			"embed_key" => "",
 			"title" => "",
 			"class_name" => "",
-			"request_text" => ""
+			"request_text" => "",
+			"snippet_code" => ""
 		];
 		$this->save_embed_app_state($ctl, $state);
 		$this->show_embed_app_step_select($ctl, $state);
@@ -1537,12 +1608,13 @@ class wizard {
 		$state["title"] = "";
 		$state["class_name"] = "";
 		$state["request_text"] = "";
+		$state["snippet_code"] = "";
 		$this->save_embed_app_state($ctl, $state);
 		if ($action === "add") {
 			$this->show_embed_app_step_basic($ctl, $state);
 			return;
 		}
-		if ($action === "edit" || $action === "delete") {
+		if ($action === "edit" || $action === "delete" || $action === "show_code") {
 			$this->show_embed_app_step_target($ctl, $state);
 			return;
 		}
@@ -1553,7 +1625,14 @@ class wizard {
 		$embed_app_id = $this->normalize_single_id((string) $ctl->POST("embed_app_id"));
 		if ($embed_app_id === "") {
 			$action = (string) ($this->get_embed_app_state($ctl)["embed_action"] ?? "");
-			$ctl->res_error_message("embed_app_id", $action === "delete" ? $ctl->t("wizard.validation.embed_app_delete_target_required") : $ctl->t("wizard.validation.embed_app_edit_target_required"));
+			if ($action === "delete") {
+				$message = $ctl->t("wizard.validation.embed_app_delete_target_required");
+			} elseif ($action === "show_code") {
+				$message = $ctl->t("wizard.validation.embed_app_code_target_required");
+			} else {
+				$message = $ctl->t("wizard.validation.embed_app_edit_target_required");
+			}
+			$ctl->res_error_message("embed_app_id", $message);
 			return;
 		}
 		$row = $this->get_embed_app_row($ctl, $embed_app_id);
@@ -1566,11 +1645,16 @@ class wizard {
 		$state["embed_key"] = trim((string) ($row["embed_key"] ?? ""));
 		$state["title"] = trim((string) ($row["title"] ?? ""));
 		$state["class_name"] = trim((string) ($row["class_name"] ?? ""));
+		$state["snippet_code"] = $this->build_embed_app_snippet_code($ctl, $state["embed_key"]);
 		$this->save_embed_app_state($ctl, $state);
 		if ((string) ($state["embed_action"] ?? "") === "delete") {
-			$prompt = $this->build_embed_app_delete_prompt_text($state);
-			$ctl->set_session("wizard_current_prompt", $prompt);
-			$this->open_codex_terminal_with_prompt($ctl);
+			$ctl->db("embed_app", "embed_app")->delete((int) $embed_app_id);
+			$this->save_embed_app_state($ctl, []);
+			$this->reflesh_all_screen($ctl);
+			return;
+		}
+		if ((string) ($state["embed_action"] ?? "") === "show_code") {
+			$this->show_embed_app_step_code($ctl, $state);
 			return;
 		}
 		$this->show_embed_app_step_request($ctl, $state);
@@ -1579,17 +1663,13 @@ class wizard {
 	function submit_embed_app_basic_next(Controller $ctl) {
 		$title = trim((string) $ctl->POST("title"));
 		if ($title === "") {
-			$ctl->res_error_message("title", "Embed App 名を入力してください。");
-			return;
-		}
-		$class_name = $this->suggest_embed_app_class_name($title);
-		if ($class_name === "") {
-			$ctl->res_error_message("title", "class_name / embed_key を自動作成できませんでした。");
+			$ctl->res_error_message("title", "埋め込みアプリ名を入力してください。");
 			return;
 		}
 		$state = $this->get_embed_app_state($ctl);
 		$state["title"] = $title;
-		$state["class_name"] = $class_name;
+		$state["class_name"] = "";
+		$state["embed_key"] = "";
 		$this->save_embed_app_state($ctl, $state);
 		$this->show_embed_app_step_request($ctl, $state);
 	}
@@ -1683,9 +1763,9 @@ class wizard {
 		$state["column_width"] = (string) ((int) ($row["column_width"] ?? 1));
 		$this->save_dashboard_state($ctl, $state);
 		if ((string) ($state["dashboard_action"] ?? "") === "delete") {
-			$prompt = $this->build_dashboard_delete_prompt_text($state);
-			$ctl->set_session("wizard_current_prompt", $prompt);
-			$this->open_codex_terminal_with_prompt($ctl);
+			$ctl->db("dashboard", "dashboard")->delete((int) $dashboard_id);
+			$this->save_dashboard_state($ctl, []);
+			$this->reflesh_all_screen($ctl);
 			return;
 		}
 		$this->show_dashboard_step_request($ctl, $state);
@@ -1698,18 +1778,13 @@ class wizard {
 			$ctl->res_error_message("title", "Dashboard 名を入力してください。");
 			return;
 		}
-		$class_name = $this->suggest_dashboard_class_name($title);
-		if ($class_name === "") {
-			$ctl->res_error_message("title", "Class Name を自動作成できませんでした。");
-			return;
-		}
 		if (!in_array($column_width, ["1", "2", "3"], true)) {
 			$ctl->res_error_message("column_width", $ctl->t("wizard.validation.dashboard_width_required"));
 			return;
 		}
 		$state = $this->get_dashboard_state($ctl);
 		$state["title"] = $title;
-		$state["class_name"] = $class_name;
+		$state["class_name"] = "";
 		$state["function_name"] = "dashboard";
 		$state["column_width"] = $column_width;
 		$this->save_dashboard_state($ctl, $state);
@@ -2226,6 +2301,208 @@ class wizard {
 		$this->show_db_additionals_select($ctl, $state);
 	}
 
+	function open_db_additionals_edit_home_wizard(Controller $ctl) {
+		$state = [
+			"manage_action" => "",
+			"additional_id" => "",
+			"tb_name" => "",
+			"note_name" => "",
+			"button_title" => "",
+			"class_name" => "",
+			"function_name" => "",
+			"place" => "",
+			"request_text" => ""
+		];
+		$this->save_db_additionals_edit_state($ctl, $state);
+		$this->show_db_additionals_manage_select($ctl, $state);
+	}
+
+	function submit_db_additionals_manage_action_next(Controller $ctl) {
+		$action = trim((string) $ctl->POST("manage_action"));
+		if (!in_array($action, ["edit", "delete", "sort"], true)) {
+			$ctl->res_error_message("manage_action", $ctl->t("wizard.validation.additional_manage_action_required"));
+			return;
+		}
+		$state = $this->get_db_additionals_edit_state($ctl);
+		$state["manage_action"] = $action;
+		$this->save_db_additionals_edit_state($ctl, $state);
+		if ($action === "edit") {
+			$this->show_db_additionals_edit_step_target($ctl, $state);
+			return;
+		}
+		if ($action === "delete") {
+			$this->open_db_additionals_delete_wizard($ctl);
+			return;
+		}
+		$this->open_db_additionals_sort_wizard($ctl);
+	}
+
+	function back_to_db_additionals_manage_select(Controller $ctl) {
+		$state = $this->get_db_additionals_edit_state($ctl);
+		$this->show_db_additionals_manage_select($ctl, $state);
+	}
+
+	function submit_db_additionals_edit_target_next(Controller $ctl) {
+		$additional_id = $this->normalize_single_id((string) $ctl->POST("additional_id"));
+		if ($additional_id === "") {
+			$ctl->res_error_message("additional_id", $ctl->t("wizard.validation.additional_button_target_required"));
+			return;
+		}
+		$item = $this->get_db_additionals_target($ctl, $additional_id);
+		if ($item === null) {
+			$ctl->res_error_message("additional_id", $ctl->t("wizard.validation.additional_button_target_not_found"));
+			return;
+		}
+		$state = $this->get_db_additionals_edit_state($ctl);
+		$state = array_merge($state, $this->build_db_additionals_target_state($ctl, $item));
+		$this->save_db_additionals_edit_state($ctl, $state);
+		$this->show_db_additionals_edit_step_request($ctl, $state);
+	}
+
+	function submit_db_additionals_edit_request_next(Controller $ctl) {
+		$request_text = trim((string) $ctl->POST("request_text"));
+		if ($request_text === "") {
+			$ctl->res_error_message("request_text", $ctl->t("wizard.validation.request_text_required"));
+			return;
+		}
+		$state = $this->get_db_additionals_edit_state($ctl);
+		$state["request_text"] = $request_text;
+		$this->save_db_additionals_edit_state($ctl, $state);
+		$prompt = $this->build_db_additionals_edit_prompt_text($ctl, $state);
+		$ctl->set_session("wizard_current_prompt", "");
+		$ctl->set_session("wizard_table_create_prompt", "");
+		$ctl->set_session("wizard_table_change_prompt", "");
+		$ctl->set_session("codex_terminal_initial_input", $prompt);
+		$ctl->close_multi_dialog("wizard");
+		$ctl->invoke("run", [], "codex_terminal");
+	}
+
+	function back_to_db_additionals_edit_target(Controller $ctl) {
+		$state = $this->get_db_additionals_edit_state($ctl);
+		$this->show_db_additionals_edit_step_target($ctl, $state);
+	}
+
+	function open_db_additionals_delete_wizard(Controller $ctl) {
+		$state = [
+			"additional_id" => "",
+			"tb_name" => "",
+			"note_name" => "",
+			"button_title" => "",
+			"class_name" => "",
+			"function_name" => "",
+			"place" => ""
+		];
+		$this->save_db_additionals_delete_state($ctl, $state);
+		$this->show_db_additionals_delete_step_target($ctl, $state);
+	}
+
+	function submit_db_additionals_delete_target_next(Controller $ctl) {
+		$additional_id = $this->normalize_single_id((string) $ctl->POST("additional_id"));
+		if ($additional_id === "") {
+			$ctl->res_error_message("additional_id", $ctl->t("wizard.validation.additional_button_delete_target_required"));
+			return;
+		}
+		$item = $this->get_db_additionals_target($ctl, $additional_id);
+		if ($item === null) {
+			$ctl->res_error_message("additional_id", $ctl->t("wizard.validation.additional_button_target_not_found"));
+			return;
+		}
+		$state = $this->build_db_additionals_target_state($ctl, $item);
+		$this->save_db_additionals_delete_state($ctl, $state);
+		$this->show_db_additionals_delete_step_confirm($ctl, $state);
+	}
+
+	function submit_db_additionals_delete_exe(Controller $ctl) {
+		$state = $this->get_db_additionals_delete_state($ctl);
+		$additional_id = $this->normalize_single_id($state["additional_id"] ?? "");
+		if ($additional_id === "") {
+			$ctl->show_notification_text($ctl->t("wizard.validation.additional_button_target_not_found"), 3);
+			return;
+		}
+		$ctl->invoke("delete_exe", ["id" => $additional_id], "db_additionals");
+		$ctl->reload_work_area();
+		$ctl->reload_side_panel();
+		$ctl->close_multi_dialog("wizard");
+	}
+
+	function back_to_db_additionals_delete_target(Controller $ctl) {
+		$state = $this->get_db_additionals_delete_state($ctl);
+		$this->show_db_additionals_delete_step_target($ctl, $state);
+	}
+
+	function open_db_additionals_sort_wizard(Controller $ctl) {
+		$state = [
+			"db_id" => "",
+			"tb_name" => "",
+			"parent_tb_id" => 0,
+			"place" => ""
+		];
+		$this->save_db_additionals_sort_state($ctl, $state);
+		$this->show_db_additionals_sort_step_table($ctl, $state);
+	}
+
+	function submit_db_additionals_sort_table_next(Controller $ctl) {
+		$db_id = $this->normalize_single_id((string) $ctl->POST("db_id"));
+		if ($db_id === "") {
+			$ctl->res_error_message("db_id", $ctl->t("wizard.validation.button_table_required"));
+			return;
+		}
+		$db = $ctl->db("db", "db")->get($db_id);
+		if (!is_array($db) || count($db) === 0) {
+			$ctl->res_error_message("db_id", $ctl->t("wizard.validation.target_table_not_found"));
+			return;
+		}
+		$tb_name = $this->normalize_table_name((string) ($db["tb_name"] ?? ""));
+		if ($tb_name === "") {
+			$ctl->res_error_message("db_id", $ctl->t("wizard.validation.target_table_not_found"));
+			return;
+		}
+		$state = $this->get_db_additionals_sort_state($ctl);
+		$state["db_id"] = $db_id;
+		$state["tb_name"] = $tb_name;
+		$state["parent_tb_id"] = (int) ($db["parent_tb_id"] ?? 0);
+		$place_opt = $this->get_original_form_place_options($state["parent_tb_id"] > 0);
+		if (!isset($place_opt[$state["place"]])) {
+			$state["place"] = (string) array_key_first($place_opt);
+		}
+		$this->save_db_additionals_sort_state($ctl, $state);
+		$this->show_db_additionals_sort_step_place($ctl, $state);
+	}
+
+	function submit_db_additionals_sort_place_next(Controller $ctl) {
+		$state = $this->get_db_additionals_sort_state($ctl);
+		$place = (string) $ctl->POST("place");
+		$place_opt = $this->get_original_form_place_options(((int) ($state["parent_tb_id"] ?? 0)) > 0);
+		if (!isset($place_opt[$place])) {
+			$ctl->res_error_message("place", $ctl->t("wizard.validation.place_required"));
+			return;
+		}
+		$state["place"] = $place;
+		$this->save_db_additionals_sort_state($ctl, $state);
+		$this->show_db_additionals_sort_step_list($ctl, $state);
+	}
+
+	function submit_db_additionals_sort_finish(Controller $ctl) {
+		$state = $this->get_db_additionals_sort_state($ctl);
+		$place = (string) ($state["place"] ?? "");
+		if ($place === "0" || $place === "1") {
+			$ctl->reload_work_area();
+		} else {
+			$ctl->reload_side_panel();
+		}
+		$ctl->close_multi_dialog("wizard");
+	}
+
+	function back_to_db_additionals_sort_table(Controller $ctl) {
+		$state = $this->get_db_additionals_sort_state($ctl);
+		$this->show_db_additionals_sort_step_table($ctl, $state);
+	}
+
+	function back_to_db_additionals_sort_place(Controller $ctl) {
+		$state = $this->get_db_additionals_sort_state($ctl);
+		$this->show_db_additionals_sort_step_place($ctl, $state);
+	}
+
 	function open_table_change_wizard(Controller $ctl) {
 		$state = [
 			"change_action" => "",
@@ -2233,7 +2510,7 @@ class wizard {
 			"fields_text" => "",
 			"display_matrix" => [],
 			"delete_field_ids" => [],
-			"update_field_id" => "",
+			"update_field_ids" => [],
 			"update_field_change_text" => "",
 			"screen_add_field_ids" => []
 		];
@@ -2387,9 +2664,9 @@ class wizard {
 
 	function submit_table_change_update_field_next(Controller $ctl) {
 		$state = $this->get_table_change_state($ctl);
-		$update_field_id = (string) $ctl->POST("update_field_id");
-		if ($update_field_id === "" || !preg_match('/^[0-9]+$/', $update_field_id)) {
-			$ctl->res_error_message("update_field_id", $ctl->t("wizard.validation.update_field_required"));
+		$selected = $ctl->POST("update_field_ids");
+		if (!is_array($selected) || count($selected) === 0) {
+			$ctl->res_error_message("update_field_ids", $ctl->t("wizard.validation.update_field_required"));
 			return;
 		}
 		$change_text = trim((string) $ctl->POST("update_field_change_text"));
@@ -2398,14 +2675,24 @@ class wizard {
 			return;
 		}
 		$field_options = $this->get_table_field_options($ctl, (string) ($state["target_tb_name"] ?? ""));
-		if (!isset($field_options[$update_field_id])) {
-			$ctl->res_error_message("update_field_id", $ctl->t("wizard.validation.selected_field_not_found"));
+		$ids = [];
+		$lines = [];
+		foreach ($selected as $id) {
+			$key = (string) $id;
+			if (!isset($field_options[$key])) {
+				continue;
+			}
+			$ids[] = $key;
+			$lines[] = $field_options[$key];
+		}
+		if (count($ids) === 0) {
+			$ctl->res_error_message("update_field_ids", $ctl->t("wizard.validation.selected_field_not_found"));
 			return;
 		}
 
-		$state["update_field_id"] = $update_field_id;
+		$state["update_field_ids"] = $ids;
 		$state["update_field_change_text"] = $change_text;
-		$state["fields_text"] = $field_options[$update_field_id];
+		$state["fields_text"] = implode("\n", $lines);
 		$this->save_table_change_state($ctl, $state);
 
 		$plan_lines = $this->build_table_change_update_plan_lines($state);
@@ -2510,6 +2797,16 @@ class wizard {
 	private function show_home(Controller $ctl) {
 		$wizard_groups = [
 			[
+				"title" => $ctl->t("wizard.home.group.guide.title"),
+				"icon_path" => "",
+				"items" => [
+					["label" => $ctl->t("wizard.home.group.guide.item_video"), "status" => "ready"]
+				],
+				"button_label" => $ctl->t("wizard.home.use_this_wizard"),
+				"button_function" => "open_guide_video_dialog",
+				"enabled" => 1
+			],
+			[
 				"title" => $ctl->t("wizard.home.group.note.title"),
 				"icon_path" => "css/images/wizard-icon001.png",
 				"items" => [
@@ -2552,6 +2849,18 @@ class wizard {
 				"enabled" => 1
 			],
 			[
+				"title" => $ctl->t("wizard.home.group.db_additionals_edit.title"),
+				"icon_path" => "css/images/wizard-icon003.png",
+				"items" => [
+					["label" => $ctl->t("wizard.home.group.db_additionals_edit.item_edit"), "status" => "ready"],
+					["label" => $ctl->t("wizard.home.group.db_additionals_delete.item_delete"), "status" => "ready"],
+					["label" => $ctl->t("wizard.home.group.db_additionals_sort.item_sort"), "status" => "ready"]
+				],
+				"button_label" => $ctl->t("wizard.home.use_this_wizard"),
+				"button_function" => "open_db_additionals_edit_home_wizard",
+				"enabled" => 1
+			],
+			[
 				"title" => $ctl->t("wizard.home.group.line_bot.title"),
 				"icon_path" => "css/images/wizard-icon005.png",
 				"items" => [
@@ -2570,7 +2879,8 @@ class wizard {
 				"items" => [
 					["label" => $ctl->t("wizard.home.group.cron.item_add"), "status" => "ready"],
 					["label" => $ctl->t("wizard.home.group.cron.item_edit"), "status" => "ready"],
-					["label" => $ctl->t("wizard.home.group.cron.item_delete"), "status" => "ready"]
+					["label" => $ctl->t("wizard.home.group.cron.item_delete"), "status" => "ready"],
+					["label" => $ctl->t("wizard.home.group.cron.item_start"), "status" => "ready"]
 				],
 				"button_label" => $ctl->t("wizard.home.use_this_wizard"),
 				"button_function" => "open_cron_wizard",
@@ -2598,7 +2908,8 @@ class wizard {
 					"items" => [
 						["label" => $ctl->t("wizard.home.group.embed_app.item_add"), "status" => "ready"],
 						["label" => $ctl->t("wizard.home.group.embed_app.item_edit"), "status" => "ready"],
-						["label" => $ctl->t("wizard.home.group.embed_app.item_delete"), "status" => "ready"]
+						["label" => $ctl->t("wizard.home.group.embed_app.item_delete"), "status" => "ready"],
+						["label" => $ctl->t("wizard.home.group.embed_app.item_show_code"), "status" => "ready"]
 					],
 					"button_label" => $ctl->t("wizard.home.use_this_wizard"),
 					"button_function" => "open_embed_app_wizard",
@@ -2622,6 +2933,11 @@ class wizard {
 		}));
 		$ctl->assign("wizard_groups", $wizard_groups);
 		$ctl->show_multi_dialog("wizard", "home.tpl", $ctl->t("wizard.title"), 980, "_fixed_bar.tpl");
+	}
+
+	function open_guide_video_dialog(Controller $ctl) {
+		$ctl->assign("guide_video_url", "https://www.youtube.com/embed/jJnvZktaIX8?rel=0");
+		$ctl->show_multi_dialog("wizard_guide_video", "guide_video.tpl", $ctl->t("wizard.home.group.guide.title"), 960);
 	}
 
 	private function show_step_purpose(Controller $ctl, array $state) {
@@ -2655,6 +2971,11 @@ class wizard {
 		$ctl->assign("note_show_menu_options", $this->get_note_show_menu_options());
 		$ctl->assign("note_sort_order_options", $this->get_note_sort_order_options());
 		$ctl->assign("note_sortkey_options", $this->get_note_sortkey_options($ctl, (string) ($state["target_tb_name"] ?? "")));
+		$ctl->assign("note_list_type_options", $this->get_note_list_type_options());
+		$ctl->assign("note_toggle_options", $this->get_note_toggle_options());
+		$ctl->assign("note_side_list_type_options", $this->get_note_side_list_type_options());
+		$ctl->assign("cascade_delete_flag_options", $this->get_cascade_delete_flag_options());
+		$ctl->assign("note_parent_icon_options", $this->get_note_parent_icon_options());
 		$ctl->show_multi_dialog("wizard", "note_edit_step_basic.tpl", $ctl->t("wizard.note_edit.step_basic"), 820);
 	}
 
@@ -2747,10 +3068,8 @@ class wizard {
 	}
 
 	private function show_table_change_step_fields(Controller $ctl, array $state) {
-		if (trim((string) ($state["fields_text"] ?? "")) === "") {
-			$state["fields_text"] = $ctl->t("wizard.table_change.fields.default");
-		}
 		$ctl->assign("row", $state);
+		$ctl->assign("table_create_field_type_options", $this->get_table_create_field_type_options());
 		$ctl->show_multi_dialog("wizard", "table_change_step_fields.tpl", $ctl->t("wizard.table_change.step_fields"), 760);
 	}
 
@@ -2784,7 +3103,16 @@ class wizard {
 	private function show_table_change_step_update_field(Controller $ctl, array $state) {
 		$options = $this->get_table_field_options($ctl, (string) ($state["target_tb_name"] ?? ""));
 		$ctl->assign("row", $state);
-		$ctl->assign("update_field_options", ["" => $ctl->t("wizard.select_please")] + $options);
+		$selected_map = array_fill_keys($state["update_field_ids"] ?? [], 1);
+		$rows = [];
+		foreach ($options as $id => $label) {
+			$rows[] = [
+				"id" => (string) $id,
+				"label" => (string) $label,
+				"checked" => isset($selected_map[(string) $id]) ? 1 : 0
+			];
+		}
+		$ctl->assign("update_field_rows", $rows);
 		$ctl->show_multi_dialog("wizard", "table_change_step_update_field.tpl", $ctl->t("wizard.table_change.step_update_field"), 760);
 	}
 
@@ -2804,6 +3132,54 @@ class wizard {
 	private function show_db_additionals_select(Controller $ctl, array $state) {
 		$ctl->assign("row", $state);
 		$ctl->show_multi_dialog("wizard", "db_additionals_select.tpl", $ctl->t("wizard.db_additionals.step_select"), 760);
+	}
+
+	private function show_db_additionals_manage_select(Controller $ctl, array $state) {
+		$ctl->assign("row", $state);
+		$ctl->show_multi_dialog("wizard", "db_additionals_manage_select.tpl", $ctl->t("wizard.db_additionals.step_manage_select"), 760);
+	}
+	private function show_db_additionals_edit_step_target(Controller $ctl, array $state) {
+		$ctl->assign("row", $state);
+		$ctl->assign("db_additionals_target_options", $this->get_db_additionals_target_options($ctl));
+		$ctl->show_multi_dialog("wizard", "db_additionals_edit_step_target.tpl", $ctl->t("wizard.db_additionals.step_edit_target"), 900);
+	}
+
+	private function show_db_additionals_edit_step_request(Controller $ctl, array $state) {
+		$ctl->assign("row", $state);
+		$ctl->assign("db_additionals_place_label", $this->get_db_additionals_place_label((string) ($state["place"] ?? "")));
+		$ctl->show_multi_dialog("wizard", "db_additionals_edit_step_request.tpl", $ctl->t("wizard.db_additionals.step_edit_request"), 900);
+	}
+
+	private function show_db_additionals_delete_step_target(Controller $ctl, array $state) {
+		$ctl->assign("row", $state);
+		$ctl->assign("db_additionals_target_options", $this->get_db_additionals_target_options($ctl));
+		$ctl->show_multi_dialog("wizard", "db_additionals_delete_step_target.tpl", $ctl->t("wizard.db_additionals.step_delete_target"), 900);
+	}
+
+	private function show_db_additionals_delete_step_confirm(Controller $ctl, array $state) {
+		$ctl->assign("row", $state);
+		$ctl->assign("db_additionals_place_label", $this->get_db_additionals_place_label((string) ($state["place"] ?? "")));
+		$ctl->show_multi_dialog("wizard", "db_additionals_delete_step_confirm.tpl", $ctl->t("wizard.db_additionals.step_delete_confirm"), 900);
+	}
+
+	private function show_db_additionals_sort_step_table(Controller $ctl, array $state) {
+		$ctl->assign("row", $state);
+		$ctl->assign("table_id_options", $this->get_table_id_options($ctl));
+		$ctl->show_multi_dialog("wizard", "db_additionals_sort_step_table.tpl", $ctl->t("wizard.db_additionals.step_sort_table"), 760);
+	}
+
+	private function show_db_additionals_sort_step_place(Controller $ctl, array $state) {
+		$ctl->assign("row", $state);
+		$ctl->assign("place_options", $this->get_original_form_place_options(((int) ($state["parent_tb_id"] ?? 0)) > 0));
+		$ctl->assign("is_child", ((int) ($state["parent_tb_id"] ?? 0)) > 0 ? 1 : 0);
+		$ctl->show_multi_dialog("wizard", "db_additionals_sort_step_place.tpl", $ctl->t("wizard.db_additionals.step_sort_place"), 760);
+	}
+
+	private function show_db_additionals_sort_step_list(Controller $ctl, array $state) {
+		$ctl->assign("row", $state);
+		$ctl->assign("additionals", $this->get_db_additionals_sort_list($ctl, (string) ($state["tb_name"] ?? ""), (string) ($state["place"] ?? "")));
+		$ctl->assign("db_additionals_place_label", $this->get_db_additionals_place_label((string) ($state["place"] ?? "")));
+		$ctl->show_multi_dialog("wizard", "db_additionals_sort_step_list.tpl", $ctl->t("wizard.db_additionals.step_sort_list"), 900);
 	}
 
 	private function show_original_form_step_place(Controller $ctl, array $state) {
@@ -2997,12 +3373,10 @@ class wizard {
 		$ctl->show_multi_dialog("wizard", "cron_step_timing.tpl", $title, 900);
 	}
 
-	private function show_cron_step_request(Controller $ctl, array $state) {
+	private function show_cron_step_start(Controller $ctl, array $state) {
 		$ctl->assign("row", $state);
-		$title = ((string) ($state["cron_action"] ?? "")) === "edit"
-			? $ctl->t("wizard.cron.step_request_edit")
-			: $ctl->t("wizard.cron.step_request_add");
-		$ctl->show_multi_dialog("wizard", "cron_step_request.tpl", $title, 900);
+		$ctl->assign("cron_rows", $this->get_cron_list_rows($ctl));
+		$ctl->show_multi_dialog("wizard", "cron_step_start.tpl", $ctl->t("wizard.cron.step_start"), 960);
 	}
 
 	private function show_public_pages_step_select(Controller $ctl, array $state) {
@@ -3164,6 +3538,12 @@ class wizard {
 		$ctl->show_multi_dialog("wizard", "embed_app_step_request.tpl", $title, 900);
 	}
 
+	private function show_embed_app_step_code(Controller $ctl, array $state) {
+		$ctl->assign("row", $state);
+		$ctl->assign("snippet_code", (string) ($state["snippet_code"] ?? ""));
+		$ctl->show_multi_dialog("wizard", "embed_app_step_code.tpl", $ctl->t("wizard.embed_app.step_code"), 980);
+	}
+
 	private function show_embed_app_step_select(Controller $ctl, array $state) {
 		$ctl->assign("row", $state);
 		$ctl->show_multi_dialog("wizard", "embed_app_select.tpl", $ctl->t("wizard.embed_app.step_select"), 760);
@@ -3172,9 +3552,14 @@ class wizard {
 	private function show_embed_app_step_target(Controller $ctl, array $state) {
 		$ctl->assign("row", $state);
 		$ctl->assign("embed_app_options", $this->get_embed_app_options($ctl));
-		$title = ((string) ($state["embed_action"] ?? "")) === "delete"
-			? $ctl->t("wizard.embed_app.step_target_delete")
-			: $ctl->t("wizard.embed_app.step_target");
+		$action = (string) ($state["embed_action"] ?? "");
+		if ($action === "delete") {
+			$title = $ctl->t("wizard.embed_app.step_target_delete");
+		} elseif ($action === "show_code") {
+			$title = $ctl->t("wizard.embed_app.step_target_code");
+		} else {
+			$title = $ctl->t("wizard.embed_app.step_target");
+		}
 		$ctl->show_multi_dialog("wizard", "embed_app_step_target.tpl", $title, 900);
 	}
 
@@ -3286,9 +3671,10 @@ class wizard {
 			"project_name" => $this->detect_current_project_name(),
 			"purpose" => (string) ($state["purpose"] ?? ""),
 			"note_title" => trim((string) ($state["note_title"] ?? "")),
+			"menu_name" => trim((string) ($state["menu_name"] ?? "")),
 			"field_mode" => $field_mode,
 			"manual_fields_text" => $this->normalize_fields_text_for_human($manual_fields_text),
-			"field_mode_label" => $field_mode === "manual" ? "手動設定" : "用途から自動設定",
+			"field_mode_label" => $field_mode === "manual" ? "自分で入力" : "Codexに任せる",
 			"create_mode" => $create_mode,
 			"create_mode_label" => $create_mode === "child" ? "子ノート追加" : "ノート追加",
 			"parent_tb_name" => $this->normalize_table_name((string) ($state["parent_tb_name"] ?? "")),
@@ -3310,14 +3696,35 @@ class wizard {
 		if (!isset($this->get_note_sort_order_options()[$sort_order])) {
 			$sort_order = "4";
 		}
-		$list_width = trim((string) ($state["list_width"] ?? "800"));
-		if ($list_width === "") {
-			$list_width = "800";
-		}
 		$edit_width = trim((string) ($state["edit_width"] ?? "800"));
 		if ($edit_width === "") {
 			$edit_width = "800";
 		}
+		$list_type = (string) ($state["list_type"] ?? "0");
+		if (!isset($this->get_note_list_type_options()[$list_type])) {
+			$list_type = "0";
+		}
+		$show_duplicate = (string) ($state["show_duplicate"] ?? "0");
+		if (!isset($this->get_note_toggle_options()[$show_duplicate])) {
+			$show_duplicate = "0";
+		}
+		$show_id = (string) ($state["show_id"] ?? "0");
+		if (!isset($this->get_note_toggle_options()[$show_id])) {
+			$show_id = "0";
+		}
+		$side_list_type = (string) ($state["side_list_type"] ?? "0");
+		if (!isset($this->get_note_side_list_type_options()[$side_list_type])) {
+			$side_list_type = "0";
+		}
+		$cascade_delete_flag = (string) ($state["cascade_delete_flag"] ?? "0");
+		if (!isset($this->get_cascade_delete_flag_options()[$cascade_delete_flag])) {
+			$cascade_delete_flag = "0";
+		}
+		$show_icon_on_parent_list = (string) ($state["show_icon_on_parent_list"] ?? "0");
+		if (!isset($this->get_note_parent_icon_options()[$show_icon_on_parent_list])) {
+			$show_icon_on_parent_list = "0";
+		}
+		$has_parent_note = ((int) ($state["has_parent_note"] ?? 0)) > 0 ? 1 : 0;
 		return [
 			"target_tb_name" => $this->normalize_table_name((string) ($state["target_tb_name"] ?? "")),
 			"db_id" => $this->normalize_single_id($state["db_id"] ?? ""),
@@ -3328,8 +3735,20 @@ class wizard {
 			"sortkey" => trim((string) ($state["sortkey"] ?? "id")),
 			"sort_order" => $sort_order,
 			"sort_order_label" => $this->get_note_sort_order_options()[$sort_order],
-			"list_width" => $list_width,
-			"edit_width" => $edit_width
+			"edit_width" => $edit_width,
+			"list_type" => $list_type,
+			"list_type_label" => $this->get_note_list_type_options()[$list_type],
+			"show_duplicate" => $show_duplicate,
+			"show_duplicate_label" => $this->get_note_toggle_options()[$show_duplicate],
+			"show_id" => $show_id,
+			"show_id_label" => $this->get_note_toggle_options()[$show_id],
+			"side_list_type" => $side_list_type,
+			"side_list_type_label" => $this->get_note_side_list_type_options()[$side_list_type],
+			"cascade_delete_flag" => $cascade_delete_flag,
+			"cascade_delete_flag_label" => $this->get_cascade_delete_flag_options()[$cascade_delete_flag],
+			"show_icon_on_parent_list" => $show_icon_on_parent_list,
+			"show_icon_on_parent_list_label" => $this->get_note_parent_icon_options()[$show_icon_on_parent_list],
+			"has_parent_note" => $has_parent_note
 		];
 	}
 
@@ -3400,6 +3819,52 @@ class wizard {
 		}
 		return [
 			"additional_type" => (string) ($state["additional_type"] ?? "")
+		];
+	}
+
+	private function get_db_additionals_edit_state(Controller $ctl): array {
+		$state = $ctl->get_session("wizard_db_additionals_edit_state");
+		if (!is_array($state)) {
+			$state = [];
+		}
+		return [
+			"additional_id" => $this->normalize_single_id($state["additional_id"] ?? ""),
+			"tb_name" => $this->normalize_table_name((string) ($state["tb_name"] ?? "")),
+			"note_name" => trim((string) ($state["note_name"] ?? "")),
+			"button_title" => trim((string) ($state["button_title"] ?? "")),
+			"class_name" => trim((string) ($state["class_name"] ?? "")),
+			"function_name" => trim((string) ($state["function_name"] ?? "")),
+			"place" => trim((string) ($state["place"] ?? "")),
+			"request_text" => (string) ($state["request_text"] ?? "")
+		];
+	}
+
+	private function get_db_additionals_delete_state(Controller $ctl): array {
+		$state = $ctl->get_session("wizard_db_additionals_delete_state");
+		if (!is_array($state)) {
+			$state = [];
+		}
+		return [
+			"additional_id" => $this->normalize_single_id($state["additional_id"] ?? ""),
+			"tb_name" => $this->normalize_table_name((string) ($state["tb_name"] ?? "")),
+			"note_name" => trim((string) ($state["note_name"] ?? "")),
+			"button_title" => trim((string) ($state["button_title"] ?? "")),
+			"class_name" => trim((string) ($state["class_name"] ?? "")),
+			"function_name" => trim((string) ($state["function_name"] ?? "")),
+			"place" => trim((string) ($state["place"] ?? ""))
+		];
+	}
+
+	private function get_db_additionals_sort_state(Controller $ctl): array {
+		$state = $ctl->get_session("wizard_db_additionals_sort_state");
+		if (!is_array($state)) {
+			$state = [];
+		}
+		return [
+			"db_id" => $this->normalize_single_id($state["db_id"] ?? ""),
+			"tb_name" => $this->normalize_table_name((string) ($state["tb_name"] ?? "")),
+			"parent_tb_id" => (int) ($state["parent_tb_id"] ?? 0),
+			"place" => trim((string) ($state["place"] ?? ""))
 		];
 	}
 
@@ -3561,7 +4026,8 @@ class wizard {
 			"embed_key" => (string) ($state["embed_key"] ?? ""),
 			"title" => (string) ($state["title"] ?? ""),
 			"class_name" => $this->normalize_embed_app_class_name((string) ($state["class_name"] ?? "")),
-			"request_text" => (string) ($state["request_text"] ?? "")
+			"request_text" => (string) ($state["request_text"] ?? ""),
+			"snippet_code" => (string) ($state["snippet_code"] ?? "")
 		];
 	}
 
@@ -3639,6 +4105,37 @@ class wizard {
 	private function save_db_additionals_state(Controller $ctl, array $state): void {
 		$state["additional_type"] = (string) ($state["additional_type"] ?? "");
 		$ctl->set_session("wizard_db_additionals_state", $state);
+	}
+
+	private function save_db_additionals_edit_state(Controller $ctl, array $state): void {
+		$state["additional_id"] = $this->normalize_single_id($state["additional_id"] ?? "");
+		$state["tb_name"] = $this->normalize_table_name((string) ($state["tb_name"] ?? ""));
+		$state["note_name"] = trim((string) ($state["note_name"] ?? ""));
+		$state["button_title"] = trim((string) ($state["button_title"] ?? ""));
+		$state["class_name"] = trim((string) ($state["class_name"] ?? ""));
+		$state["function_name"] = trim((string) ($state["function_name"] ?? ""));
+		$state["place"] = trim((string) ($state["place"] ?? ""));
+		$state["request_text"] = (string) ($state["request_text"] ?? "");
+		$ctl->set_session("wizard_db_additionals_edit_state", $state);
+	}
+
+	private function save_db_additionals_delete_state(Controller $ctl, array $state): void {
+		$state["additional_id"] = $this->normalize_single_id($state["additional_id"] ?? "");
+		$state["tb_name"] = $this->normalize_table_name((string) ($state["tb_name"] ?? ""));
+		$state["note_name"] = trim((string) ($state["note_name"] ?? ""));
+		$state["button_title"] = trim((string) ($state["button_title"] ?? ""));
+		$state["class_name"] = trim((string) ($state["class_name"] ?? ""));
+		$state["function_name"] = trim((string) ($state["function_name"] ?? ""));
+		$state["place"] = trim((string) ($state["place"] ?? ""));
+		$ctl->set_session("wizard_db_additionals_delete_state", $state);
+	}
+
+	private function save_db_additionals_sort_state(Controller $ctl, array $state): void {
+		$state["db_id"] = $this->normalize_single_id($state["db_id"] ?? "");
+		$state["tb_name"] = $this->normalize_table_name((string) ($state["tb_name"] ?? ""));
+		$state["parent_tb_id"] = (int) ($state["parent_tb_id"] ?? 0);
+		$state["place"] = trim((string) ($state["place"] ?? ""));
+		$ctl->set_session("wizard_db_additionals_sort_state", $state);
 	}
 
 	private function save_pdf_state(Controller $ctl, array $state): void {
@@ -3745,6 +4242,7 @@ class wizard {
 		$state["title"] = trim((string) ($state["title"] ?? ""));
 		$state["class_name"] = $this->normalize_embed_app_class_name((string) ($state["class_name"] ?? ""));
 		$state["request_text"] = (string) ($state["request_text"] ?? "");
+		$state["snippet_code"] = (string) ($state["snippet_code"] ?? "");
 		$ctl->set_session("wizard_embed_app_state", $state);
 	}
 
@@ -3819,6 +4317,22 @@ class wizard {
 		return $data;
 	}
 
+	private function build_embed_app_snippet_code(Controller $ctl, string $embed_key): string {
+		$embed_key = trim($embed_key);
+		if ($embed_key === "") {
+			return "";
+		}
+		$loader_url = $ctl->get_APP_URL("embed_app_runtime", "loader_js");
+		$route_url = $ctl->get_APP_URL("embed_app_runtime", "route", ["embed_key" => $embed_key]);
+		$target_id = "embed-app-" . preg_replace('/[^a-zA-Z0-9_-]/', '-', $embed_key);
+		$loader_url = htmlspecialchars($loader_url, ENT_QUOTES, 'UTF-8');
+		$route_url = htmlspecialchars($route_url, ENT_QUOTES, 'UTF-8');
+		$embed_key = htmlspecialchars($embed_key, ENT_QUOTES, 'UTF-8');
+		return '<div id="' . $target_id . '"></div>' . "
+"
+			. '<script src="' . $loader_url . '" data-target="#' . $target_id . '" data-boot-url="' . $route_url . '" data-embed-key="' . $embed_key . '" defer></script>';
+	}
+
 	private function get_dashboard_row(Controller $ctl, string $dashboard_id): ?array {
 		$dashboard_id = $this->normalize_single_id($dashboard_id);
 		if ($dashboard_id === "") {
@@ -3881,6 +4395,7 @@ class wizard {
 		$state["project_name"] = $this->detect_current_project_name();
 		$state["purpose"] = trim((string) ($state["purpose"] ?? ""));
 		$state["note_title"] = trim((string) ($state["note_title"] ?? ""));
+		$state["menu_name"] = trim((string) ($state["menu_name"] ?? ""));
 		$state["field_mode"] = ((string) ($state["field_mode"] ?? "auto")) === "manual" ? "manual" : "auto";
 		$state["manual_fields_text"] = $this->normalize_fields_text_for_human((string) ($state["manual_fields_text"] ?? ""));
 		$state["create_mode"] = ((string) ($state["create_mode"] ?? "normal")) === "child" ? "child" : "normal";
@@ -3898,8 +4413,14 @@ class wizard {
 		$state["show_menu"] = (string) ($state["show_menu"] ?? "1");
 		$state["sortkey"] = trim((string) ($state["sortkey"] ?? "id"));
 		$state["sort_order"] = (string) ($state["sort_order"] ?? "4");
-		$state["list_width"] = trim((string) ($state["list_width"] ?? "800"));
 		$state["edit_width"] = trim((string) ($state["edit_width"] ?? "800"));
+		$state["list_type"] = (string) ($state["list_type"] ?? "0");
+		$state["show_duplicate"] = (string) ($state["show_duplicate"] ?? "0");
+		$state["show_id"] = (string) ($state["show_id"] ?? "0");
+		$state["side_list_type"] = (string) ($state["side_list_type"] ?? "0");
+		$state["cascade_delete_flag"] = (string) ($state["cascade_delete_flag"] ?? "0");
+		$state["show_icon_on_parent_list"] = (string) ($state["show_icon_on_parent_list"] ?? "0");
+		$state["has_parent_note"] = ((int) ($state["has_parent_note"] ?? 0)) > 0 ? 1 : 0;
 		$ctl->set_session("wizard_note_edit_state", $state);
 	}
 
@@ -3924,89 +4445,6 @@ class wizard {
 		$state["list_width"] = trim((string) ($state["list_width"] ?? "800"));
 		$state["cascade_delete_flag"] = (string) ($state["cascade_delete_flag"] ?? "0");
 		$ctl->set_session("wizard_parent_child_note_state", $state);
-	}
-
-	private function infer_suggestions_from_purpose(Controller $ctl, string $purpose): array {
-		$fallback = $this->build_fallback_suggestions($purpose);
-		try {
-			$sys = "You are a strict assistant for FBP schema planning. Return ONLY JSON with keys: table_name, menu_name, field_candidates. field_candidates is an array and each item has title, type, note.";
-			$payload = [
-				"task" => "wizard_table_create_suggestion",
-				"purpose" => $purpose,
-				"allowed_types" => ["text", "textarea", "number", "date", "select", "email", "tel"],
-				"field_style" => "human_friendly"
-			];
-			$ctl->chatGPT_reset_history();
-			$ctl->chatGPT_add_history("system", $sys);
-			$raw = (string) $ctl->chatGPT(json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), "user", 0, 900, "api");
-			$parsed = $this->decode_json_object($raw);
-			if (!is_array($parsed)) {
-				return $fallback;
-			}
-			$table_name = $this->normalize_table_name((string) ($parsed["table_name"] ?? ""));
-			if ($table_name === "") {
-				$table_name = $fallback["table_name"];
-			}
-			$menu_name = trim((string) ($parsed["menu_name"] ?? ""));
-			if ($menu_name === "") {
-				$menu_name = $fallback["menu_name"];
-			}
-			$fields_text = $this->build_field_candidate_lines_from_llm($parsed["field_candidates"] ?? []);
-			if ($fields_text === "") {
-				$fields_text = $fallback["fields_text"];
-			}
-			return [
-				"table_name" => $table_name,
-				"menu_name" => $menu_name,
-				"fields_text" => $fields_text
-			];
-		} catch (Throwable $e) {
-			return $fallback;
-		}
-	}
-
-	private function build_fallback_suggestions(string $purpose): array {
-		$normalized = mb_convert_kana($purpose, "asKV");
-		$table_name = "custom_table";
-		$menu_name = "新規テーブル";
-		$fields = [
-			"名前（text）",
-			"メールアドレス（email）",
-			"メモ（textarea）",
-			"ステータス（select）"
-		];
-
-		if (preg_match('/問い合わせ|問合せ|toiawase/iu', $normalized)) {
-			$table_name = "inquiries";
-			$menu_name = "問い合わせ管理";
-			$fields = [
-				"問い合わせ番号（text）",
-				"受付日（date）",
-				"氏名（text）",
-				"メールアドレス（email）",
-				"電話番号（tel）",
-				"問い合わせ内容（textarea）",
-				"ステータス（select）"
-			];
-		} else if (preg_match('/予約|booking|reservation/iu', $normalized)) {
-			$table_name = "reservations";
-			$menu_name = "予約管理";
-			$fields = [
-				"予約番号（text）",
-				"予約日（date）",
-				"氏名（text）",
-				"連絡先（tel）",
-				"人数（number）",
-				"備考（textarea）",
-				"ステータス（select）"
-			];
-		}
-
-		return [
-			"table_name" => $this->normalize_table_name($table_name),
-			"menu_name" => $menu_name,
-			"fields_text" => implode("\n", $fields)
-		];
 	}
 
 	private function build_field_candidate_lines_from_llm($candidates): string {
@@ -4077,81 +4515,6 @@ class wizard {
 		return null;
 	}
 
-	private function infer_cron_suggestions(Controller $ctl, string $timing_text, string $request_text): array {
-		$fallback = [
-			"title" => "",
-			"class_name" => "",
-			"function_name" => "",
-			"min" => [],
-			"hour" => [],
-			"day" => [],
-			"month" => [],
-			"weekday" => [],
-			"summary" => trim($request_text)
-		];
-		try {
-			$sys = "You are a strict assistant for FBP cron planning. Return ONLY JSON with keys: title, class_name, function_name, min, hour, day, month, weekday, summary. min/hour/day/month/weekday must be arrays of strings. Use empty array to mean wildcard. class_name and function_name must be valid PHP identifiers with underscore.";
-			$payload = [
-				"task" => "wizard_cron_schedule_suggestion",
-				"timing_text" => $timing_text,
-				"request_text" => $request_text,
-				"field_meaning" => [
-					"min" => "0,10,20,30,40,50 only in this framework's typical UI",
-					"hour" => "0-23",
-					"day" => "1-31",
-					"month" => "1-12",
-					"weekday" => "0:Sun,1:Mon,2:Tue,3:Wed,4:Thu,5:Fri,6:Sat"
-				],
-				"examples" => [
-					[
-						"timing_text" => "毎日午前9時",
-						"request_text" => "売上集計を送る",
-						"title" => "売上集計送信",
-						"class_name" => "cron_sales_report",
-						"function_name" => "exec",
-						"min" => ["0"],
-						"hour" => ["9"],
-						"day" => [],
-						"month" => [],
-						"weekday" => []
-					],
-					[
-						"timing_text" => "毎週月曜の朝8時",
-						"request_text" => "未入金者へ通知",
-						"title" => "未入金通知",
-						"class_name" => "cron_unpaid_notice",
-						"function_name" => "exec",
-						"min" => ["0"],
-						"hour" => ["8"],
-						"day" => [],
-						"month" => [],
-						"weekday" => ["1"]
-					]
-				]
-			];
-			$ctl->chatGPT_reset_history();
-			$ctl->chatGPT_add_history("system", $sys);
-			$raw = (string) $ctl->chatGPT(json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), "user", 0, 900, "api");
-			$parsed = $this->decode_json_object($raw);
-			if (!is_array($parsed)) {
-				return $fallback;
-			}
-			return [
-				"title" => trim((string) ($parsed["title"] ?? "")),
-				"class_name" => trim((string) ($parsed["class_name"] ?? "")),
-				"function_name" => trim((string) ($parsed["function_name"] ?? "")),
-				"min" => $this->normalize_cron_component_list($parsed["min"] ?? null),
-				"hour" => $this->normalize_cron_component_list($parsed["hour"] ?? null),
-				"day" => $this->normalize_cron_component_list($parsed["day"] ?? null),
-				"month" => $this->normalize_cron_component_list($parsed["month"] ?? null),
-				"weekday" => $this->normalize_cron_component_list($parsed["weekday"] ?? null),
-				"summary" => trim((string) ($parsed["summary"] ?? $request_text))
-			];
-		} catch (Throwable $e) {
-			return $fallback;
-		}
-	}
-
 	private function normalize_cron_component_list($val): array {
 		if (!is_array($val)) {
 			return [];
@@ -4165,14 +4528,6 @@ class wizard {
 			$res[] = $s;
 		}
 		return array_values(array_unique($res));
-	}
-
-	private function has_valid_cron_schedule(array $state): bool {
-		return count($this->normalize_cron_component_list($state["min"] ?? null)) > 0
-			|| count($this->normalize_cron_component_list($state["hour"] ?? null)) > 0
-			|| count($this->normalize_cron_component_list($state["day"] ?? null)) > 0
-			|| count($this->normalize_cron_component_list($state["month"] ?? null)) > 0
-			|| count($this->normalize_cron_component_list($state["weekday"] ?? null)) > 0;
 	}
 
 	private function build_cron_component_text(array $items, string $wildcard = "*"): string {
@@ -4215,6 +4570,35 @@ class wizard {
 			return null;
 		}
 		return $data;
+	}
+
+	private function get_cron_list_rows(Controller $ctl): array {
+		$list = $ctl->db("cron", "cron")->getall("sort", SORT_ASC);
+		if (!is_array($list)) {
+			return [];
+		}
+		$rows = [];
+		foreach ($list as $one) {
+			$id = $this->normalize_single_id($one["id"] ?? "");
+			if ($id === "") {
+				continue;
+			}
+			$state = [
+				"min" => $this->normalize_cron_component_list($one["min"] ?? null),
+				"hour" => $this->normalize_cron_component_list($one["hour"] ?? null),
+				"day" => $this->normalize_cron_component_list($one["day"] ?? null),
+				"month" => $this->normalize_cron_component_list($one["month"] ?? null),
+				"weekday" => $this->normalize_cron_component_list($one["weekday"] ?? null)
+			];
+			$rows[] = [
+				"id" => $id,
+				"title" => trim((string) ($one["title"] ?? "")),
+				"class_name" => trim((string) ($one["class_name"] ?? "")),
+				"function_name" => trim((string) ($one["function_name"] ?? "")),
+				"timing_text" => $this->build_cron_human_timing_text($state)
+			];
+		}
+		return $rows;
 	}
 
 	private function get_public_pages_registry_options(Controller $ctl): array {
@@ -4398,9 +4782,6 @@ class wizard {
 
 	private function suggest_embed_app_class_name(string $title): string {
 		$base = $this->normalize_embed_app_class_name($title);
-		if ($base === '') {
-			$base = 'embed_app_' . substr(md5($title), 0, 8);
-		}
 		if (strpos($base, 'embed_app_') !== 0) {
 			$base = 'embed_app_' . $base;
 		}
@@ -4409,9 +4790,6 @@ class wizard {
 
 	private function suggest_dashboard_class_name(string $title): string {
 		$base = $this->normalize_embed_app_class_name($title);
-		if ($base === '') {
-			$base = 'dashboard_' . substr(md5($title), 0, 8);
-		}
 		if (strpos($base, 'dashboard_') !== 0) {
 			$base = 'dashboard_' . $base;
 		}
@@ -4474,13 +4852,13 @@ class wizard {
 				$lines[] = "   - " . $one;
 			}
 		} else {
-			$lines[] = ((string) ($row["create_mode"] ?? "") === "child") ? "7. 項目は用途から自動提案" : "6. 項目は用途から自動提案";
+			$lines[] = ((string) ($row["create_mode"] ?? "") === "child") ? "7. 項目はCodexに任せる" : "6. 項目はCodexに任せる";
 		}
 		return $lines;
 	}
 
 	private function build_table_create_prompt_text($row, $plan_lines) {
-		$field_block = "- 用途から必要な項目を自動提案してください。";
+		$field_block = "- 項目は要件に応じて Codex 側で提案・実装してください。";
 		if ((string) ($row["field_mode"] ?? "") === "manual") {
 			$field_lines = $this->normalize_field_lines((string) ($row["manual_fields_text"] ?? ""));
 			if (!empty($field_lines)) {
@@ -4817,6 +5195,46 @@ $this->build_prompt_policy_block() . "\n\n" .
 		);
 	}
 
+	private function build_db_additionals_edit_prompt_text(Controller $ctl, array $row): string {
+		$place = (string) ($row["place"] ?? "");
+		$additional_id = $this->normalize_single_id($row["additional_id"] ?? "");
+		$tb_name = (string) ($row["tb_name"] ?? "");
+		$note_name = trim((string) ($row["note_name"] ?? ""));
+		$button_title = trim((string) ($row["button_title"] ?? ""));
+		$class_name = trim((string) ($row["class_name"] ?? ""));
+		$function_name = trim((string) ($row["function_name"] ?? ""));
+		$request_text = trim((string) ($row["request_text"] ?? ""));
+
+		return trim(
+"app-framework5で実装してください。\n\n" .
+"【変更種別】\n" .
+"db_additionals / 制作済みボタン変更\n\n" .
+"【対象ボタンID】\n" .
+$additional_id . "\n\n" .
+"【対象ノート】\n" .
+($note_name !== "" ? $note_name : $tb_name) . " (tb_name=" . $tb_name . ")\n\n" .
+"【既存ボタン名】\n" .
+$button_title . "\n\n" .
+"【既存 class / function】\n" .
+$class_name . " / " . $function_name . "\n\n" .
+"【既存配置場所】\n" .
+$this->get_db_additionals_place_label($place) . " (place=" . $place . ")\n\n" .
+"【変更内容】\n" .
+$request_text . "\n\n" .
+"【実装方針】\n" .
+"- 既存の db_additionals ボタンを前提に変更する\n" .
+"- 対象 additionals レコードと既存 class/function の実装内容を確認してから改修する\n" .
+"- button_title / place / class / function の変更が必要なら整合するように更新する\n" .
+"- 既存導線を壊さないように関連テンプレート・PHP・登録値を最小差分で調整する\n\n" .
+$this->build_prompt_policy_block() . "\n\n" .
+"【完了条件】\n" .
+"- app_call 成功\n" .
+"- 更新内容が data_get または data_list で確認できる\n" .
+"- 主要導線を app_check で確認\n\n" .
+"実装後は、変更ファイル一覧・検証コマンド・確認結果を簡潔に報告してください。"
+		);
+	}
+
 	private function resolve_line_message_send_mode(string $place): string {
 		$place = trim($place);
 		if ($place === "1" || $place === "3") {
@@ -4935,6 +5353,82 @@ $this->build_prompt_policy_block() . "\n\n" .
 			}
 		}
 		return "";
+	}
+
+	private function get_db_additionals_target_options(Controller $ctl): array {
+		$opt = ["" => "選択してください"];
+		$list = $ctl->db("additionals", "db_additionals")->getall("sort", SORT_ASC);
+		if (!is_array($list)) {
+			return $opt;
+		}
+		foreach ($list as $one) {
+			$id = $this->normalize_single_id($one["id"] ?? "");
+			$tb_name = trim((string) ($one["tb_name"] ?? ""));
+			$button_title = trim((string) ($one["button_title"] ?? ""));
+			$class_name = trim((string) ($one["class_name"] ?? ""));
+			if ($id === "" || $tb_name === "" || $button_title === "" || $class_name === "admin") {
+				continue;
+			}
+			$note_name = $this->resolve_db_additionals_note_name($ctl, $tb_name);
+			$opt[$id] = ($note_name !== "" ? $note_name : $tb_name) . " " . $button_title;
+		}
+		return $opt;
+	}
+
+	private function get_db_additionals_target(Controller $ctl, string $additional_id): ?array {
+		$additional_id = $this->normalize_single_id($additional_id);
+		if ($additional_id === "") {
+			return null;
+		}
+		$item = $ctl->db("additionals", "db_additionals")->get((int) $additional_id);
+		if (!is_array($item) || count($item) === 0) {
+			return null;
+		}
+		$tb_name = trim((string) ($item["tb_name"] ?? ""));
+		$button_title = trim((string) ($item["button_title"] ?? ""));
+		$class_name = trim((string) ($item["class_name"] ?? ""));
+		if ($tb_name === "" || $button_title === "" || $class_name === "admin") {
+			return null;
+		}
+		return $item;
+	}
+
+	private function build_db_additionals_target_state(Controller $ctl, array $item): array {
+		$tb_name = trim((string) ($item["tb_name"] ?? ""));
+		return [
+			"additional_id" => $this->normalize_single_id($item["id"] ?? ""),
+			"tb_name" => $tb_name,
+			"note_name" => $this->resolve_db_additionals_note_name($ctl, $tb_name),
+			"button_title" => trim((string) ($item["button_title"] ?? "")),
+			"class_name" => trim((string) ($item["class_name"] ?? "")),
+			"function_name" => trim((string) ($item["function_name"] ?? "")),
+			"place" => trim((string) ($item["place"] ?? ""))
+		];
+	}
+
+	private function resolve_db_additionals_note_name(Controller $ctl, string $tb_name): string {
+		$db = $this->find_db_row_by_tb_name($ctl, $tb_name);
+		if (!is_array($db) || count($db) === 0) {
+			return $tb_name;
+		}
+		$menu_name = trim((string) ($db["menu_name"] ?? ""));
+		return $menu_name !== "" ? $menu_name : $tb_name;
+	}
+
+	private function get_db_additionals_place_label(string $place): string {
+		$is_child = $place === "2" || $place === "3";
+		$place_opt = $this->get_original_form_place_options($is_child);
+		return $place_opt[$place] ?? $place;
+	}
+
+	private function get_db_additionals_sort_list(Controller $ctl, string $tb_name, string $place): array {
+		$tb_name = $this->normalize_table_name($tb_name);
+		$place = trim($place);
+		if ($tb_name === "" || $place === "") {
+			return [];
+		}
+		$list = $ctl->db("additionals", "db_additionals")->select(["tb_name", "place"], [$tb_name, $place], true, "AND", "sort", SORT_ASC);
+		return is_array($list) ? $list : [];
 	}
 
 	private function get_line_bot_edit_rule_options(Controller $ctl): array {
@@ -5173,16 +5667,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 	}
 
 	private function build_cron_add_prompt_text(array $row): string {
-		$min = $this->normalize_cron_component_list($row["min"] ?? null);
-		$hour = $this->normalize_cron_component_list($row["hour"] ?? null);
-		$day = $this->normalize_cron_component_list($row["day"] ?? null);
-		$month = $this->normalize_cron_component_list($row["month"] ?? null);
-		$weekday = $this->normalize_cron_component_list($row["weekday"] ?? null);
-		$title = trim((string) ($row["title"] ?? ""));
-		$class_name = trim((string) ($row["class_name"] ?? ""));
-		$function_name = trim((string) ($row["function_name"] ?? ""));
 		$timing_text = trim((string) ($row["timing_text"] ?? ""));
-		$summary = trim((string) ($row["summary"] ?? ""));
 		$request_text = trim((string) ($row["request_text"] ?? ""));
 
 		return trim(
@@ -5191,27 +5676,13 @@ $this->build_prompt_policy_block() . "\n\n" .
 "Cron / 定期処理追加\n\n" .
 "【実行タイミング】\n" .
 $timing_text . "\n\n" .
-"【定期処理名】\n" .
-$title . "\n\n" .
-"【class_name】\n" .
-$class_name . "\n\n" .
-"【function_name】\n" .
-$function_name . "\n\n" .
-"【cron登録値】\n" .
-"- min: " . $this->build_cron_component_text($min) . "\n" .
-"- hour: " . $this->build_cron_component_text($hour) . "\n" .
-"- day: " . $this->build_cron_component_text($day) . "\n" .
-"- month: " . $this->build_cron_component_text($month) . "\n" .
-"- weekday: " . $this->build_cron_component_text($weekday) . "\n\n" .
-"【自然文入力】\n" .
+"【実行内容】\n" .
 $request_text . "\n\n" .
-"【処理概要】\n" .
-$summary . "\n\n" .
 "【実装方針】\n" .
 "- cron の定期処理を追加する\n" .
+"- 実行タイミングと実行内容から、title / class_name / function_name / min / hour / day / month / weekday を Codex 側で決定する\n" .
 "- cron テーブルの min/hour/day/month/weekday 形式で登録する\n" .
-"- class_name は " . $class_name . "、function_name は " . $function_name . " を使用する\n" .
-"- 必要に応じて class/function 名を提案してよい\n\n" .
+"- class_name と function_name は PHP で扱いやすい分かりやすい名前にする\n\n" .
 $this->build_prompt_policy_block() . "\n\n" .
 "【完了条件】\n" .
 "- app_call 成功\n" .
@@ -5241,28 +5712,26 @@ $this->build_prompt_policy_block() . "\n\n" .
 "Cron / 定期処理変更\n\n" .
 "【対象Cron ID】\n" .
 $cron_id . "\n\n" .
-"【変更後の実行タイミング】\n" .
-$timing_text . "\n\n" .
-"【定期処理名】\n" .
+"【現在の定期処理名】\n" .
 $title . "\n\n" .
-"【class_name】\n" .
+"【現在のclass_name】\n" .
 $class_name . "\n\n" .
-"【function_name】\n" .
+"【現在のfunction_name】\n" .
 $function_name . "\n\n" .
-"【変更後のcron登録値】\n" .
+"【現在のcron登録値】\n" .
 "- min: " . $this->build_cron_component_text($min) . "\n" .
 "- hour: " . $this->build_cron_component_text($hour) . "\n" .
 "- day: " . $this->build_cron_component_text($day) . "\n" .
 "- month: " . $this->build_cron_component_text($month) . "\n" .
 "- weekday: " . $this->build_cron_component_text($weekday) . "\n\n" .
-"【自然文入力】\n" .
+"【変更後の実行タイミング】\n" .
+$timing_text . "\n\n" .
+"【変更内容】\n" .
 $request_text . "\n\n" .
-"【処理概要】\n" .
-$summary . "\n\n" .
 "【実装方針】\n" .
 "- 既存 cron レコードを変更する\n" .
 "- cron テーブルの min/hour/day/month/weekday 形式で更新する\n" .
-"- class_name は " . $class_name . "、function_name は " . $function_name . " を使用する\n" .
+"- 現在の登録値と変更後の実行タイミング・変更内容から、必要な title / class_name / function_name / min / hour / day / month / weekday の変更を Codex 側で決定する\n" .
 "- 必要に応じて既存 class/function の調整も行ってよい\n\n" .
 $this->build_prompt_policy_block() . "\n\n" .
 "【完了条件】\n" .
@@ -5478,19 +5947,16 @@ $this->build_prompt_policy_block() . "\n\n" .
 		return trim(
 "app-framework5で実装してください。\n\n" .
 "【変更種別】\n" .
-"Embed App / 新規制作\n\n" .
+"埋め込みアプリ / 追加\n\n" .
 "【タイトル】\n" .
 $title . "\n\n" .
-"【class_name】\n" .
-$class_name . "\n\n" .
-"【embed_key】\n" .
-$embed_key . "\n\n" .
 "【制作内容】\n" .
 $request_text . "\n\n" .
 "【実装方針】\n" .
-"- router方式の Embed App を新規作成する\n" .
-"- entry point は " . $class_name . "::page を前提にする\n" .
-"- embed_app の登録値は embed_key=class_name を基本とする\n" .
+"- router方式の埋め込みアプリを新規作成する\n" .
+"- class_name と embed_key は要件に合う分かりやすい名前を Codex 側で決定する\n" .
+"- entry point は決定した class_name の page を使う\n" .
+"- embed_app の登録値は実装した class_name / embed_key と整合させる\n" .
 "- snippet は配信元URL固定で生成する\n" .
 "- embed_app_runtime の route / loader_js 導線に接続する\n" .
 "- 埋め込みタグ生成と origin 条件の確認まで行う\n" .
@@ -5514,7 +5980,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 		return trim(
 "app-framework5で実装してください。\n\n" .
 "【変更種別】\n" .
-"Embed App / 既存変更\n\n" .
+"埋め込みアプリ / 既存変更\n\n" .
 "【対象ID】\n" .
 $embed_app_id . "\n\n" .
 "【タイトル】\n" .
@@ -5526,7 +5992,7 @@ $embed_key . "\n\n" .
 "【変更内容】\n" .
 $request_text . "\n\n" .
 "【実装方針】\n" .
-"- 既存の router方式 Embed App を変更する\n" .
+"- 既存の router方式埋め込みアプリを変更する\n" .
 "- entry point は " . $class_name . "::page を前提にする\n" .
 "- embed_app の登録値と実装の整合を保つ\n" .
 "- snippet は配信元URL固定で生成する\n" .
@@ -5550,7 +6016,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 		return trim(
 "app-framework5で実装してください。\n\n" .
 "【変更種別】\n" .
-"Embed App / 削除\n\n" .
+"埋め込みアプリ / 削除\n\n" .
 "【対象ID】\n" .
 $embed_app_id . "\n\n" .
 "【タイトル】\n" .
@@ -5590,19 +6056,16 @@ $this->build_prompt_policy_block() . "\n\n" .
 "Dashboard / 追加\n\n" .
 "【Dashboard 名】\n" .
 $title . "\n\n" .
-"【class_name】\n" .
-$class_name . "\n\n" .
-"【function_name】\n" .
-$function_name . "\n\n" .
 "【column_width】\n" .
 $column_width . "\n\n" .
 "【制作内容】\n" .
 $request_text . "\n\n" .
 "【実装方針】\n" .
 "- Dashboard 用のウィジェットクラスまたは既存クラスのウィジェット関数を追加する\n" .
+"- 新規 class_name は要件に合う分かりやすい名前を Codex 側で決定する\n" .
+"- function_name は原則 dashboard を使うが、要件に応じて変更してよい\n" .
 "- 表示関数内では show_dashboard_widget() を使う\n" .
 "- dashboard テーブルに class_name / function_name / column_width / sort を登録する\n" .
-"- function_name は原則 dashboard を使うが、要件に応じて変更してよい\n" .
 "- column_width は 1,2,3 のいずれかで実装する\n" .
 "- dashboard/page はウィジェット登録しない\n" .
 "- CLI確認では data_list(table=dashboard,max=100) と app_call(class=dashboard,function=page) を使う\n\n" .
@@ -5705,7 +6168,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 			"display_matrix" => $display_matrix,
 			"display_targets_text" => $display_targets_text,
 			"delete_field_ids" => $this->normalize_id_list($state["delete_field_ids"] ?? null),
-			"update_field_id" => $this->normalize_single_id($state["update_field_id"] ?? ""),
+			"update_field_ids" => $this->normalize_id_list($state["update_field_ids"] ?? null),
 			"update_field_change_text" => (string) ($state["update_field_change_text"] ?? ""),
 			"screen_add_field_ids" => $this->normalize_id_list($state["screen_add_field_ids"] ?? null)
 		];
@@ -5720,7 +6183,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 			$state["display_matrix"] = $this->normalize_display_matrix($state["display_matrix"] ?? null, $field_lines, true);
 		}
 		$state["delete_field_ids"] = $this->normalize_id_list($state["delete_field_ids"] ?? null);
-		$state["update_field_id"] = $this->normalize_single_id($state["update_field_id"] ?? "");
+		$state["update_field_ids"] = $this->normalize_id_list($state["update_field_ids"] ?? null);
 		$state["update_field_change_text"] = (string) ($state["update_field_change_text"] ?? "");
 		$state["screen_add_field_ids"] = $this->normalize_id_list($state["screen_add_field_ids"] ?? null);
 		$ctl->set_session("wizard_table_change_state", $state);
@@ -5837,10 +6300,104 @@ $this->build_prompt_policy_block() . "\n\n" .
 		];
 	}
 
+	private function ensure_note_edit_sort_field(Controller $ctl, int $db_id): void {
+		$where_fields = ["db_id", "parameter_name"];
+		$where_values = [$db_id, "sort"];
+		$list = $ctl->db("db_fields", "db")->select($where_fields, $where_values);
+		if (is_array($list) && count($list) > 0) {
+			return;
+		}
+		$insert_row = [
+			"db_id" => $db_id,
+			"type" => "number",
+			"length" => 24,
+			"parameter_name" => "sort",
+			"parameter_title" => "Sort"
+		];
+		$ctl->db("db_fields", "db")->insert($insert_row);
+	}
+
+	private function ensure_note_edit_weekly_calendar_fields(Controller $ctl, int $db_id): void {
+		$required = [
+			[
+				"parameter_name" => "datetime",
+				"type" => "datetime",
+				"length" => 15,
+				"parameter_title" => "Scheduled Date & Time",
+				"default_value" => ""
+			],
+			[
+				"parameter_name" => "duration",
+				"type" => "number",
+				"length" => 24,
+				"parameter_title" => "Duration(minutes)",
+				"default_value" => 60
+			],
+			[
+				"parameter_name" => "travel_before",
+				"type" => "number",
+				"length" => 24,
+				"parameter_title" => "Travel Time Before (min)",
+				"default_value" => 0
+			],
+			[
+				"parameter_name" => "travel_after",
+				"type" => "number",
+				"length" => 24,
+				"parameter_title" => "Travel Time After (min)",
+				"default_value" => 0
+			]
+		];
+		foreach ($required as $def) {
+			$list = $ctl->db("db_fields", "db")->select(["db_id", "parameter_name"], [$db_id, $def["parameter_name"]]);
+			if (is_array($list) && count($list) > 0) {
+				continue;
+			}
+			$ctl->db("db_fields", "db")->insert([
+				"db_id" => $db_id,
+				"type" => $def["type"],
+				"length" => $def["length"],
+				"parameter_name" => $def["parameter_name"],
+				"parameter_title" => $def["parameter_title"],
+				"validation" => 0,
+				"default_value" => $def["default_value"]
+			]);
+		}
+	}
+
 	private function get_cascade_delete_flag_options(): array {
 		return [
 			"0" => "Do not delete",
 			"1" => "Cascade delete"
+		];
+	}
+
+	private function get_note_list_type_options(): array {
+		return [
+			"0" => "Search and Table",
+			"1" => "Manual Sort"
+		];
+	}
+
+	private function get_note_side_list_type_options(): array {
+		return [
+			"0" => "Same as Main Screen",
+			"1" => "Search and Table",
+			"2" => "Manual Sort"
+		];
+	}
+
+	private function get_note_toggle_options(): array {
+		return [
+			"0" => "Hide",
+			"1" => "Show"
+		];
+	}
+
+	private function get_note_parent_icon_options(): array {
+		return [
+			"0" => "Show",
+			"1" => "Hide"
 		];
 	}
 
@@ -5928,18 +6485,46 @@ $this->build_prompt_policy_block() . "\n\n" .
 		return $val >= 600 && $val <= 1200;
 	}
 
+	private function is_valid_parent_child_side_width(string $width): bool {
+		if ($width === "" || !ctype_digit($width)) {
+			return false;
+		}
+		return (int) $width >= 100;
+	}
+
 	private function build_note_edit_plan_lines(array $row): array {
-		return [
+		$lines = [
 			"1. 対象ノート: " . (string) ($row["target_tb_name"] ?? ""),
 			"2. db の対象レコードを更新",
-			"3. menu_name / description / show_menu / sortkey / sort_order / list_width / edit_width を反映",
-			"4. 関連画面への影響を確認",
-			"5. db_tables_list / app_call / app_check で確認"
+			"3. menu_name / description / show_menu / sortkey / sort_order / list_type / show_duplicate / show_id / edit_width を反映"
 		];
+		if ((int) ($row["has_parent_note"] ?? 0) > 0) {
+			$lines[] = "4. side_list_type / cascade_delete_flag / show_icon_on_parent_list も反映";
+			$lines[] = "5. db_tables_list / app_call / app_check で確認";
+			return $lines;
+		}
+		$lines[] = "4. db_tables_list / app_call / app_check で確認";
+		return $lines;
 	}
 
 	private function build_note_edit_prompt_text(array $row, array $plan_lines): string {
 		$plan_block = "- " . implode("\n- ", $plan_lines);
+		$change_lines = [
+			"- menu_name: " . (string) ($row["menu_name"] ?? ""),
+			"- description: " . (string) ($row["description"] ?? ""),
+			"- show_menu: " . (string) ($row["show_menu_label"] ?? "") . " (" . (string) ($row["show_menu"] ?? "") . ")",
+			"- sortkey: " . (string) ($row["sortkey"] ?? ""),
+			"- sort_order: " . (string) ($row["sort_order_label"] ?? "") . " (" . (string) ($row["sort_order"] ?? "") . ")",
+			"- list_type: " . (string) ($row["list_type_label"] ?? "") . " (" . (string) ($row["list_type"] ?? "") . ")",
+			"- show_duplicate: " . (string) ($row["show_duplicate_label"] ?? "") . " (" . (string) ($row["show_duplicate"] ?? "") . ")",
+			"- show_id: " . (string) ($row["show_id_label"] ?? "") . " (" . (string) ($row["show_id"] ?? "") . ")",
+			"- edit_width: " . (string) ($row["edit_width"] ?? "")
+		];
+		if ((int) ($row["has_parent_note"] ?? 0) > 0) {
+			$change_lines[] = "- side_list_type: " . (string) ($row["side_list_type_label"] ?? "") . " (" . (string) ($row["side_list_type"] ?? "") . ")";
+			$change_lines[] = "- cascade_delete_flag: " . (string) ($row["cascade_delete_flag_label"] ?? "") . " (" . (string) ($row["cascade_delete_flag"] ?? "") . ")";
+			$change_lines[] = "- show_icon_on_parent_list: " . (string) ($row["show_icon_on_parent_list_label"] ?? "") . " (" . (string) ($row["show_icon_on_parent_list"] ?? "") . ")";
+		}
 		return trim(
 "app-framework5で実装してください。\n\n" .
 "【変更種別】\n" .
@@ -5947,13 +6532,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 "【対象ノート】\n" .
 (string) ($row["target_tb_name"] ?? "") . " (db_id=" . (string) ($row["db_id"] ?? "") . ")\n\n" .
 "【変更後設定】\n" .
-"- menu_name: " . (string) ($row["menu_name"] ?? "") . "\n" .
-"- description: " . (string) ($row["description"] ?? "") . "\n" .
-"- show_menu: " . (string) ($row["show_menu_label"] ?? "") . " (" . (string) ($row["show_menu"] ?? "") . ")\n" .
-"- sortkey: " . (string) ($row["sortkey"] ?? "") . "\n" .
-"- sort_order: " . (string) ($row["sort_order_label"] ?? "") . " (" . (string) ($row["sort_order"] ?? "") . ")\n" .
-"- list_width: " . (string) ($row["list_width"] ?? "") . "\n" .
-"- edit_width: " . (string) ($row["edit_width"] ?? "") . "\n\n" .
+implode("\n", $change_lines) . "\n\n" .
 "【実装方針】\n" .
 "- db テーブルの対象レコードを更新する\n" .
 "- 対象ノートの基本設定のみ変更する\n" .
@@ -6164,7 +6743,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 		return trim(
 "app-framework5で実装してください。\n\n" .
 "【変更種別】\n" .
-"テーブルの変更 / 標準画面への項目追加・削除\n\n" .
+"テーブルの変更 / 画面への項目表示設定\n\n" .
 "【対象テーブル】\n" .
 $row["target_tb_name"] . "\n\n" .
 "【対象項目】\n" .

@@ -15,16 +15,18 @@
 			<p class="error_message error_dropdown_item_display_type"></p>
 		</div>
 		<div>
-			<p style="margin:0 0 4px 0;">{t key="wizard.parent_child_note.basic.display_field"}</p>
-			{html_options name="dropdown_item" options=$dropdown_item_options selected=$row.dropdown_item}
-			<p class="error_message error_dropdown_item"></p>
+			<div id="wizard_parent_child_note_display_field_area">
+				<p style="margin:0 0 4px 0;">{t key="wizard.parent_child_note.basic.display_field"}</p>
+				{html_options name="dropdown_item" options=$dropdown_item_options selected=$row.dropdown_item}
+				<p class="error_message error_dropdown_item"></p>
+			</div>
+			<div id="wizard_parent_child_note_display_template_area">
+				<p style="margin:0 0 4px 0;">{t key="wizard.parent_child_note.basic.display_template"}</p>
+				<input type="text" name="dropdown_item_template" value="{$row.dropdown_item_template|escape}" style="width:100%;" placeholder="{t key='wizard.parent_child_note.basic.display_template_placeholder'}">
+				<p class="error_message error_dropdown_item_template"></p>
+			</div>
 		</div>
 	</div>
-
-	<p style="margin:12px 0 4px 0;">{t key="wizard.parent_child_note.basic.display_template"}</p>
-	<input type="text" name="dropdown_item_template" value="{$row.dropdown_item_template|escape}" style="width:100%;" placeholder="{t key='wizard.parent_child_note.basic.display_template_placeholder'}">
-	<p class="error_message error_dropdown_item_template"></p>
-	<p style="margin:6px 0 0 0;font-size:12px;color:#6b7280;">{t key="wizard.parent_child_note.basic.display_template_help"}</p>
 
 	<p style="font-weight:bold;margin:16px 0 8px 0;">{t key="wizard.parent_child_note.basic.child_settings"}</p>
 	<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
@@ -45,3 +47,28 @@
 		<button type="button" class="ajax-link" invoke-function="submit_parent_child_note_basic_next" data-form="wizard_parent_child_note_basic_form" style="float:right;">{t key="common.next"}</button>
 	</div>
 </form>
+
+<script>
+	{literal}
+	(function () {
+		var form = $("#wizard_parent_child_note_basic_form");
+		if (form.length === 0) {
+			return;
+		}
+
+		var updateParentChildDisplayMethod = function () {
+			var mode = form.find("select[name='dropdown_item_display_type']").val();
+			if (mode === "template") {
+				$("#wizard_parent_child_note_display_template_area").show();
+				$("#wizard_parent_child_note_display_field_area").hide();
+				return;
+			}
+			$("#wizard_parent_child_note_display_template_area").hide();
+			$("#wizard_parent_child_note_display_field_area").show();
+		};
+
+		form.find("select[name='dropdown_item_display_type']").off("change.parentChildNoteDisplayMethod").on("change.parentChildNoteDisplayMethod", updateParentChildDisplayMethod);
+		updateParentChildDisplayMethod();
+	})();
+	{/literal}
+</script>

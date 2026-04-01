@@ -2,14 +2,15 @@
 {if $testserver || $setting.show_developer_panel == 1}
 	<div class="db_edit_button_area">
 		<button class="ajax-link" invoke-class="db" invoke-function="edit" data-id="{$db_id}" data-mode="database">
-			<span class="material-symbols-outlined">database</span>
+			<span class="material-symbols-outlined">description</span>
 		</button>
 	</div>
 	<div style="clear:both;"></div>
 {/if}
 
 {if $show_search_box }
-	<div class="search_box">
+	<div class="search_box" style="margin:8px 0 14px 0;padding:10px 14px 12px 14px;border:1px solid #d7deea;border-radius:10px;background:#f8fafc;display:flex;flex-direction:column;justify-content:center;">
+		<p style="margin:0 0 8px 0;min-height:18px;display:flex;align-items:center;font-size:13px;line-height:1.2;font-weight:bold;color:#334155;">{t key="db_exe.search_panel_title"}</p>
 		<div class="search_left">
 			<form id="form_{$timestamp}" class="search_form_flex">
 				<input type="hidden" name="db_id" value="{$db_id}">
@@ -34,7 +35,7 @@
 	<div style="float:right;margin-bottom: 8px;">
 		
 		{if $flg_add_button}
-		<button class="ajax-link lang" data-class="{$class}" data-function="add" data-db_id="{$db_id}">Add</button>
+		<button class="ajax-link lang" data-class="{$class}" data-function="add" data-db_id="{$db_id}"><span class="material-symbols-outlined" style="font-size:18px;vertical-align:text-bottom;margin-right:2px;">add_circle</span>{t key="common.add"}</button>
 		{/if}
 
 		<button class="ajax-link lang" data-class="{$class}" data-function="unassigned_tasks" data-db_id="{$db_id}">Show Unassigned Tasks</button>
@@ -46,17 +47,8 @@
 				<button class="ajax-link lang {$a.show_button_class}" data-class="{$a.class_name}" data-function="{$a.function_name}" style="padding:6px;"><span class="material-symbols-outlined">{$a.button_title}</span></button>
 			{/if}
 			
-			{if $testserver || $setting.show_developer_panel == 1}
-			{if $a.class_name != "admin"}
-				<a style="float:right;margin-left:5px;margin-right:-10px;" class="ajax-link" invoke-class="db_additionals" invoke-function="edit" data-id="{$a.id}" data-reload_db_id="{$db_id}"><span class="material-symbols-outlined">smart_toy</span></a>
-			{/if}
-			{/if}
 		{/foreach}
 
-		{if $testserver || $setting.show_developer_panel == 1}
-			<a style="float:right;margin-left:5px;margin-right:0px;" class="ajax-link" invoke-class="db_additionals" invoke-function="add" data-id="{$db_id}"><span class="material-symbols-outlined">library_add</span></a>
-			<a style="float:right;margin-left:5px;margin-right:0px;" class="ajax-link" invoke-class="db_additionals" invoke-function="button_sort" data-tb_name="{$a.tb_name}" data-place="0"><span class="material-symbols-outlined">overview_key</span></a>
-		{/if}
 		
 		
 	</div>

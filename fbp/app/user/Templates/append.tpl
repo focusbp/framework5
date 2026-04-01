@@ -12,13 +12,6 @@
                 <p class="error">{$err_login_id}</p>
             </td>
         </tr>
-        <tr>
-            <td>{t key="user.password_setup"}</td>
-            <td>
-                <p style="margin:0;">{t key="user.password_setup_help"}</p>
-            </td>
-        </tr>
-
 		<tr>
 			<td>{t key="user.email"}</td>
 			<td><input type="text" name="email" value="{$data.email}" style="width:400px;">

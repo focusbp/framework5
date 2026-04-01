@@ -3,8 +3,10 @@
 		{if $row.title|default:'' neq ''}
 			<tr><th style="width:30%;">{t key="wizard.dashboard.basic.title"}</th><td>{$row.title|escape}</td></tr>
 		{/if}
-		<tr><th style="width:30%;">{t key="wizard.dashboard.request.class_name"}</th><td><code style="display:inline;background:#111827;color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;">{$row.class_name|escape}</code></td></tr>
-		<tr><th>{t key="wizard.dashboard.request.function_name"}</th><td><code style="display:inline;background:#111827;color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;">{$row.function_name|escape}</code></td></tr>
+		{if $row.dashboard_action == 'edit'}
+			<tr><th style="width:30%;">{t key="wizard.dashboard.request.class_name"}</th><td><code style="display:inline;background:#111827;color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;">{$row.class_name|escape}</code></td></tr>
+			<tr><th>{t key="wizard.dashboard.request.function_name"}</th><td><code style="display:inline;background:#111827;color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;">{$row.function_name|escape}</code></td></tr>
+		{/if}
 		<tr><th>{t key="wizard.dashboard.basic.width"}</th><td>{$dashboard_column_width_label|escape}</td></tr>
 	</table>
 

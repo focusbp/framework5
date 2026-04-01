@@ -19,6 +19,14 @@
 		mask.style.pointerEvents = focused ? "none" : "auto";
 	}
 
+	function hideInjectButton(root) {
+		var button = root.querySelector(".codex-terminal-inject");
+		if (!button) {
+			return;
+		}
+		button.style.display = "none";
+	}
+
 	function buildWsUrl(path, token) {
 		if (path.indexOf("ws://") === 0 || path.indexOf("wss://") === 0) {
 			return path + (path.indexOf("?") >= 0 ? "&" : "?") + "token=" + encodeURIComponent(token);
@@ -134,10 +142,9 @@
 						rows: session.term.rows
 					}));
 				}
-				if (session.pendingInjectFromMaskClick && !session.initialInputSent) {
+				if (session.pendingInjectFromButton && !session.initialInputSent) {
 					if (injectPrompt(session)) {
-						session.pendingInjectFromMaskClick = false;
-						setFocusMask(root, true);
+						session.pendingInjectFromButton = false;
 						focusTerminal(root, session.term);
 						setStatus(root, "prompt injected");
 					}
@@ -227,7 +234,7 @@
 			ws: null,
 			initialInput: root.getAttribute("data-initial-input") || "",
 			initialInputSent: false,
-			pendingInjectFromMaskClick: false
+			pendingInjectFromButton: false
 		};
 
 		term.onData(function (data) {
@@ -242,31 +249,31 @@
 			}
 		});
 
-			var focusMask = root.querySelector(".codex-terminal-focus-mask");
-			if (focusMask) {
-				if (session.initialInput) {
-					focusMask.innerHTML = '<span style="display:inline-block;padding:10px 18px;border-radius:8px;background:#4BA3FF;color:#FFF;font-weight:700;font-size:16px;line-height:1;">プロンプトを投入</span>';
-				}
+		var focusMask = root.querySelector(".codex-terminal-focus-mask");
+		if (focusMask) {
 			focusMask.addEventListener("mousedown", function (event) {
 				event.preventDefault();
 			});
 			focusMask.addEventListener("click", function () {
-				if (session.initialInput && !session.initialInputSent) {
-					session.pendingInjectFromMaskClick = true;
-					if (!session.ws || session.ws.readyState !== WebSocket.OPEN) {
-						setStatus(root, "接続待機中... 接続後に投入します");
-						return;
-					}
-					if (injectPrompt(session)) {
-						session.pendingInjectFromMaskClick = false;
-						setFocusMask(root, true);
-						focusTerminal(root, term);
-						setStatus(root, "prompt injected");
-					}
-					return;
-				}
 				setFocusMask(root, true);
 				focusTerminal(root, term);
+			});
+		}
+
+		var injectBtn = root.querySelector(".codex-terminal-inject");
+		if (injectBtn) {
+			injectBtn.addEventListener("click", function () {
+				hideInjectButton(root);
+				session.pendingInjectFromButton = true;
+				if (!session.ws || session.ws.readyState !== WebSocket.OPEN) {
+					setStatus(root, "接続待機中... 接続後に投入します");
+					return;
+				}
+				if (injectPrompt(session)) {
+					session.pendingInjectFromButton = false;
+					focusTerminal(root, term);
+					setStatus(root, "prompt injected");
+				}
 			});
 		}
 

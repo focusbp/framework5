@@ -43,16 +43,7 @@
 				<a class="ajax-link listbutton {$a.show_button_class}" style="color:black;" invoke-class="{$a.class_name}" invoke-function="{$a.function_name}" data-id="{$row["_id_enc"]}"><span class="material-symbols-outlined">{$a.button_title}</span></a>
 			{/if}
 			
-			{if $testserver || $setting.show_developer_panel == 1}
-			{if $a.class_name != "admin"}
-			<a style="float:right;margin-left:5px;" class="ajax-link" invoke-class="db_additionals" invoke-function="edit" data-id="{$a.id}" data-reload_db_id="{$db_id}"><span class="material-symbols-outlined">smart_toy</span></a>
-			{/if}
-			{/if}
 		{/foreach}
-		{if $testserver || $setting.show_developer_panel == 1}
-			<a style="float:right;margin-left:5px;margin-right:0px;" class="ajax-link" invoke-class="db_additionals" invoke-function="add" data-id="{$db_id}" data-place="1"><span class="material-symbols-outlined">library_add</span></a>
-			<a style="float:right;margin-left:5px;margin-right:0px;" class="ajax-link" invoke-class="db_additionals" invoke-function="button_sort" data-tb_name="{$a.tb_name}" data-place="{$a.place}"><span class="material-symbols-outlined">overview_key</span></a>
-		{/if}
 
 
 		</td>

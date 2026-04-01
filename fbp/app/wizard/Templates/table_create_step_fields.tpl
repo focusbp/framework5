@@ -32,8 +32,6 @@
 			<div style="flex:0 0 auto;">
 				<button type="button" id="wizard_manual_field_add" style="white-space:nowrap;" onclick="var manualText=document.getElementById('wizard_manual_fields_text'); var titleInput=document.getElementById('wizard_manual_field_title'); var typeSelect=document.getElementById('wizard_manual_field_type'); var optionsWrap=document.getElementById('wizard_manual_field_options_wrap'); var optionsInput=document.getElementById('wizard_manual_field_options'); if(!manualText||!titleInput||!typeSelect) return false; var title=titleInput.value.replace(/\s+/g,' ').trim(); var type=typeSelect.value; var options=optionsInput?optionsInput.value.replace(/\s+/g,' ').trim():''; if(!title) return titleInput.focus(), false; var line=title+'（'+type; if(optionsWrap && optionsWrap.style.display !== 'none' && options !== '') line += ' / ' + options; line += '）'; var current=manualText.value.replace(/\s+$/,''); manualText.value=current===''?line:current+'\n'+line; titleInput.value=''; if(optionsInput) optionsInput.value=''; titleInput.focus(); return false;">{t key="common.add"}</button>
 			</div>
-					<p style="margin:10px 0 0 0;font-size:12px;color:#6b7280;">{t key="wizard.note_create.fields.example"}</p>
-					
 		<textarea name="manual_fields_text" id="wizard_manual_fields_text" rows="9" style="width:100%;">{$row.manual_fields_text|escape}</textarea>
 		</div>
 

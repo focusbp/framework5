@@ -1,7 +1,7 @@
 <form id="wizard_db_additionals_select_form">
 	<p style="font-size:13px;color:#374151;margin:0 0 8px 0;">{t key="wizard.db_additionals.select.description"}</p>
 	<div style="line-height:1.9;">
-		<label style="display:block;"><input type="radio" name="additional_type" value="original_form" {if $row.additional_type == 'original_form'}checked{/if}> Original Form</label>
+		<label style="display:block;"><input type="radio" name="additional_type" value="original_form" {if $row.additional_type == 'original_form'}checked{/if}> オリジナル機能（フォーム/表示）</label>
 		<label style="display:block;"><input type="radio" name="additional_type" value="pdf" {if $row.additional_type == 'pdf'}checked{/if}> {t key="wizard.db_additionals.type.pdf"}</label>
 		<label style="display:block;"><input type="radio" name="additional_type" value="csv_download" {if $row.additional_type == 'csv_download'}checked{/if}> {t key="wizard.db_additionals.type.csv_download"}</label>
 		<label style="display:block;"><input type="radio" name="additional_type" value="csv_upload" {if $row.additional_type == 'csv_upload'}checked{/if}> {t key="wizard.db_additionals.type.csv_upload"}</label>

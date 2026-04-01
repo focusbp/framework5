@@ -4,6 +4,7 @@
 		<label style="display:block;"><input type="radio" name="embed_action" value="add" {if $row.embed_action == 'add'}checked{/if}> {t key="wizard.embed_app.action.add"}</label>
 		<label style="display:block;"><input type="radio" name="embed_action" value="edit" {if $row.embed_action == 'edit'}checked{/if}> {t key="wizard.embed_app.action.edit"}</label>
 		<label style="display:block;"><input type="radio" name="embed_action" value="delete" {if $row.embed_action == 'delete'}checked{/if}> {t key="wizard.embed_app.action.delete"}</label>
+		<label style="display:block;"><input type="radio" name="embed_action" value="show_code" {if $row.embed_action == 'show_code'}checked{/if}> {t key="wizard.embed_app.action.show_code"}</label>
 	</div>
 	<p class="error_message error_embed_action"></p>
 

@@ -12,11 +12,11 @@
 	<p class="error">{$err_email}</p>
 
 	
-	<p>{t key="user.status"}</p>
-	{html_options name="status" options=$arr_status selected=$data.status}
-	
 	<p>{t key="user.type"}</p>
 	{html_options id="dropdown_user_type" name="type" options=$user_type_opt selected=$data.type}
+
+	<p>{t key="user.status"}</p>
+	{html_options name="status" options=$arr_status selected=$data.status}
 	
 	<div class="permission-row">
 	<p>{t key="user.developer_permission"}</p>

@@ -15,6 +15,11 @@ description: Build and adjust standard FBP screens using screen_fields and helpe
 3. 表示は `fields_view_direct` を優先。
 4. 反映範囲を `list/add/edit/delete` で確認し、親ありなら `list_on_side` も確認。
 
+## terminology
+- 画面上のユーザー向け文言では、`テーブル` は `ノート` と表現する前提で扱う。
+- 画面上のユーザー向け文言では、`フィールド` は `項目` と表現する前提で扱う。
+- `screen_fields`、`db_fields_*`、`parameter_name` など実装用語をそのままUIへ出さない。UI文言追加時は既存の `ノート` / `項目` 表記に合わせる。
+
 ## constraints
 - 手書き `<input>/<select>/<textarea>` は例外時のみ。
 - 手書きの表示値展開（`{$row.xxx}` 直書き等）は例外時のみとし、原則 `fields_view_direct` を使う。

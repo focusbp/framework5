@@ -9,14 +9,6 @@
 				<p class="error_message error_title"></p>
 			</td>
 		</tr>
-		<tr>
-			<th style="text-align:left;border:1px solid #d5dbe5;background:#f4f7fb;padding:8px;">{t key="wizard.embed_app.basic.class_name"}</th>
-			<td style="border:1px solid #d5dbe5;padding:8px;">
-				<div style="padding:8px 10px;border:1px solid #d5dbe5;background:#f9fafb;border-radius:4px;color:#111827;">
-					{t key="wizard.embed_app.basic.class_name_help"} 例: <code style="font-size:11px;">embed_app_contact_widget</code>
-				</div>
-			</td>
-		</tr>
 	</table>
 
 	<div style="margin-top:12px;overflow:auto;">

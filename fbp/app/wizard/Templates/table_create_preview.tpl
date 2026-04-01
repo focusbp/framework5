@@ -1,6 +1,7 @@
 <form id="wizard_table_create_preview_form" onsubmit="return false;">
 	<input type="hidden" name="purpose" value="{$row.purpose|escape}" />
 	<input type="hidden" name="note_title" value="{$row.note_title|escape}" />
+	<input type="hidden" name="menu_name" value="{$row.menu_name|escape}" />
 	<input type="hidden" name="field_mode" value="{$row.field_mode|escape}" />
 	<input type="hidden" name="manual_fields_text" value="{$row.manual_fields_text|escape}" />
 
@@ -17,7 +18,7 @@
 		{/if}
 		<tr>
 			<th style="text-align:left;border:1px solid #d5dbe5;background:#f4f7fb;padding:8px;">{t key="wizard.note_create.note_title.label"}</th>
-			<td style="border:1px solid #d5dbe5;padding:8px;">{$row.note_title|escape}</td>
+			<td style="border:1px solid #d5dbe5;padding:8px;">{$row.menu_name|escape}</td>
 		</tr>
 		<tr>
 			<th style="text-align:left;border:1px solid #d5dbe5;background:#f4f7fb;padding:8px;">{t key="wizard.note_create.preview.field_mode"}</th>

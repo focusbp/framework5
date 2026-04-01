@@ -4,6 +4,7 @@
 		<label style="display:block;"><input type="radio" name="cron_action" value="add" {if $row.cron_action == 'add'}checked{/if}> {t key="wizard.cron.action.add"}</label>
 		<label style="display:block;"><input type="radio" name="cron_action" value="edit" {if $row.cron_action == 'edit'}checked{/if}> {t key="wizard.cron.action.edit"}</label>
 		<label style="display:block;"><input type="radio" name="cron_action" value="delete" {if $row.cron_action == 'delete'}checked{/if}> {t key="wizard.cron.action.delete"}</label>
+		<label style="display:block;"><input type="radio" name="cron_action" value="start" {if $row.cron_action == 'start'}checked{/if}> {t key="wizard.cron.action.start"}</label>
 	</div>
 	<p class="error_message error_cron_action"></p>
 

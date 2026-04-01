@@ -29,19 +29,46 @@
 			<p class="error_message error_sortkey"></p>
 		</div>
 		<div>
-			<p style="font-weight:bold;margin:0 0 4px 0;">{t key="wizard.note_edit.list_width"}</p>
-			<input type="text" name="list_width" value="{$row.list_width|escape}" style="width:100%;">
-			<p class="error_message error_list_width"></p>
+			<p style="font-weight:bold;margin:0 0 4px 0;">{t key="db.list_type"}</p>
+			{html_options name="list_type" options=$note_list_type_options selected=$row.list_type}
+			<p class="error_message error_list_type"></p>
+		</div>
+		<div>
+			<p style="font-weight:bold;margin:0 0 4px 0;">{t key="db.duplicate_icon"}</p>
+			{html_options name="show_duplicate" options=$note_toggle_options selected=$row.show_duplicate}
+			<p class="error_message error_show_duplicate"></p>
+		</div>
+		<div>
+			<p style="font-weight:bold;margin:0 0 4px 0;">{t key="db.show_id_on_list"}</p>
+			{html_options name="show_id" options=$note_toggle_options selected=$row.show_id}
+			<p class="error_message error_show_id"></p>
 		</div>
 		<div>
 			<p style="font-weight:bold;margin:0 0 4px 0;">{t key="wizard.note_edit.edit_width"}</p>
 			<input type="text" name="edit_width" value="{$row.edit_width|escape}" style="width:100%;">
 			<p class="error_message error_edit_width"></p>
 		</div>
+		{if $row.has_parent_note}
+			<div>
+				<p style="font-weight:bold;margin:0 0 4px 0;">{t key="db.side_panel_list_type"}</p>
+				{html_options name="side_list_type" options=$note_side_list_type_options selected=$row.side_list_type}
+				<p class="error_message error_side_list_type"></p>
+			</div>
+			<div>
+				<p style="font-weight:bold;margin:0 0 4px 0;">{t key="db.cascade_delete"}</p>
+				{html_options name="cascade_delete_flag" options=$cascade_delete_flag_options selected=$row.cascade_delete_flag}
+				<p class="error_message error_cascade_delete_flag"></p>
+			</div>
+			<div>
+				<p style="font-weight:bold;margin:0 0 4px 0;">{t key="db.show_icon_on_parent_list"}</p>
+				{html_options name="show_icon_on_parent_list" options=$note_parent_icon_options selected=$row.show_icon_on_parent_list}
+				<p class="error_message error_show_icon_on_parent_list"></p>
+			</div>
+		{/if}
 	</div>
 
 	<div style="margin-top:12px;overflow:auto;">
 		<button type="button" class="ajax-link" invoke-function="back_to_note_edit_table" style="float:left;">{t key="common.back"}</button>
-		<button type="button" class="ajax-link" invoke-function="submit_note_edit_basic_next" data-form="wizard_note_edit_basic_form" style="float:right;">{t key="common.next"}</button>
+		<button type="button" class="ajax-link" invoke-function="submit_note_edit_basic_next" data-form="wizard_note_edit_basic_form" style="float:right;">{t key="common.update"}</button>
 	</div>
 </form>
