@@ -54,6 +54,14 @@ $row : array of the values.
 	
 {else if $type == "dropdown"}
 	{html_options name=$name options=$field["options"] selected=$row[$name]}
+
+{else if $type == "checkbox"}
+	<select name="{$name}">
+		<option value=""></option>
+		{foreach $field["options"] as $key=>$option}
+			<option value="{$key|escape}" {if $row[$name] == $key}selected{/if}>{$option}</option>
+		{/foreach}
+	</select>
 	
 {else if $type == "date"}
 	

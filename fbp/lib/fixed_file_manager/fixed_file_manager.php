@@ -470,12 +470,6 @@ class fixed_file_manager implements FFM {
 			throw new Exception("The and_or parameter must be 'AND' or 'OR'");
 		}
 
-		foreach ($this->format as $f) {
-			if ($f["type"] == "A" && in_array($f["name"], $itemname)) {
-				throw new Exception("Can't search Field type A!");
-			}
-		}
-
 		$is_last = true;
 
 		// IDを整列し直す
@@ -623,6 +617,41 @@ class fixed_file_manager implements FFM {
 									}
 								}
 							}
+						}
+
+						if ($and_or == "AND") {
+							$flg = $flg && $check;
+						} else {
+							$flg = $flg || $check;
+						}
+					} else if ($itemtype[$iname] == "A") {
+						// 配列(JSON)保存された checkbox を検索する
+						$check = false;
+						$field_value = $d[$iname] ?? [];
+						$search_value = $value[$key];
+						if (!is_array($field_value)) {
+							$field_value = (($tmp = json_decode((string) $field_value, true)) !== null) ? $tmp : [];
+						}
+
+						if (is_array($search_value)) {
+							$search_value = array_values(array_filter($search_value, static function ($v) {
+								return $v !== "" && $v !== null;
+							}));
+							if (count($search_value) === 0) {
+								$check = true;
+							} else {
+								$matched = 0;
+								foreach ($search_value as $sv) {
+									if (in_array((string) $sv, array_map('strval', $field_value), true)) {
+										$matched++;
+									}
+								}
+								$check = ($matched === count($search_value));
+							}
+						} else if ($search_value === "" || $search_value === null) {
+							$check = true;
+						} else {
+							$check = in_array((string) $search_value, array_map('strval', $field_value), true);
 						}
 
 						if ($and_or == "AND") {

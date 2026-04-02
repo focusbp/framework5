@@ -207,7 +207,7 @@ class db_exe {
 		$search_values = [];
 		foreach($fields as $f){
 			$search_field_list[] = $f["parameter_name"];
-			$search_values[] = $session[$f["parameter_name"]];
+			$search_values[] = $session[$f["parameter_name"]] ?? "";
 		}
 		
 		// Getting data from DB
@@ -764,7 +764,7 @@ class db_exe {
 		$search_values = [];
 		foreach($fields as $f){
 			$search_field_list[] = $f["parameter_name"];
-			$search_values[] = $session[$f["parameter_name"]];
+			$search_values[] = $session[$f["parameter_name"]] ?? "";
 		}
 		$ctl->assign("row",$session);
 		
