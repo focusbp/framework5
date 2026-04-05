@@ -1,4 +1,4 @@
-# FBP (Focus Business Platform Ver.5)
+# FBP (Focus Business Platform Ver.5.0-b)
 
 > Build business systems with AI — safely, fast, and real.
 
