@@ -19,9 +19,11 @@ class I18nSimple {
 		$setting = $this->ctl->get_setting();
 		$language_code = $this->resolve_lang($lang, $setting);
 		if ($language_code !== "en") {
-			$messages = self::load_language_messages($language_code);
-			if (isset($messages[$key]) && trim((string) $messages[$key]) !== "") {
-				return $this->replace_params((string) $messages[$key], $params);
+			foreach ($this->get_translation_candidates($language_code, $setting) as $candidate) {
+				$messages = self::load_language_messages($candidate);
+				if (isset($messages[$key]) && trim((string) $messages[$key]) !== "") {
+					return $this->replace_params((string) $messages[$key], $params);
+				}
 			}
 		}
 
@@ -49,6 +51,20 @@ class I18nSimple {
 		return $text;
 	}
 
+	private function get_translation_candidates(string $language_code, ?array $setting): array {
+		$candidates = [];
+		$language_code = strtolower(trim($language_code));
+		$locale_code = strtolower(trim(self::get_locale_code_from_setting($setting)));
+		if ($locale_code !== "" && preg_match('/^[a-z]{2}-[a-z]{2}$/', $locale_code)) {
+			[$locale_language] = explode("-", $locale_code, 2);
+			if ($locale_language === $language_code) {
+				$candidates[] = $locale_code;
+			}
+		}
+		$candidates[] = $language_code;
+		return array_values(array_unique($candidates));
+	}
+
 	static function get_language_code_from_setting(?array $setting): string {
 		$code = strtolower(trim((string) ($setting["framework_language_code"] ?? "")));
 		if (!preg_match('/^[a-z]{2}$/', $code)) {
@@ -63,6 +79,26 @@ class I18nSimple {
 			return "jp";
 		}
 		return "en";
+	}
+
+	static function get_locale_code_from_setting(?array $setting): string {
+		$locale = trim((string) ($setting["locale_code"] ?? ""));
+		if (preg_match('/^[a-z]{2}-[A-Z]{2}$/', $locale)) {
+			return $locale;
+		}
+		return self::get_default_locale_code_from_language_code(
+			self::get_language_code_from_setting($setting)
+		);
+	}
+
+	static function get_default_locale_code_from_language_code(string $language_code): string {
+		$language_code = strtolower(trim($language_code));
+		$map = [
+			"ja" => "ja-JP",
+			"en" => "en-US",
+			"zh" => "zh-CN",
+		];
+		return $map[$language_code] ?? "en-US";
 	}
 
 	static function get_language_options(): array {
@@ -249,8 +285,19 @@ class I18nSimple {
 //			"yi" => "Yiddish",
 //			"yo" => "Yoruba",
 //			"za" => "Zhuang",
-//			"zh" => "Chinese",
+			"zh" => "Chinese",
 //			"zu" => "Zulu",
+		];
+	}
+
+	static function get_locale_options(): array {
+		return [
+			"ja-JP" => "Japanese (Japan)",
+			"ja-OS" => "Japanese (Osaka)",
+			"en-US" => "English (United States)",
+			"en-GB" => "English (United Kingdom)",
+			"zh-CN" => "Chinese (Simplified, China)",
+			"zh-TW" => "Chinese (Traditional, Taiwan)",
 		];
 	}
 

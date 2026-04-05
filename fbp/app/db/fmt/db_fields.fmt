@@ -3,7 +3,6 @@ db_id,24,N
 parameter_name,255,T
 parameter_title,255,T
 parameter_description,255,T
-parameter_description_bot,255,T
 constant_array_name,255,T
 display_fields_for_dropdown,255,T
 type,255,T
@@ -17,3 +16,4 @@ duplicate_check,1,N
 format_check,15,T
 api_access_policy,100,A
 title_color,10,T
+display_format,1,N

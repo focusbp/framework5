@@ -3,12 +3,16 @@
 class login {
 
 	private $ffm_user;
+	private $ffm_setting;
 	private $remember_me_cookie_name = "remember_me";
 	private $remember_me_ttl = 2592000; // 30 days
+	private $pending_account_session_key = "login_first_account_pending";
+	private $arr_smtp_secure = [0 => "false", 1 => "tls", 2 => "ssl"];
 
 	function __construct(Controller $ctl) {
 		$ctl->set_check_login(false);
 		$this->ffm_user = $ctl->db("user", "user");
+		$this->ffm_setting = $ctl->db("setting", "setting");
 	}
 
 	function page(Controller $ctl) {		
@@ -18,24 +22,25 @@ class login {
 	}
 	
 	function make_new_account(Controller $ctl){
-		
-		$post = $ctl->POST();
-		
-		$login_id = $post["login_id"];
-		$password = $post["password"];
-		
-		// 半角英数字のバリデーション
-		if (!preg_match('/^[a-zA-Z0-9@._\-!#$%&*?]+$/', $login_id)) {
-		    $ctl->res_error_message("login_id", $ctl->t("login.validation.login_id_format"));
-		}
-
-		if (!preg_match('/^[a-zA-Z0-9@._\-!#$%&*?]+$/', $password)) {
-		    $ctl->res_error_message("password", $ctl->t("login.validation.password_format"));
-		}
-		
-		if($ctl->count_res_error_message()>0){
+		$pending = $ctl->get_session($this->pending_account_session_key);
+		if (!is_array($pending) || empty($pending["login_id"]) || empty($pending["password"])) {
+			$ctl->show_notification_text($ctl->t("login.validation.initial_account_session_expired"));
 			return;
 		}
+
+		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? "en"));
+		$locale_code = $this->normalize_locale_code($pending["locale_code"] ?? "", $framework_language_code);
+		$project_release_code = trim((string) ($pending["project_release_code"] ?? ""));
+		$smtp_from = trim((string) ($pending["smtp_from"] ?? ""));
+		$smtp_server = trim((string) ($pending["smtp_server"] ?? ""));
+		$smtp_port = trim((string) ($pending["smtp_port"] ?? ""));
+		$smtp_user = trim((string) ($pending["smtp_user"] ?? ""));
+		$smtp_password = (string) ($pending["smtp_password"] ?? "");
+		$smtp_secure = $this->normalize_smtp_secure($pending["smtp_secure"] ?? 0);
+		$smtp_email_test = trim((string) ($pending["smtp_email_test"] ?? ""));
+		
+		$login_id = (string) $pending["login_id"];
+		$password = (string) $pending["password"];
 		
 		$user = array();
 		$user["login_id"] = $login_id;
@@ -44,14 +49,38 @@ class login {
 		$user["type"] = 0;
 		$user["email"] = "";
 		$this->ffm_user->insert($user);
+
+		$setting = $ctl->get_setting();
+		if (!is_array($setting)) {
+			$setting = [];
+		}
+		$setting["id"] = $setting["id"] ?? 1;
+		$setting["framework_language_code"] = $framework_language_code;
+		$setting["locale_code"] = $locale_code;
+		$setting["project_release_code"] = $project_release_code;
+		$setting["smtp_from"] = $smtp_from;
+		$setting["smtp_server"] = $smtp_server;
+		$setting["smtp_port"] = $smtp_port;
+		$setting["smtp_user"] = $smtp_user;
+		$setting["smtp_password"] = $smtp_password;
+		$setting["smtp_secure"] = $smtp_secure;
+		$setting["smtp_email_test"] = $smtp_email_test;
+		$setting["lang_default"] = I18nSimple::get_legacy_lang_code_from_setting($setting);
+		$setting_list = $this->ffm_setting->select("id", $setting["id"]);
+		if (count($setting_list) === 0) {
+			$this->ffm_setting->insert($setting);
+			$ctl->set_session("setting", $setting);
+		} else {
+			$ctl->save_setting($setting);
+		}
 		
 		// Make .htaccess
-		$path_server = $_SERVER['REQUEST_URI'];
-		$directoryPath = pathinfo($path_server, PATHINFO_DIRNAME);
+		$scriptName = (string) ($_SERVER["SCRIPT_NAME"] ?? "");
+		$directoryPath = pathinfo($scriptName, PATHINFO_DIRNAME);
 		if(endsWith($directoryPath, "/fbp")){
 			$directoryPath = substr($directoryPath,0, strlen($directoryPath)-4);
 		}
-		if($directoryPath == "/"){
+		if($directoryPath === "/" || $directoryPath === "."){
 			$directoryPath = "";
 		}
 		$template = file_get_contents(dirname(__FILE__) . "/../setting/Templates/htaccess.tpl");
@@ -61,8 +90,191 @@ class login {
 		$template = str_replace('{$default_class_name}',"",$template);
 		$template = str_replace('{$ssl}',"",$template);	
 		file_put_contents(dirname(__FILE__) . "/../../../.htaccess", $template);
-	
-		$ctl->show_multi_dialog("new_account", "finish_new_account.tpl", $ctl->t("login.dialog.make_new_account"));
+
+		$ctl->set_session($this->pending_account_session_key, null);
+		$ctl->show_notification_text($ctl->t("login.account_created"));
+		$ctl->close_all_dialog();
+	}
+
+	function make_new_account_next(Controller $ctl){
+		$pending = $ctl->get_session($this->pending_account_session_key);
+		if (!is_array($pending)) {
+			$pending = [];
+		}
+
+		$post = $ctl->POST();
+		$framework_language_code = $this->normalize_framework_language_code((string) ($post["framework_language_code"] ?? "en"));
+		$locale_code = $this->normalize_locale_code($post["locale_code"] ?? "", $framework_language_code);
+
+		$pending["framework_language_code"] = $framework_language_code;
+		$pending["locale_code"] = $locale_code;
+		$ctl->set_session($this->pending_account_session_key, $pending);
+
+		$ctl->assign("dialog_lang", $framework_language_code);
+		$ctl->assign("login_id", (string) ($pending["login_id"] ?? ""));
+		$ctl->assign("password", (string) ($pending["password"] ?? ""));
+		$ctl->show_multi_dialog("new_account", "new_account.tpl", $ctl->t("login.dialog.make_new_account", [], $framework_language_code));
+	}
+
+	function make_new_account_project_release_code(Controller $ctl){
+		$pending = $ctl->get_session($this->pending_account_session_key);
+		if (!is_array($pending)) {
+			$pending = [];
+		}
+		if (empty($pending["framework_language_code"]) || empty($pending["locale_code"])) {
+			$ctl->res_error_message("login_id", $ctl->t("login.validation.initial_account_session_expired"));
+			return;
+		}
+
+		$post = $ctl->POST();
+		$login_id = (string) ($post["login_id"] ?? "");
+		$password = (string) ($post["password"] ?? "");
+
+		$this->validate_new_account_credentials($ctl, $login_id, $password);
+		if($ctl->count_res_error_message()>0){
+			return;
+		}
+
+		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? "en"));
+		$pending["login_id"] = $login_id;
+		$pending["password"] = $password;
+		$ctl->set_session($this->pending_account_session_key, $pending);
+
+		$setting = $ctl->get_setting();
+		if (!is_array($setting)) {
+			$setting = [];
+		}
+		$pending["project_release_code"] = (string) ($pending["project_release_code"] ?? ($setting["project_release_code"] ?? ""));
+		$ctl->set_session($this->pending_account_session_key, $pending);
+		$ctl->assign("dialog_lang", $framework_language_code);
+		$ctl->assign("project_release_code", (string) ($pending["project_release_code"] ?? ""));
+		$ctl->show_multi_dialog("new_account", "new_account_project_release_code.tpl", $ctl->t("setting.project_release_code", [], $framework_language_code));
+	}
+
+	function make_new_account_mail_server(Controller $ctl){
+		$pending = $ctl->get_session($this->pending_account_session_key);
+		if (!is_array($pending) || empty($pending["login_id"]) || empty($pending["password"])) {
+			$ctl->res_error_message("project_release_code", $ctl->t("login.validation.initial_account_session_expired"));
+			return;
+		}
+
+		$post = $ctl->POST();
+		$pending["project_release_code"] = trim((string) ($post["project_release_code"] ?? ""));
+		$this->validate_project_release_code($ctl, $pending["project_release_code"]);
+		if($ctl->count_res_error_message()>0){
+			return;
+		}
+		$ctl->set_session($this->pending_account_session_key, $pending);
+
+		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? "en"));
+		$this->assign_mail_server_dialog($ctl, $pending, $framework_language_code);
+		$ctl->show_multi_dialog("new_account", "new_account_mail_server.tpl", $ctl->t("login.mail_server_setting_title", [], $framework_language_code));
+	}
+
+	function make_new_account_confirm(Controller $ctl){
+		$pending = $ctl->get_session($this->pending_account_session_key);
+		if (!is_array($pending) || empty($pending["login_id"]) || empty($pending["password"])) {
+			$ctl->res_error_message("smtp_from", $ctl->t("login.validation.initial_account_session_expired"));
+			return;
+		}
+
+		$post = $ctl->POST();
+		$setting = $ctl->get_setting();
+		if (!is_array($setting)) {
+			$setting = [];
+		}
+		$pending["smtp_from"] = trim((string) ($post["smtp_from"] ?? ""));
+		$pending["smtp_server"] = trim((string) ($post["smtp_server"] ?? ""));
+		$pending["smtp_port"] = trim((string) ($post["smtp_port"] ?? ""));
+		$pending["smtp_user"] = trim((string) ($post["smtp_user"] ?? ""));
+		$posted_smtp_password = (string) ($post["smtp_password"] ?? "");
+		$pending["smtp_password"] = ($posted_smtp_password === "") ? (string) ($setting["smtp_password"] ?? "") : $posted_smtp_password;
+		$pending["smtp_secure"] = $this->normalize_smtp_secure($post["smtp_secure"] ?? 0);
+		$pending["smtp_email_test"] = trim((string) ($post["smtp_email_test"] ?? ""));
+		$ctl->set_session($this->pending_account_session_key, $pending);
+
+		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? "en"));
+		$this->show_new_account_confirm_dialog($ctl, $pending, $framework_language_code);
+	}
+
+	function make_new_account_confirm_skip_mail_server(Controller $ctl){
+		$pending = $ctl->get_session($this->pending_account_session_key);
+		if (!is_array($pending) || empty($pending["login_id"]) || empty($pending["password"])) {
+			$ctl->res_error_message("smtp_from", $ctl->t("login.validation.initial_account_session_expired"));
+			return;
+		}
+
+		$pending["smtp_from"] = "";
+		$pending["smtp_server"] = "";
+		$pending["smtp_port"] = "";
+		$pending["smtp_user"] = "";
+		$pending["smtp_password"] = "";
+		$pending["smtp_secure"] = 0;
+		$pending["smtp_email_test"] = "";
+		$ctl->set_session($this->pending_account_session_key, $pending);
+
+		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? "en"));
+		$this->show_new_account_confirm_dialog($ctl, $pending, $framework_language_code);
+	}
+
+	function make_new_account_back(Controller $ctl){
+		$pending = $ctl->get_session($this->pending_account_session_key);
+		if (!is_array($pending)) {
+			$pending = [];
+		}
+		$setting = $ctl->get_setting();
+		if (!is_array($setting)) {
+			$setting = [];
+		}
+		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? ($setting["framework_language_code"] ?? "en")));
+		$locale_code = $this->normalize_locale_code($pending["locale_code"] ?? ($setting["locale_code"] ?? ""), $framework_language_code);
+
+		$ctl->assign("framework_language_code", $framework_language_code);
+		$ctl->assign("locale_code", $locale_code);
+		$ctl->assign("dialog_lang", $framework_language_code);
+		$ctl->assign("arr_framework_language_code", I18nSimple::get_language_options());
+		$ctl->assign("arr_locale_code", I18nSimple::get_locale_options());
+		$ctl->assign("locale_option_map_json", json_encode($this->get_locale_option_map(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+		$ctl->show_multi_dialog("new_account", "new_account_locale.tpl", $ctl->t("login.dialog.language_locale", [], $framework_language_code));
+	}
+
+	function make_new_account_project_release_code_back(Controller $ctl){
+		$pending = $ctl->get_session($this->pending_account_session_key);
+		if (!is_array($pending) || empty($pending["framework_language_code"]) || empty($pending["locale_code"])) {
+			$ctl->res_error_message("login_id", $ctl->t("login.validation.initial_account_session_expired"));
+			return;
+		}
+
+		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? "en"));
+		$ctl->assign("dialog_lang", $framework_language_code);
+		$ctl->assign("login_id", (string) ($pending["login_id"] ?? ""));
+		$ctl->assign("password", (string) ($pending["password"] ?? ""));
+		$ctl->show_multi_dialog("new_account", "new_account.tpl", $ctl->t("login.dialog.make_new_account", [], $framework_language_code));
+	}
+
+	function make_new_account_mail_server_back(Controller $ctl){
+		$pending = $ctl->get_session($this->pending_account_session_key);
+		if (!is_array($pending) || empty($pending["login_id"]) || empty($pending["password"])) {
+			$ctl->show_notification_text($ctl->t("login.validation.initial_account_session_expired"));
+			return;
+		}
+
+		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? "en"));
+		$ctl->assign("dialog_lang", $framework_language_code);
+		$ctl->assign("project_release_code", (string) ($pending["project_release_code"] ?? ""));
+		$ctl->show_multi_dialog("new_account", "new_account_project_release_code.tpl", $ctl->t("setting.project_release_code", [], $framework_language_code));
+	}
+
+	function make_new_account_confirm_back(Controller $ctl){
+		$pending = $ctl->get_session($this->pending_account_session_key);
+		if (!is_array($pending) || empty($pending["login_id"]) || empty($pending["password"])) {
+			$ctl->show_notification_text($ctl->t("login.validation.initial_account_session_expired"));
+			return;
+		}
+
+		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? "en"));
+		$this->assign_mail_server_dialog($ctl, $pending, $framework_language_code);
+		$ctl->show_multi_dialog("new_account", "new_account_mail_server.tpl", $ctl->t("login.mail_server_setting_title", [], $framework_language_code));
 	}
 	
 	function close(Controller $ctl){
@@ -74,7 +286,20 @@ class login {
 		//ユーザが登録されているか確認
 		$list = $this->ffm_user->select("type",0);
 		if(count($list) == 0){
-			$ctl->show_multi_dialog("new_account", "new_account.tpl", $ctl->t("login.dialog.make_new_account"));
+			$setting = $ctl->get_setting();
+			if (!is_array($setting)) {
+				$setting = [];
+			}
+			$framework_language_code = $this->normalize_framework_language_code((string) ($setting["framework_language_code"] ?? "en"));
+			$locale_code = $this->normalize_locale_code($setting["locale_code"] ?? "", $framework_language_code);
+
+			$ctl->assign("framework_language_code", $framework_language_code);
+			$ctl->assign("locale_code", $locale_code);
+			$ctl->assign("dialog_lang", $framework_language_code);
+			$ctl->assign("arr_framework_language_code", I18nSimple::get_language_options());
+			$ctl->assign("arr_locale_code", I18nSimple::get_locale_options());
+			$ctl->assign("locale_option_map_json", json_encode($this->get_locale_option_map(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+			$ctl->show_multi_dialog("new_account", "new_account_locale.tpl", $ctl->t("login.dialog.language_locale", [], $framework_language_code));
 			
 		}else{
 			$ctl->assign("user", null);
@@ -245,6 +470,112 @@ class login {
 			throw new Exception("Failed to hash password.");
 		}
 		return $hash;
+	}
+
+	private function validate_new_account_credentials(Controller $ctl, string $login_id, string $password) {
+		if (!preg_match('/^[a-zA-Z0-9@._\-!#$%&*?]+$/', $login_id)) {
+		    $ctl->res_error_message("login_id", $ctl->t("login.validation.login_id_format"));
+		}
+
+		if (!preg_match('/^[a-zA-Z0-9@._\-!#$%&*?]+$/', $password)) {
+		    $ctl->res_error_message("password", $ctl->t("login.validation.password_format"));
+		}
+	}
+
+	private function validate_project_release_code(Controller $ctl, string $project_release_code) {
+		if ($project_release_code === "") {
+			return;
+		}
+		if (!preg_match('/^[A-Za-z0-9_-]+$/', $project_release_code)) {
+			$ctl->res_error_message("project_release_code", $ctl->t("login.validation.project_release_code_format"));
+		}
+	}
+
+	private function normalize_smtp_secure($value): int {
+		$normalized = (int) $value;
+		if (!array_key_exists($normalized, $this->arr_smtp_secure)) {
+			return 0;
+		}
+		return $normalized;
+	}
+
+	private function normalize_framework_language_code(string $code): string {
+		$code = strtolower(trim($code));
+		if (!preg_match('/^[a-z]{2}$/', $code)) {
+			return "en";
+		}
+		return $code;
+	}
+
+	private function normalize_locale_code($value, string $framework_language_code): string {
+		$value = trim((string) $value);
+		$allowed = $this->get_locale_options_by_language($framework_language_code);
+		if (isset($allowed[$value])) {
+			return $value;
+		}
+		return I18nSimple::get_default_locale_code_from_language_code($framework_language_code);
+	}
+
+	private function get_locale_option_map(): array {
+		return [
+			"ja" => $this->get_locale_options_by_language("ja"),
+			"en" => $this->get_locale_options_by_language("en"),
+			"zh" => $this->get_locale_options_by_language("zh"),
+		];
+	}
+
+	private function get_locale_options_by_language(string $language_code): array {
+		$all = I18nSimple::get_locale_options();
+		$map = [
+			"ja" => ["ja-JP", "ja-OS"],
+			"en" => ["en-US", "en-GB"],
+			"zh" => ["zh-CN", "zh-TW"],
+		];
+		$codes = $map[$language_code] ?? [I18nSimple::get_default_locale_code_from_language_code($language_code)];
+		$options = [];
+		foreach ($codes as $code) {
+			if (isset($all[$code])) {
+				$options[$code] = $all[$code];
+			}
+		}
+		return $options;
+	}
+
+	private function assign_mail_server_dialog(Controller $ctl, array $pending, string $framework_language_code): void {
+		$setting = $ctl->get_setting();
+		if (!is_array($setting)) {
+			$setting = [];
+		}
+
+		$ctl->assign("dialog_lang", $framework_language_code);
+		$ctl->assign("smtp_from", (string) ($pending["smtp_from"] ?? ($setting["smtp_from"] ?? "")));
+		$ctl->assign("smtp_server", (string) ($pending["smtp_server"] ?? ($setting["smtp_server"] ?? "")));
+		$ctl->assign("smtp_port", (string) ($pending["smtp_port"] ?? ($setting["smtp_port"] ?? "")));
+		$ctl->assign("smtp_user", (string) ($pending["smtp_user"] ?? ($setting["smtp_user"] ?? "")));
+		$ctl->assign("smtp_password", (string) ($pending["smtp_password"] ?? ""));
+		$existing_smtp_password = (string) ($setting["smtp_password"] ?? "");
+		$ctl->assign("smtp_password_placeholder", $existing_smtp_password === "" ? "" : $ctl->t("common.configured"));
+		$ctl->assign("smtp_secure", $this->normalize_smtp_secure($pending["smtp_secure"] ?? ($setting["smtp_secure"] ?? 0)));
+		$ctl->assign("arr_smtp_secure", $this->arr_smtp_secure);
+	}
+
+	private function show_new_account_confirm_dialog(Controller $ctl, array $pending, string $framework_language_code): void {
+		$locale_options = I18nSimple::get_locale_options();
+		$language_options = I18nSimple::get_language_options();
+
+		$ctl->assign("dialog_lang", $framework_language_code);
+		$ctl->assign("confirm_items", [
+			["label_key" => "setting.framework_language_code", "value" => $language_options[$framework_language_code] ?? $framework_language_code],
+			["label_key" => "setting.locale_code", "value" => $locale_options[$pending["locale_code"] ?? ""] ?? (string) ($pending["locale_code"] ?? "")],
+			["label_key" => "setting.project_release_code", "value" => (string) ($pending["project_release_code"] ?? "")],
+			["label_key" => "setting.mail_address_from", "value" => (string) ($pending["smtp_from"] ?? "")],
+			["label_key" => "setting.mail_server", "value" => (string) ($pending["smtp_server"] ?? "")],
+			["label_key" => "setting.mail_port", "value" => (string) ($pending["smtp_port"] ?? "")],
+			["label_key" => "setting.mail_user", "value" => (string) ($pending["smtp_user"] ?? "")],
+			["label_key" => "setting.mail_password", "value" => ((string) ($pending["smtp_password"] ?? "") === "") ? "" : "********"],
+			["label_key" => "setting.smtp_secure", "value" => $this->arr_smtp_secure[$this->normalize_smtp_secure($pending["smtp_secure"] ?? 0)] ?? ""],
+		]);
+		$ctl->show_multi_dialog("new_account", "new_account_confirm.tpl", $ctl->t("login.dialog.confirm_new_account", [], $framework_language_code));
 	}
 
 	private function set_remember_me_cookie(Controller $ctl, $login_id) {

@@ -2,12 +2,14 @@
 <html>
 <head>
 {include file="{$base_template_dir}/publicsite_header.tpl"}
-{$html_header}
+{$html_header nofilter}
 </head>
 
 <body class="publicsite-body">
     <article class="class_style_{$class} lang_check_area publicsite-shell" data-classname="{$class}">
-		<div class="publicsite-site-header"></div>
+		
+		
+		{$contents_header nofilter}
 
 		<section class="public_main_section">
 			<div class="publicsite-main-inner">
@@ -17,7 +19,7 @@
 			</div>
 		</section>
 
-		<div class="publicsite-site-footer"></div>
+		{$contents_footer nofilter}
 			
 	</article>
 	

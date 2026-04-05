@@ -74,22 +74,26 @@ interface ctl_ui {
 
 	/**
 	 * Renders a public page by injecting content/header templates into
-	 * fbp/lib/Templates/publicsite_index.tpl.
+	 * fbp/Templates/publicsite_index.tpl.
 	 *
 	 * @param string $contents_template The template that generates body contents.
 	 * @param string|null $header_template Optional template for extra header tags.
+	 * @param string|null $contents_header_template Optional template rendered before body contents.
+	 * @param string|null $contents_footer_template Optional template rendered after body contents.
 	 * @return void
 	 */
-	function show_public_pages($contents_template, $header_template = null);
+	function show_public_pages($contents_template, $header_template = null, $contents_header_template = null, $contents_footer_template = null);
 
 	/**
 	 * Backward-compatible alias for typo usage.
 	 *
 	 * @param string $contents_template
 	 * @param string|null $header_template
+	 * @param string|null $contents_header_template
+	 * @param string|null $contents_footer_template
 	 * @return void
 	 */
-	function show_pubic_pages($contents_template, $header_template = null);
+	function show_pubic_pages($contents_template, $header_template = null, $contents_header_template = null, $contents_footer_template = null);
 
 	/**
 	 * Reloads the content of a specific HTML element.

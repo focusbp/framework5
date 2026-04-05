@@ -2,7 +2,6 @@
 
 ini_set('display_errors', 1);
 error_reporting(E_ALL & ~E_NOTICE);
-date_default_timezone_set('Asia/Tokyo');
 mb_language("Japanese");
 mb_internal_encoding("UTF-8");
 

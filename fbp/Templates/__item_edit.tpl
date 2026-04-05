@@ -79,7 +79,7 @@ $row : array of the values.
 	
 {else if $type == "year_month"}
 	
-	<input type="text" name="{$name}" value="{$row.$name}" class="year_month_picker">
+	<input type="text" name="{$name}" value="{html_year_month value=$row.$name}" class="year_month_picker">
 	
 {else if $type == "checkbox"}
 	{foreach $field["options"] as $key=>$option}
@@ -129,13 +129,13 @@ $row : array of the values.
 	<div class="vimeo_upload_area">
 		<input type="hidden" name="vimeo_title" value="from system" id="vimeo_title">
 		<input type="hidden" name="vimeo_description" value="from system" id="vimeo_description">
-		<p class="lang" style="word-break:inherit;">You can upload a video here or put the ID that you had uploaded from vimeo site.</p>
+		<p style="word-break:inherit;">{t key="vimeo.help.upload_or_input"}</p>
 		<div style="width:50%;float: left;">
-			<p style="margin-top:0px;">Upload a video</p>
+			<p style="margin-top:0px;">{t key="vimeo.upload_video"}</p>
 			<input id="sliced_file" type="file" data-mode="vimeo" />
 		</div>
 		<div style="width:50%;float: left;">
-			<p style="margin-top:0px;">Vimeo ID</p>
+			<p style="margin-top:0px;">{t key="vimeo.id"}</p>
 			<input type="text" id="vimeo_id" name="{$name}" value="{$row[$name]}" style="margin-top:0px;">
 		</div>
 		<p class="error" id="sliced_error"></p>

@@ -235,6 +235,8 @@ interface ctl_media {
 	function create_linebot(): linebot;
 	
 	function create_pdfmaker(): pdfmaker_class;
+
+	function create_ValueFormatter(): ValueFormatter;
 	
 	function cron_set();
 }

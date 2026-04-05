@@ -57,9 +57,9 @@ $row : array of the values.
 
 {else if $type == "checkbox"}
 	<select name="{$name}">
-		<option value=""></option>
+		<option value="" {if $row[$name]|default:'' == ''}selected{/if}></option>
 		{foreach $field["options"] as $key=>$option}
-			<option value="{$key|escape}" {if $row[$name] == $key}selected{/if}>{$option}</option>
+			<option value="{$key|escape}" {if $row[$name]|default:null !== null && $row[$name]|cat:'' === $key|cat:''}selected{/if}>{$option}</option>
 		{/foreach}
 	</select>
 	
@@ -72,7 +72,7 @@ $row : array of the values.
 	
 {else if $type == "year_month"}
 	
-	<input type="text" name="{$name}" value="{$row.$name}" class="year_month_picker" data-search-name="{$name|escape}" data-search-title="{$title|escape}" data-search-type="{$type|escape}">	
+	<input type="text" name="{$name}" value="{html_year_month value=$row.$name}" class="year_month_picker" data-search-name="{$name|escape}" data-search-title="{$title|escape}" data-search-type="{$type|escape}">	
 			
 {else if $type == "radio"}
 	{html_radios name="{$name}" options=$field["options"] selected=$row[$name] class="checkboxradio"}
@@ -82,7 +82,7 @@ $row : array of the values.
 	<input type="text" name="{$name}" value="{$row[$name]}" class="colorpicker" data-search-name="{$name|escape}" data-search-title="{$title|escape}" data-search-type="{$type|escape}">
 		
 {else}
-	<p>This item cannot be used as a search field.</p>
+	<p>{t key="common.search_field_not_supported"}</p>
 
 {/if}
 

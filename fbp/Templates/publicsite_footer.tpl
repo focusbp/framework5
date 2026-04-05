@@ -21,6 +21,13 @@
 
 <div id="lang_priority" style="display:none;">1</div>
 <div id="lang_default" style="display:none;">{$legacy_lang_default}</div>
+<div id="server_language_code" style="display:none;">{$setting.framework_language_code}</div>
+<div id="server_locale_code" style="display:none;">{$setting.locale_code}</div>
+<div id="server_timezone" style="display:none;">{$setting.timezone}</div>
+<div id="server_date_format" style="display:none;">{$setting.date_format}</div>
+<div id="server_datetime_format" style="display:none;">{$setting.datetime_format}</div>
+<div id="server_year_month_format" style="display:none;">{$setting.year_month_format}</div>
+<div id="public_windowcode" style="display:none;">{$windowcode}</div>
 
 {include file="{$base_template_dir}/scripts.tpl"}
 
@@ -37,44 +44,58 @@
 <div id="page_classname" data-class="{$class}" style="display: none;"></div>
 
 <script>
-	(function() {
-		const body = document.body;
-		const menuToggle = document.querySelector("[data-publicsite-menu-toggle]");
-		const menuPanel = document.querySelector("[data-publicsite-menu]");
-		const menuBackdrop = document.querySelector("[data-publicsite-menu-backdrop]");
-		if (!body || !menuToggle || !menuPanel || !menuBackdrop) {
-			return;
+	(function () {
+		function getServerWindowcode() {
+			return ($("#public_windowcode").text() || "").trim();
 		}
 
-		const closeMenu = function() {
-			body.classList.remove("publicsite-menu-open");
-			menuToggle.setAttribute("aria-expanded", "false");
-			menuPanel.setAttribute("aria-hidden", "true");
-		};
+		function getPublicWindowcode() {
+			var wid = getServerWindowcode();
+			if (wid !== "") {
+				return wid;
+			}
+			try {
+				wid = sessionStorage.getItem("windowID") || "";
+			} catch (e) {
+				wid = "";
+			}
+			if (wid === "") {
+				wid = Cookies.get("windowID") || "";
+			}
+			return wid;
+		}
 
-		const openMenu = function() {
-			body.classList.add("publicsite-menu-open");
-			menuToggle.setAttribute("aria-expanded", "true");
-			menuPanel.setAttribute("aria-hidden", "false");
-		};
-
-		menuToggle.addEventListener("click", function() {
-			if (body.classList.contains("publicsite-menu-open")) {
-				closeMenu();
+		function bindWindowcodeToForm(form, wid) {
+			if (!form || wid === "") {
 				return;
 			}
-			openMenu();
-		});
-
-		menuBackdrop.addEventListener("click", closeMenu);
-		menuPanel.querySelectorAll("a").forEach(function(link) {
-			link.addEventListener("click", closeMenu);
-		});
-
-		document.addEventListener("keydown", function(event) {
-			if (event.key === "Escape") {
-				closeMenu();
+			var $form = $(form);
+			var $field = $form.find('input[name="_windowcode"]');
+			if ($field.length === 0) {
+				$field = $('<input type="hidden" name="_windowcode">');
+				$form.append($field);
 			}
+			$field.val(wid);
+		}
+
+		function bindWindowcodeToPublicPage() {
+			var wid = getPublicWindowcode();
+			if (wid === "") {
+				return;
+			}
+			$("body.publicsite-body form").each(function () {
+				bindWindowcodeToForm(this, wid);
+			});
+		}
+
+		bindWindowcodeToPublicPage();
+
+		$(document).on("submit", "body.publicsite-body form", function () {
+			var wid = getPublicWindowcode();
+			if (wid === "") {
+				return;
+			}
+			bindWindowcodeToForm(this, wid);
 		});
 	})();
 </script>

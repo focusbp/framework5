@@ -1,3 +1,9 @@
+{t key="square.button.pay" assign="square_button_pay"}
+{t key="square.status.success" assign="square_status_success"}
+{t key="square.status.failure" assign="square_status_failure"}
+{t key="square.status.missing_credentials" assign="square_status_missing_credentials"}
+{t key="square.status.store_card_success" assign="square_status_store_card_success"}
+{t key="square.status.store_card_failure" assign="square_status_store_card_failure"}
 <div style="display:block;overflow:hidden;padding:5px;">
     {if $amount}<h4>{$currency} {number_format($amount)}</h4>{/if}
 	
@@ -7,7 +13,7 @@
 <div style="width:100%;margin-bottom:30px;">
 	<img src="app.php?class=base&function=img&file=square.png" style="width: 150px;margin: 0 auto;display: block;">
 </div>
-	<button id="card-button" type="button" class="payment_button lang" style="float: none;margin: 0 auto;margin-bottom: 20px;">Pay</button>
+	<button id="card-button" type="button" class="payment_button" style="float: none;margin: 0 auto;margin-bottom: 20px;">{$square_button_pay}</button>
 </form>
 
 	
@@ -24,6 +30,11 @@
 		var callback_function = "{$callback_function}";
 		var callback_parameter_array = '{$callback_parameter_array}';
 		var flg_public = "{$public}";
+		var squareStatusSuccess = "{$square_status_success|escape:'javascript'}";
+		var squareStatusFailure = "{$square_status_failure|escape:'javascript'}";
+		var squareStatusMissingCredentials = "{$square_status_missing_credentials|escape:'javascript'}";
+		var squareStatusStoreCardSuccess = "{$square_status_store_card_success|escape:'javascript'}";
+		var squareStatusStoreCardFailure = "{$square_status_store_card_failure|escape:'javascript'}";
 	{literal}
 		  async function initializeCard(payments) {
 			  payments.setLocale("en");
@@ -67,14 +78,18 @@
 			  const statusContainer = document.getElementById(
 					  'payment-status-container'
 					  );
+			  let statusText = '';
 			  if (status === 'SUCCESS') {
 				  statusContainer.classList.remove('is-failure');
 				  statusContainer.classList.add('is-success');
+				  statusText = squareStatusSuccess;
 			  } else {
 				  statusContainer.classList.remove('is-success');
 				  statusContainer.classList.add('is-failure');
+				  statusText = squareStatusFailure;
 			  }
 
+			  statusContainer.setAttribute('data-status-text', statusText);
 			  statusContainer.style.visibility = 'visible';
 		  }
 
@@ -91,6 +106,7 @@
 						  'payment-status-container'
 						  );
 				  statusContainer.className = 'missing-credentials';
+				  statusContainer.setAttribute('data-status-text', squareStatusMissingCredentials);
 				  statusContainer.style.visibility = 'visible';
 				  return;
 			  }
@@ -262,7 +278,7 @@
 	}
 
 	#payment-status-container.is-success:after {
-		content: 'Payment successful';
+		content: attr(data-status-text);
 		font-size: 14px;
 		line-height: 16px;
 	}
@@ -278,7 +294,7 @@
 	}
 
 	#payment-status-container.is-failure:after {
-		content: 'Payment failed';
+		content: attr(data-status-text);
 		font-size: 14px;
 		line-height: 16px;
 	}
@@ -294,17 +310,17 @@
 	}
 
 	#payment-status-container.missing-credentials:after {
-		content: 'applicationId and/or locationId is incorrect';
+		content: attr(data-status-text);
 		font-size: 14px;
 		line-height: 16px;
 	}
 
 	#payment-status-container.is-success.store-card-message:after {
-		content: 'Store card successful';
+		content: attr(data-status-text);
 	}
 
 	#payment-status-container.is-failure.store-card-message:after {
-		content: 'Store card failed';
+		content: attr(data-status-text);
 	}
 
 	#afterpay-button {
@@ -313,4 +329,3 @@
 
 
 </style>
-

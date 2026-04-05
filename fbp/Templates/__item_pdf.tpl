@@ -7,9 +7,9 @@
 {if $type == "text"}
 {$row.$name nofilter}
 {else if $type == "number"}
-{$row.$name nofilter}
+{html_display_value field=$field value=$row[$name]}
 {else if $type == "float"}
-{$row.$name nofilter}
+{html_display_value field=$field value=$row[$name]}
 {else if $type == "textarea"}
 {$row.$name nofilter}
 {else if $type == "textarea_links"}
@@ -21,9 +21,9 @@
 {else if $type == "date"}
 {$row.$name nofilter}
 {else if $type == "datetime"}
-{$row.$name}
+{html_datetime value=$row.$name}
 {else if $type == "year_month"}
-{$row.$name}
+{html_year_month value=$row.$name}
 {else if $type == "checkbox"}
 	{foreach $field["options"] as $key=>$option}
 	    {if is_array($row.$name)}

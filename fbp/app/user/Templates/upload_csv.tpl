@@ -4,6 +4,7 @@
 	<input type="file" name="users_csv" class="fr_image_paste">
 	<p class="error">{$errors['users_csv']}</p>
 	<p>{t key="user.csv.format_help"}</p>
+	<p>{t key="user.csv.date_format_help" format=$date_format}</p>
 	<img src="app.php?class={$class}&function=image_sample" style="width:40%">
 	
 	<p>{t key="user.csv.character_code"}</p>

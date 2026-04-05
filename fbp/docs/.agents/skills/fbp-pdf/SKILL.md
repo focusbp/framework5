@@ -20,6 +20,7 @@ description: Implement and test PDF generation flows in FBP, including modern tp
 
 ## constraints
 - 文字化け・画像パス・ページ崩れを優先チェックする。
+- PDF本文で日付/日時/年月を PHP 直書きする場合は `$ctl->create_ValueFormatter()` を使う。HTML 表示 helper の代替としては使わない。
 - PDFダウンロード導線に `ajax-link` は使わない（ダウンロードデータを扱えないため）。
 - `download-link` の `data-class` は明示的に実クラス名を指定する（`{$class}` 依存を避ける）。
 - PDFダウンロードの `download-link` は `data-open_new_tab="true"` を基本とする。例外時は理由を実装コメントかPR説明に残す。

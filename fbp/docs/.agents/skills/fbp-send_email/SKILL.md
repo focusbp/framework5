@@ -18,3 +18,4 @@ description: Configure email_format templates and implement prepared-format emai
 
 ## constraints
 - 実運用アドレスへの誤送信を防ぐため、検証環境では宛先を固定化する。
+- 本文や件名で日付/日時/年月を PHP 直書きする場合は `$ctl->create_ValueFormatter()` を使う。HTML helper の代替としては使わない。

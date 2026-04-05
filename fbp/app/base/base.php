@@ -176,7 +176,16 @@ class base {
 		
 		// Database Menu
 		$list = $this->fmt_db->select("show_menu",1,true,"AND","sort",SORT_ASC);
-		$ctl->assign("database_menu",$list);
+		$database_menu = [];
+		$is_app_admin = $ctl->is_app_admin();
+		foreach ($list as $db) {
+			$menu_visibility = (int) ($db["menu_visibility"] ?? 0);
+			if ($menu_visibility === 1 && !$is_app_admin) {
+				continue;
+			}
+			$database_menu[] = $db;
+		}
+		$ctl->assign("database_menu",$database_menu);
 
 		// Dashboard Menu
 		$dashboard_widgets = $ctl->db("dashboard", "dashboard")->getall("sort", SORT_ASC);

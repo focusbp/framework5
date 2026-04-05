@@ -12,14 +12,10 @@ $row : array of the values.
 	{$row.$name}
 	
 {else if $type == "number"}
-	{if $row[$name]|is_numeric}
-	  {$row[$name]|number_format}
-	{else}
-	  {$row[$name]}
-	{/if}
+	{html_display_value field=$field value=$row[$name]}
 	
 {else if $type == "float"}
-	{$row.$name}
+	{html_display_value field=$field value=$row[$name]}
 	
 {else if $type == "textarea"}
 	{$row.$name|escape|nl2br nofilter}
@@ -54,7 +50,7 @@ $row : array of the values.
 	<span class="world_datetime">{$row.$name}</span>
 	
 {else if $type == "year_month"}
-	{$row.$name}
+	{html_year_month value=$row.$name}
 	
 {else if $type == "checkbox"}
 	{foreach $field["options"] as $key=>$option}

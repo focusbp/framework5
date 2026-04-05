@@ -1,6 +1,13 @@
 <form id="wizard_public_pages_common_text_form">
-	<p style="font-size:13px;color:#374151;margin:0 0 8px 0;">{$step_prompt|escape}</p>
-	<p style="font-size:12px;color:#6b7280;margin:0 0 8px 0;">{$example_prompt|escape}</p>
+	<div style="margin:0 0 8px 0;overflow:hidden;">
+		{if $icon_path|default:'' != ''}
+			<img src="{$icon_path|escape}" alt="" style="float:left;width:88px;height:88px;object-fit:contain;margin-left:12px;margin-right:10px;margin-top:-13px;margin-bottom:-10px;">
+		{/if}
+		<div>
+			<p style="font-size:13px;color:#374151;margin:0 0 8px 0;">{$step_prompt|escape}</p>
+			<p style="font-size:12px;color:#6b7280;margin:0 0 8px 0;">{$example_prompt|escape}</p>
+		</div>
+	</div>
 	<textarea name="step_value" style="width:100%;height:220px;">{$field_value|default:''|escape}</textarea>
 	<p class="error_message error_step_value"></p>
 	{if count($selected_public_asset_rows) > 0}

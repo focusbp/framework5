@@ -30,10 +30,13 @@ function smarty_function_html_date($params, Smarty_Internal_Template $template)
         }
     }
 	
+	$setting = $template->getTemplateVars("setting");
+	$date_format = !empty($setting["date_format"]) ? (string) $setting["date_format"] : "Y/m/d";
+
 	if(empty($value)){
 		$str = "";
 	}else{
-		$str = date("Y/m/d",$value);
+		$str = date($date_format, $value);
 	}
 	
     return $str;

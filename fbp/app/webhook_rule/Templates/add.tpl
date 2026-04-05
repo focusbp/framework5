@@ -8,7 +8,7 @@
 
 	<div>
 		<h6 class="lang">{t key="webhook_rule.keyword"}</h6>
-		<input type="text" name="keyword" value="{$post.keyword|default:''}">
+		<input type="text" name="keyword" value="{$post.keyword|default:''}" id="webhook_rule_add_keyword">
 		<p style="font-size:12px;color:#666;">{t key="webhook_rule.data_type_help"}</p>
 		<p class="error_message lang error_keyword"></p>
 	</div>
@@ -16,7 +16,7 @@
 	<div>
 		<h6 class="lang">{t key="webhook_rule.match_type"}</h6>
 		{assign var=selected_match value=$post.match_type|default:'exact'}
-		{html_options name="match_type" options=$match_type_opt selected=$selected_match}
+		{html_options name="match_type" options=$match_type_opt selected=$selected_match id="webhook_rule_add_match_type"}
 		<p class="error_message lang error_match_type"></p>
 	</div>
 
@@ -34,3 +34,25 @@
 
 	<button class="ajax-link lang" data-form="webhook_rule_add_form" data-class="{$class}" data-function="add_exe">{t key="common.add"}</button>
 </form>
+<script>
+(function () {
+	var matchType = document.getElementById('webhook_rule_add_match_type');
+	var keyword = document.getElementById('webhook_rule_add_keyword');
+	if (!matchType || !keyword) {
+		return;
+	}
+	function syncKeywordState() {
+		if (matchType.value === 'unmatch') {
+			keyword.value = '[unmatch]';
+			keyword.readOnly = true;
+			return;
+		}
+		if (keyword.value === '[unmatch]') {
+			keyword.value = '';
+		}
+		keyword.readOnly = false;
+	}
+	matchType.addEventListener('change', syncKeywordState);
+	syncKeywordState();
+})();
+</script>

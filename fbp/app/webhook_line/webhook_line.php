@@ -47,6 +47,17 @@ class webhook_line {
 					case "text":
 						$text = (string)($event["message"]["text"] ?? "");
 						$rule = $this->find_rule_by_text($ctl, "0", $text);
+						$matched_rule = ($rule !== null);
+						if ($rule !== null) {
+							$handled = $this->execute_rule_action($ctl, $linebot, $rule, $event, $line_member, $text, $userid, $displayname);
+							if ($handled === null) {
+								break;
+							}
+							if ($handled) {
+								break;
+							}
+						}
+						$rule = $matched_rule ? null : $this->find_rule_by_unmatch($ctl, "0");
 						if ($rule !== null) {
 							$handled = $this->execute_rule_action($ctl, $linebot, $rule, $event, $line_member, $text, $userid, $displayname);
 							if ($handled === null) {
@@ -111,11 +122,29 @@ class webhook_line {
 	}
 
 	public function find_rule_by_text(Controller $ctl, string $channel, string $text): ?array {
-		return $this->find_rule($ctl, $this->normalize_channel($channel), $text);
+		$rules = $ctl->db("webhook_rule", "webhook_rule")->select("channel", $this->normalize_channel($channel), true, "AND", "sort", SORT_ASC);
+		foreach ($rules as $rule) {
+			if ((int) ($rule["enabled"] ?? 0) !== 1) {
+				continue;
+			}
+			$match_type = (string) ($rule["match_type"] ?? "exact");
+			if (!in_array($match_type, ["exact", "contains", "regex"], true)) {
+				continue;
+			}
+			$keyword = (string) ($rule["keyword"] ?? "");
+			if ($this->is_match($match_type, $keyword, $text)) {
+				return $rule;
+			}
+		}
+		return null;
 	}
 
 	public function find_rule_by_data_type(Controller $ctl, string $channel, string $data_type): ?array {
 		return $this->find_rule($ctl, $this->normalize_channel($channel), $data_type, "data_type");
+	}
+
+	public function find_rule_by_unmatch(Controller $ctl, string $channel): ?array {
+		return $this->find_rule($ctl, $this->normalize_channel($channel), "[unmatch]", "unmatch");
 	}
 
 	protected function normalize_channel(string $channel): string {

@@ -26,6 +26,8 @@ description: Implement and verify CSV upload/download and file/image field flows
 ## constraints
 - エラー時に `show_multi_dialog()` 再実行や `reload_area()` をしない。
 - 公開画面で画像/ファイル表示は `fields_view_direct` を優先する。
+- 日付/日時/年月のCSV文字列化が PHP 直書きになる場合は `$ctl->create_ValueFormatter()` を使う。`date()` の直書きは機械連携用の固定フォーマットCSVに限定する。
+- `ValueFormatter` は CSV/PDF/Mail など PHP 直書き出力用。HTML 表示には使わず、`fields_*` / `html_*` helper を優先する。
 - `db()->insert()` / `update()` に配列リテラルを直接渡さず、変数化してから渡す（参照渡し対策）。
 - CLI `app_call` の `files.path` 検証では `is_uploaded_file()` が `false` になるため、CLI時のみ `is_file()` を許可して検証する。
 - 入力部品や `select` に固定 `width` は原則付けない。ユーザーが明示指定した場合のみ追加する。`style="width:220px;"` のような推測ベースの幅指定は入れない。

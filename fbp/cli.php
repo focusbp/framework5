@@ -48,6 +48,7 @@ if (!$skip_lock) {
 include "lib_ext/smarty-4.3.1/libs/Smarty.class.php";
 $smarty = new Smarty();
 
+include("lib/ValueFormatter.php");
 include("interface/Controller.php");
 include("lib/Controller_class.php");
 include("lib/I18nSimple.php");
@@ -199,7 +200,25 @@ function cli_prepare_setting(Dirs $dir) {
 		$ffm_setting->update($setting);
 	}
 	if (empty($setting["timezone"])) {
-		$setting["timezone"] = "Asia/Tokyo";
+		$setting["timezone"] = date_default_timezone_get();
+		$ffm_setting->update($setting);
+	}
+	if (empty($setting["date_format"])) {
+		$setting["date_format"] = "Y/m/d";
+		$ffm_setting->update($setting);
+	}
+	if (empty($setting["datetime_format"])) {
+		$setting["datetime_format"] = "Y/m/d H:i";
+		$ffm_setting->update($setting);
+	}
+	if (empty($setting["year_month_format"])) {
+		$setting["year_month_format"] = "Y/m";
+		$ffm_setting->update($setting);
+	}
+	if (empty($setting["locale_code"])) {
+		$setting["locale_code"] = I18nSimple::get_default_locale_code_from_language_code(
+			I18nSimple::get_language_code_from_setting($setting)
+		);
 		$ffm_setting->update($setting);
 	}
 }
@@ -410,6 +429,20 @@ function cli_extract_email_placeholders($text) {
 	return array_values($list);
 }
 
+function cli_normalize_session_id($session_id, $fallback = "CLIAPPCALL") {
+	$session_id = preg_replace('/[^A-Za-z0-9,-]/', '', (string) $session_id);
+	if ($session_id === null) {
+		$session_id = "";
+	}
+	if ($session_id === "") {
+		$session_id = (string) $fallback;
+	}
+	if (strlen($session_id) > 120) {
+		$session_id = substr($session_id, 0, 120);
+	}
+	return $session_id;
+}
+
 function cli_app_call_execute(array $data, Dirs $dir, Smarty $smarty) {
 	if (!defined("CLI_APP_CALL")) {
 		define("CLI_APP_CALL", true);
@@ -461,10 +494,12 @@ function cli_app_call_execute(array $data, Dirs $dir, Smarty $smarty) {
 	cli_prepare_smarty($smarty);
 	$setting = cli_get_setting($dir);
 
-	$session_id = (string) ($data["session_id"] ?? "");
-	if ($session_id === "") {
-		$session_id = "CLIAPPCALL";
+	$windowcode = (string) ($data["windowcode"] ?? "");
+	if ($windowcode === "") {
+		$windowcode = "CLIAPPCALL";
 	}
+	$session_fallback = cli_normalize_session_id($windowcode, "CLIAPPCALL");
+	$session_id = cli_normalize_session_id((string) ($data["session_id"] ?? ""), $session_fallback);
 	if ($session_id !== "" && session_status() !== PHP_SESSION_ACTIVE) {
 		@session_id($session_id);
 	}
@@ -475,10 +510,6 @@ function cli_app_call_execute(array $data, Dirs $dir, Smarty $smarty) {
 	$ctl = new Controller_class($class, $smarty);
 	$smarty->assign("_ctl", $ctl);
 
-	$windowcode = (string) ($data["windowcode"] ?? "");
-	if ($windowcode === "") {
-		$windowcode = "CLIAPPCALL";
-	}
 	$ctl->set_windowcode($windowcode);
 	$smarty->assign("windowcode", $windowcode);
 
@@ -2214,4 +2245,5 @@ if ($command === "db_schema") {
 }
 
 fwrite(STDERR, "Usage: php cli.php db_schema | setting_get | setting_edit --json='{}' | app_call --json='{}' | app_check --json='{}' | db_additionals_list | db_additionals_add --json='{}' | db_additionals_edit --json='{}' | db_additionals_delete --json='{}' | db_additionals_generate --json='{\"id\":1}' | db_tables_list | db_tables_add --json='{}' | db_tables_edit --json='{}' | db_tables_delete --json='{}' | db_fields_list [--json='{\"db_id\":1}'] | db_fields_add --json='{}' | db_fields_edit --json='{}' | db_fields_delete --json='{}' | screen_fields_list --json='{\"tb_name\":\"xxx\",\"screen_name\":\"list\"}' | screen_fields_add --json='{}' | screen_fields_edit --json='{}' | screen_fields_delete --json='{}' | cron_list [--json='{\"id\":1}'] | cron_add --json='{}' | cron_edit --json='{}' | cron_delete --json='{}' | webhook_rule_list [--json='{\"id\":1}'] | webhook_rule_add --json='{}' | webhook_rule_edit --json='{}' | webhook_rule_delete --json='{\"id\":1}' | embed_app_list [--json='{\"id\":1}'] | embed_app_add --json='{}' | embed_app_edit --json='{}' | embed_app_delete --json='{\"id\":1}'\n");
+fwrite(STDERR, "app_call/app_check: windowcodeを固定する場合、session_id未指定時はwindowcode由来の有効なsession_idを自動使用します。session_idに使える文字は英数字・'-'・','です。\n");
 exit(1);

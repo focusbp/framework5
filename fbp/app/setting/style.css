@@ -1,0 +1,155 @@
+.class_style_setting #setting_tabs {
+	border: none;
+	background: transparent;
+	overflow: hidden;
+	padding-bottom: 20px;
+}
+
+.class_style_setting #setting_tabs > ul {
+	position: sticky;
+	top: 0;
+	z-index: 4;
+	padding: 0;
+	border: none;
+	background: linear-gradient(180deg, #f7f9fc 0%, #eef3f8 100%);
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 20px;
+}
+
+.class_style_setting #setting_tabs > ul li {
+	border-radius: 999px;
+	border: 1px solid #c7d2e0;
+}
+
+.class_style_setting #setting_tabs > ul li a {
+	padding: 10px 16px;
+}
+
+.class_style_setting #setting_tabs > ul .ui-tabs-active {
+	border-color: #2563eb;
+	background: #2563eb;
+}
+
+.class_style_setting #setting_tabs > ul .ui-tabs-active a {
+	color: #ffffff;
+}
+
+.class_style_setting .setting_tab_panel {
+	padding: 0;
+}
+
+.class_style_setting .setting_tab_inner {
+	max-width: 800px;
+	width: 100%;
+}
+
+.class_style_setting .setting_tab_actions {
+	max-width: 100%;
+	overflow: hidden;
+	padding-top: 12px;
+}
+
+.class_style_setting .setting_tab_actions button {
+	max-width: 100%;
+	white-space: normal;
+	word-break: break-word;
+}
+
+.class_style_setting .setting_section {
+	margin-bottom: 24px;
+	padding: 18px 20px;
+	border: 1px solid #dbe4ee;
+	border-radius: 14px;
+	background: #ffffff;
+}
+
+.class_style_setting .setting_section h5 {
+	margin-top: 0;
+	margin-bottom: 14px;
+}
+
+.class_style_setting .setting_section_grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	gap: 16px;
+}
+
+.class_style_setting .setting_section_grid > div {
+	min-width: 0;
+}
+
+.class_style_setting .setting_section table {
+	width: 100%;
+}
+
+.class_style_setting .setting_section table td:first-child {
+	width: 32%;
+	vertical-align: top;
+}
+
+.class_style_setting .setting_section input[type="text"],
+.class_style_setting .setting_section input[type="password"],
+.class_style_setting .setting_section select,
+.class_style_setting .setting_section textarea {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.class_style_setting .setting_section textarea {
+	min-height: 120px;
+}
+
+.class_style_setting .setting_page_bar {
+	position: sticky;
+	top: 0;
+	z-index: 6;
+	background: #ffffff;
+	border-bottom: 1px solid #dbe4ee;
+	margin-bottom: 20px;
+}
+
+.class_style_setting .setting_page_bar_inner {
+	max-width: 800px;
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	justify-content: flex-end;
+	padding: 10px 0;
+}
+
+.class_style_setting .setting_form_layout {
+	padding-bottom: 32px;
+}
+
+.class_style_setting .setting_detail_table {
+	width: 100%;
+	border-collapse: collapse;
+	table-layout: fixed;
+	background: #ffffff;
+	border: 1px solid #dbe4ee;
+}
+
+.class_style_setting .setting_detail_table th,
+.class_style_setting .setting_detail_table td {
+	border: 1px solid #dbe4ee;
+	padding: 12px 14px;
+	vertical-align: top;
+	text-align: left;
+}
+
+.class_style_setting .setting_detail_table th {
+	width: 28%;
+	background: #f7f9fc;
+	font-weight: 700;
+}
+
+.class_style_setting .setting_detail_table td:nth-child(2) {
+	width: 28%;
+	background: #fbfdff;
+}
+
+.class_style_setting .setting_detail_table td:nth-child(3) {
+	width: 44%;
+}

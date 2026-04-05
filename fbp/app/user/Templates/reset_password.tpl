@@ -6,6 +6,7 @@
 
 	<p>{t key="user.email"}</p>
 	<p>{$data.email}</p>
+	<div class="error_email"></div>
 
 	<p>{t key="user.password_setup_user_help"}</p>
 

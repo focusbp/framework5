@@ -18,12 +18,6 @@
 		<input type="text" name="parameter_description" value="{$post.parameter_description}">
 		<p class="error_message lang error_parameter_description"></p>
 	</div>
-		
-	<div>
-		<p class="lang">{t key="db.field_description_bot"}:</p>
-		<input type="text" name="parameter_description_bot" value="{$post.parameter_description_bot}">
-		<p class="error_message lang error_parameter_description_bot"></p>
-	</div>
 
 	<div>
 		<p class="lang">{t key="db.field_type"}:</p>
@@ -56,6 +50,10 @@
 	<div>
 		<p class="lang">{t key="db.format_check"}:</p>
 		{html_options name="format_check" selected=$post.format_check options=$format_check_title_opt}
+	</div>
+	<div>
+		<p class="lang">{t key="db.display_format"}:</p>
+		{html_options name="display_format" selected=$post.display_format options=$display_format_opt}
 	</div>
 	<div>
 		<p class="lang">{t key="db.default"}:</p>

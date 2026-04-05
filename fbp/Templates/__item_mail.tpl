@@ -14,10 +14,10 @@ $row : array of the values.
 	<p>{$title}: {$row.$name}</p>
 	
 {else if $type == "number"}
-	<p style="white-space: nowrap;text-align: right;">{$title}: {$row.$name|number_format}</p>
+	<p style="white-space: nowrap;text-align: right;">{$title}: {html_display_value field=$param value=$row[$name]}</p>
 	
 {else if $type == "float"}
-	<p style="white-space: nowrap;text-align: right;">{$title}: {$row.$name}</p>
+	<p style="white-space: nowrap;text-align: right;">{$title}: {html_display_value field=$param value=$row[$name]}</p>
 	
 {else if $type == "textarea"}
 	<p>{$title}: {$row.$name|nl2br|escape nofilter}</p>
@@ -36,10 +36,10 @@ $row : array of the values.
 	<p style="white-space: nowrap;text-align: center;">{$title}: {html_date value=$row.$name}</p>
 	
 {else if $type == "datetime"}
-	<p class="world_datetime">{$row.$name}</p>
+	<p style="white-space: nowrap;text-align: center;">{$title}: {html_datetime value=$row.$name}</p>
 	
 {else if $type == "year_month"}
-	<p style="white-space: nowrap;text-align: center;">{$title}: {$row.$name}</p>
+	<p style="white-space: nowrap;text-align: center;">{$title}: {html_year_month value=$row.$name}</p>
 	
 {else if $type == "checkbox"}
 	<p>{$title}: <span style='background: #{$item_setting[$name]["options"][$row[$name]]["color"]};padding:7px;white-space:nowrap;'>{$row.$name}</span></p>
@@ -56,4 +56,3 @@ $row : array of the values.
     {/if}
     
 {/if}
-

@@ -1,14 +1,14 @@
-Dear {$data.name},
+{t key="user.email.account_invite_greeting" name=$data.name}
 
-Your account has been created. Please use the link below to set your password and activate your access.
+{t key="user.email.account_invite_intro"}
 
-Login ID: {$data.login_id}
-Set Password Link:
+{t key="user.login_id"}: {$data.login_id}
+{t key="user.email.account_invite_reset_link_label"}:
 {$data.reset_url nofilter}
 
-This link expires on {$data.reset_expires_at}.
+{t key="user.email.account_invite_expires" datetime=$data.reset_expires_at}
 
-If you did not expect this email, please ignore it.
+{t key="user.email.account_invite_ignore"}
 
-Best Regards,
+{t key="user.email.account_invite_regards"}
 {$setting.system_name}

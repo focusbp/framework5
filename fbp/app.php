@@ -27,6 +27,7 @@ include "lib_ext/smarty-4.3.1/libs/Smarty.class.php";
 $smarty = new Smarty();
 
 include("lib/fixed_file_manager/fixed_file_manager.php");
+include("lib/ValueFormatter.php");
 include("interface/Controller.php");
 include("lib/Controller_class.php");
 include("lib/I18nSimple.php");
@@ -149,7 +150,25 @@ if(empty($setting["iv"])){
 	$ffm_setting->update($setting);
 }
 if (empty($setting["timezone"])){
-	$setting["timezone"] = 'Asia/Tokyo';
+	$setting["timezone"] = date_default_timezone_get();
+	$ffm_setting->update($setting);
+}
+if (empty($setting["date_format"])) {
+	$setting["date_format"] = "Y/m/d";
+	$ffm_setting->update($setting);
+}
+if (empty($setting["datetime_format"])) {
+	$setting["datetime_format"] = "Y/m/d H:i";
+	$ffm_setting->update($setting);
+}
+if (empty($setting["year_month_format"])) {
+	$setting["year_month_format"] = "Y/m";
+	$ffm_setting->update($setting);
+}
+if (empty($setting["locale_code"])) {
+	$setting["locale_code"] = I18nSimple::get_default_locale_code_from_language_code(
+		I18nSimple::get_language_code_from_setting($setting)
+	);
 	$ffm_setting->update($setting);
 }
 date_default_timezone_set($setting["timezone"]);
@@ -177,10 +196,12 @@ if(empty($setting["viewport_base"])){
 // Smartyにアサイン
 $smarty->assign("testserver",$testserver);
 $framework_language_code = I18nSimple::get_language_code_from_setting($setting);
+$locale_code = I18nSimple::get_locale_code_from_setting($setting);
 $legacy_lang_default = I18nSimple::get_legacy_lang_code_from_setting($setting);
 $smarty->assign("lang", $framework_language_code);
 $smarty->assign("arr_lang",["en"=>"English","jp"=>"Japanese"]);
 $smarty->assign("framework_language_code", $framework_language_code);
+$smarty->assign("locale_code", $locale_code);
 $smarty->assign("legacy_lang_default", $legacy_lang_default);
 $smarty->assign("setting",$setting);
 
@@ -201,6 +222,8 @@ try{
 	// Windowcodeの生成
 	if(!empty($_COOKIE["windowID"])){
 		$windowcode = $_COOKIE["windowID"];
+	}else if (!empty($_REQUEST["_windowcode"]) && preg_match('/^WID_[A-Za-z0-9._-]+$/', (string) $_REQUEST["_windowcode"])) {
+		$windowcode = (string) $_REQUEST["_windowcode"];
 	}else{
 		$windowcode = uniqid("WID_");
 		$ctl->assign("new_windowID",$windowcode);
@@ -238,6 +261,10 @@ try{
 
 	// 強制Display(ajaxからの呼び出しで $ctl->display() を使った場合の動作
 	$display_html = $ctl->get_session("_DISPLAY");
+	if(empty($display_html) && $class == "public_pages" && !empty($_SESSION["_PUBLIC_DISPLAY"])){
+		$display_html = $_SESSION["_PUBLIC_DISPLAY"];
+		$_SESSION["_PUBLIC_DISPLAY"] = null;
+	}
 	if(!empty($display_html)){
 		$ctl->set_session("_DISPLAY",null);
 		echo $display_html;

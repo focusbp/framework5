@@ -434,6 +434,9 @@ class Controller_class implements Controller {
 		if ($this->POST("_call_from") == "appcon") {
 			$html = $this->smarty->fetch($template);
 			$this->set_session("_DISPLAY", $html);
+			if ($this->class === "public_pages") {
+				$_SESSION["_PUBLIC_DISPLAY"] = $html;
+			}
 			$this->res_reload();
 		} else {
 			$this->smarty->assign("MYSESSION", $_SESSION[$this->windowcode]);
@@ -442,7 +445,7 @@ class Controller_class implements Controller {
 		}
 	}
 
-	function show_public_pages($contents_template, $header_template = null) {
+	function show_public_pages($contents_template, $header_template = null, $contents_header_template = null, $contents_footer_template = null) {
 		$contents = $this->fetch($contents_template);
 		$this->assign("contents", $contents);
 		$this->assign("publicsite_menu_items", $this->build_publicsite_menu_items());
@@ -453,17 +456,19 @@ class Controller_class implements Controller {
 		}
 		$this->assign("html_header", $html_header);
 
-		$current_template_dir = $this->smarty->template_dir;
-		$current_compile_dir = $this->smarty->compile_dir;
-
-		try {
-			$this->smarty->template_dir = dirname(__FILE__) . "/Templates/";
-			$this->smarty->compile_dir = $this->dirs->datadir . "/templates_c/_lib/";
-			$this->display("publicsite_index.tpl");
-		} finally {
-			$this->smarty->template_dir = $current_template_dir;
-			$this->smarty->compile_dir = $current_compile_dir;
+		$contents_header = "";
+		if (!empty($contents_header_template)) {
+			$contents_header = $this->fetch($contents_header_template);
 		}
+		$this->assign("contents_header", $contents_header);
+
+		$contents_footer = "";
+		if (!empty($contents_footer_template)) {
+			$contents_footer = $this->fetch($contents_footer_template);
+		}
+		$this->assign("contents_footer", $contents_footer);
+
+		$this->display(dirname(__FILE__) . "/../Templates/publicsite_index.tpl");
 	}
 
 	private function build_publicsite_menu_items(): array {
@@ -500,8 +505,8 @@ class Controller_class implements Controller {
 		return $items;
 	}
 
-	function show_pubic_pages($contents_template, $header_template = null) {
-		$this->show_public_pages($contents_template, $header_template);
+	function show_pubic_pages($contents_template, $header_template = null, $contents_header_template = null, $contents_footer_template = null) {
+		$this->show_public_pages($contents_template, $header_template, $contents_header_template, $contents_footer_template);
 	}
 
 	function fetch($template) {
@@ -4414,6 +4419,14 @@ class Controller_class implements Controller {
 		$pm = new pdfmaker_class();
 		$pm->set_controller($this);
 		return $pm;
+	}
+
+	function create_ValueFormatter(): ValueFormatter {
+		$setting = $this->get_setting();
+		if (!is_array($setting)) {
+			$setting = [];
+		}
+		return new ValueFormatter($setting);
 	}
 	
 	function cron_set() {

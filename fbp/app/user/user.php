@@ -91,21 +91,34 @@ class user {
 	function edit_exe(Controller $ctl) {
 		$c = $ctl->POST();
 		$flg = true;
+		$id = (int) $ctl->POST("id");
+		$data = $this->ffm->get($id);
+		if (!is_array($data) || empty($data["id"])) {
+			$ctl->assign("err_type", $ctl->t("user.validation.user_not_found"));
+			$this->edit($ctl);
+			return;
+		}
 		if (!empty($c["email"])) {
 			if (!filter_var($c["email"], FILTER_VALIDATE_EMAIL)) {
 				$flg = false;
 				$ctl->assign("err_email", $ctl->t("validation.email.invalid"));
 			}
 		}
+		if ($this->is_oldest_user_id($id) && (int) ($data["type"] ?? 1) === 0 && (int) ($c["type"] ?? 1) !== 0) {
+			$flg = false;
+			$ctl->assign("err_type", $ctl->t("user.validation.primary_admin_type_locked"));
+		}
 
 		if (!$flg) {
-			$ctl->assign("data", $ctl->POST());
-			$this->edit($ctl);
+			$edit_data = $data;
+			foreach ($ctl->POST() as $key => $val) {
+				$edit_data[$key] = $val;
+			}
+			$ctl->assign("data", $edit_data);
+			$ctl->show_multi_dialog("user_edit", "edit.tpl", $ctl->t("user.dialog.edit"), 800, true, true);
 			return;
 		}
 
-		$id = $ctl->POST("id");
-		$data = $this->ffm->get($id);
 		foreach ($ctl->POST() as $key => $val) {
 			if ($key === "password") {
 				continue;
@@ -119,18 +132,52 @@ class user {
 		$this->page($ctl);
 	}
 
+	private function is_oldest_user_id(int $id): bool {
+		if ($id <= 0) {
+			return false;
+		}
+		$list = $this->ffm->getall();
+		$oldest_id = null;
+		foreach ($list as $row) {
+			$row_id = (int) ($row["id"] ?? 0);
+			if ($row_id <= 0) {
+				continue;
+			}
+			if ($oldest_id === null || $row_id < $oldest_id) {
+				$oldest_id = $row_id;
+			}
+		}
+		return $oldest_id !== null && $id === $oldest_id;
+	}
+
 	function delete(Controller $ctl) {
-		$id = $ctl->POST("id");
+		$id = (int) $ctl->POST("id");
 		$data = $this->ffm->get($id);
+		if ($this->is_protected_oldest_admin($data)) {
+			$ctl->show_notification_text($ctl->t("user.validation.primary_admin_delete_forbidden"));
+			return;
+		}
 		$ctl->assign("data", $data);
 		$ctl->show_multi_dialog("user_delete", "delete.tpl", $ctl->t("user.dialog.delete"), 800, true, true);
 	}
 
 	function delete_exe(Controller $ctl) {
-		$id = $ctl->POST("id");
+		$id = (int) $ctl->POST("id");
+		$data = $this->ffm->get($id);
+		if ($this->is_protected_oldest_admin($data)) {
+			$ctl->show_notification_text($ctl->t("user.validation.primary_admin_delete_forbidden"));
+			return;
+		}
 		$this->ffm->delete($id);
 		$ctl->close_multi_dialog("user_delete");
 		$ctl->ajax("user", "page");
+	}
+
+	private function is_protected_oldest_admin($data): bool {
+		if (!is_array($data) || empty($data["id"])) {
+			return false;
+		}
+		return $this->is_oldest_user_id((int) $data["id"]) && (int) ($data["type"] ?? 1) === 0;
 	}
 
 	function passchange(Controller $ctl) {
@@ -175,7 +222,12 @@ class user {
 			$ctl->res_error_message("id", $ctl->t("user.validation.user_not_found"));
 			return;
 		}
-		$this->send_account_invite($ctl, (int) $data["id"]);
+		try {
+			$this->send_account_invite($ctl, (int) $data["id"]);
+		} catch (Throwable $e) {
+			$ctl->res_error_message("email", $this->get_account_invite_error_message($ctl, $e, $data));
+			return;
+		}
 		$ctl->close_multi_dialog("user_password_reset_" . $id);
 		$ctl->show_notification_text($ctl->t("user.notification.password_setup_link_sent"));
 	}
@@ -228,6 +280,8 @@ class user {
 		$ctl->assign('post', $post);
 		$code_list = ["UTF-8"=>"UTF-8(Exported from Google SpreadSheet/Mac)","win"=>"SJIS-win(Exported from Windows Excel)"];
 		$ctl->assign("code_list",$code_list);
+		$setting = $ctl->get_setting();
+		$ctl->assign("date_format", !empty($setting["date_format"]) ? (string) $setting["date_format"] : "Y/m/d");
 		$ctl->show_multi_dialog("upload_csv", "upload_csv.tpl", $ctl->t("user.dialog.upload_csv"), 800);
 	}
 	
@@ -236,7 +290,7 @@ class user {
 		
 		if (!$ctl->is_posted_file("users_csv")){
 			if (empty($post["users_csv"])){
-				$errors["users_csv"] = "必須項目です";
+				$errors["users_csv"] = $ctl->t("validation.required");
 			}
 			$ctl->assign("errors",$errors);
 			$this->upload_csv($ctl);
@@ -258,6 +312,7 @@ class user {
 
 		
 
+		$formatter = $ctl->create_ValueFormatter();
 		//read each line as csv
 		$first = true;
 		$list = [];
@@ -324,7 +379,7 @@ class user {
 				'password' => $this->create_placeholder_password_hash(),
 				'flg_password_change_required' => 1,
 				'type' => 1, //member
-				'date_join' => date('Y/m/d'),
+				'date_join' => $formatter->format_date(time()),
 				'created_at' => time(),
 				'password_reset_token_hash' => "",
 				'password_reset_token_expires_at' => 0,
@@ -374,18 +429,32 @@ class user {
 		$this->ffm->update($data);
 
 		$setting = $ctl->get_setting();
+		$formatter = $ctl->create_ValueFormatter();
 		$mail_data = $data;
 		$mail_data["reset_url"] = $ctl->get_APP_URL("password_reset", "token_page", ["token" => $token]);
-		$mail_data["reset_expires_at"] = date("Y/m/d H:i", $expires_at);
+		$mail_data["reset_expires_at"] = $formatter->format_datetime($expires_at);
 		$ctl->assign("data", $mail_data);
 		$ctl->assign("setting", $setting);
 		$ctl->send_mail_prepared_format(
 			(string) $data["email"],
 			"account_invite",
 			null,
-			"Set Up Your Account",
+			$ctl->t("user.email.account_invite_subject"),
 			"default_account_invite.tpl"
 		);
+	}
+
+	private function get_account_invite_error_message(Controller $ctl, Throwable $e, array $data = []): string {
+		if (empty($data["email"]) || !filter_var((string) $data["email"], FILTER_VALIDATE_EMAIL)) {
+			return $ctl->t("validation.email.invalid");
+		}
+
+		$message = trim((string) $e->getMessage());
+		if ($message === "") {
+			return "Failed to send email.";
+		}
+
+		return $message;
 	}
 
 	private function current_origin() {

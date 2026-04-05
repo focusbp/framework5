@@ -53,6 +53,11 @@ class db {
 	    0 => "",
 	    1 => "Disallow Duplicates",
 	];
+	private $display_format_opt = [
+	    0 => "None",
+	    1 => "Currency Format",
+	    2 => "Number Format",
+	];
 	private $format_check_title_opt = [
 	    '' => '',
 	    'email' => 'Email',
@@ -70,6 +75,10 @@ class db {
 	private $show_menu_opt = [
 	    0 => "Hide",
 	    1 => "Show"
+	];
+	private $menu_visibility_opt = [
+	    0 => "All Users",
+	    1 => "Admin Only"
 	];
 	private $sort_order_opt = [
 	    4 => "ASC",
@@ -100,12 +109,6 @@ class db {
 	private $show_duplicate_opt = [
 	    0 => "Hide",
 	    1 => "Show"
-	];
-	private $bot_access_policy_opt = [
-	    "add",
-	    "update",
-	    "get",
-	    "find"
 	];
 	private $api_access_policy_opt = [
 	    "add" => "Add",
@@ -157,6 +160,25 @@ class db {
 		return $candidates;
 	}
 
+	private function get_display_format_options(Controller $ctl): array {
+		return [
+			0 => $ctl->t("db.display_format.none"),
+			1 => $ctl->t("db.display_format.currency"),
+			2 => $ctl->t("db.display_format.number"),
+		];
+	}
+
+	private function normalize_display_format(string $type, $value): int {
+		if (!in_array($type, ["number", "float"], true)) {
+			return 0;
+		}
+		$value = (int) $value;
+		if (!in_array($value, [0, 1, 2], true)) {
+			return 0;
+		}
+		return $value;
+	}
+
 	function __construct(Controller $ctl) {
 		$this->fmt_db = $ctl->db("db");
 		$this->fmt_db_fields = $ctl->db("db_fields");
@@ -167,14 +189,15 @@ class db {
 		$ctl->assign("validation_opt", $this->validation_opt);
 		$ctl->assign("constant_array_opt", $ctl->get_all_constant_array_names(true));
 		$ctl->assign("show_menu_opt", $this->show_menu_opt);
+		$ctl->assign("menu_visibility_opt", $this->menu_visibility_opt);
 		$ctl->assign("sort_order_opt", $this->sort_order_opt);
 		$ctl->assign("list_type_opt", $this->list_type_opt);
 		$ctl->assign("side_list_type_opt", $this->side_list_type_opt);
 		$ctl->assign("duplicate_check_opt", $this->duplicate_check_opt);
+		$ctl->assign("display_format_opt", $this->get_display_format_options($ctl));
 		$ctl->assign("format_check_title_opt", $this->format_check_title_opt);
 		$ctl->assign("show_id_opt", $this->show_id_opt);
 		$ctl->assign("show_duplicate_opt", $this->show_duplicate_opt);
-		$ctl->assign("bot_access_policy_opt", $this->bot_access_policy_opt);
 		$ctl->assign("api_access_policy_opt", $this->api_access_policy_opt);
 		$ctl->assign("api_scope_opt", $this->api_scope_opt);
 		$ctl->assign("api_allow_delete_opt", $this->api_allow_delete_opt);
@@ -334,6 +357,9 @@ class db {
 
 		if ($data["side_list_type"] === "" || $data["side_list_type"] === null) {
 			$data["side_list_type"] = 0;
+		}
+		if ($data["menu_visibility"] === "" || $data["menu_visibility"] === null) {
+			$data["menu_visibility"] = 0;
 		}
 
 		if ($data["edit_width"] == 0) {
@@ -728,6 +754,7 @@ class db {
 		$post["image_width"] = 200;
 		$post["image_width_thumbnail"] = 50;
 		$post["title_color"] = $ctl->get_session("title_color");
+		$post["display_format"] = 0;
 		$ctl->assign('post', $post);
 		$ctl->show_multi_dialog("add_db_fields", "add_fields.tpl", $ctl->t("db.dialog.add_parameters"), 1000, true, true);
 	}
@@ -791,6 +818,7 @@ class db {
 
 		// Set default length
 		$post["length"] = $this->type_length[$post["type"]];
+		$post["display_format"] = $this->normalize_display_format((string) $post["type"], $post["display_format"] ?? 0);
 
 		// sortを調べる
 		$db_id = $post["db_id"];
@@ -903,6 +931,7 @@ class db {
 		}
 
 		$data = array_merge($data, $post);
+		$data["display_format"] = $this->normalize_display_format((string) ($data["type"] ?? ""), $data["display_format"] ?? 0);
 		$ctl->assign("data", $data);
 		$ctl->show_multi_dialog("edit_db_fields", "edit_fields.tpl", $ctl->t("db.dialog.edit_parameters"), 1000, true, true);
 	}
@@ -970,6 +999,7 @@ class db {
 		foreach ($_POST as $key => $value) {
 			$data[$key] = $value;
 		}
+		$data["display_format"] = $this->normalize_display_format((string) ($data["type"] ?? ""), $post["display_format"] ?? 0);
 
 		if (!in_array($post["type"], ["dropdown", "checkbox", "radio"])) {
 			$data["constant_array_name"] = "";
@@ -977,10 +1007,6 @@ class db {
 
 		if (!$is_table_only && !startsWith($constant_array_name, "table/")) {
 			$data["display_fields_for_dropdown"] = "";
-		}
-
-		if (empty($post["bot_access_policy"])) {
-			$data["bot_access_policy"] = [];
 		}
 
 		if (empty($post["api_access_policy"])) {

@@ -21,12 +21,6 @@
 		<input type="text" name="parameter_description" value="{$data.parameter_description}">
 		<p class="error_message lang error_parameter_description"></p>
 	</div>
-		
-	<div>
-		<p class="lang">{t key="db.field_description_bot"}:</p>
-		<input type="text" name="parameter_description_bot" value="{$data.parameter_description_bot}">
-		<p class="error_message lang error_parameter_description_bot"></p>
-	</div>
 
 	<div>
 		<p class="lang">{t key="db.field_type"}:</p>
@@ -43,19 +37,6 @@
 		<p class="recommended_length"></p>
 		<p class="error_message lang error_length"></p>
 	</div>
-
-	<div>
-		<p class="lang">{t key="db.bot_access_policy"}:</p>
-{html_checkboxes
-    name="bot_access_policy"
-    options=$bot_access_policy_opt
-    selected=$data.bot_access_policy
-    separator="<br>"
-}
-
-	</div>
-
-
 
 	<div class="image_width">
 		<p class="lang">{t key="db.image_width"}:</p>
@@ -78,6 +59,10 @@
 	<div>
 		<p class="lang">{t key="db.format_check"}:</p>
 		{html_options name="format_check" selected=$data.format_check options=$format_check_title_opt}
+	</div>
+	<div>
+		<p class="lang">{t key="db.display_format"}:</p>
+		{html_options name="display_format" selected=$data.display_format|default:0 options=$display_format_opt}
 	</div>
 	<div>
 		<p class="lang">{t key="db.title_color"}:</p>

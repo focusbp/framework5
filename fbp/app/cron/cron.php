@@ -78,9 +78,10 @@ class cron {
 		$obj = getClassObject($ctl, $class_name, new Dirs());
 
 		// Execute
+		$formatter = $ctl->create_ValueFormatter();
 		try{
 			$obj->$function_name($ctl);
-			$d["last_log"] = date("Y/m/d H:i") . " Success!";
+			$d["last_log"] = $formatter->format_datetime(time()) . " " . $ctl->t("cron.exec_success");
 		}catch(Exception $e){
 			$d["last_log"] = $e->getTraceAsString();
 		}

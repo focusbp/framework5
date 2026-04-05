@@ -5,6 +5,7 @@ sort,24,N
 parent_tb_id,24,N
 description,255,T
 show_menu,1,N
+menu_visibility,1,N
 sortkey,255,T
 sort_order,1,N
 list_type,1,N

@@ -158,13 +158,13 @@ class wizard {
 		$state = $this->get_note_edit_state($ctl);
 		$tb_name = $this->normalize_table_name((string) ($state["target_tb_name"] ?? ""));
 		if ($tb_name === "") {
-			$ctl->show_notification_text("対象ノートを選び直してください。", 3);
+			$ctl->show_notification_text($ctl->t("wizard.notification.reselect_target_note"), 3);
 			return;
 		}
 
 		$menu_name = trim((string) $ctl->POST("menu_name"));
 		if ($menu_name === "") {
-			$ctl->res_error_message("menu_name", "ノート名を入力してください。");
+			$ctl->res_error_message("menu_name", $ctl->t("wizard.validation.note_name_required"));
 			return;
 		}
 		$description = trim((string) $ctl->POST("description"));
@@ -186,7 +186,7 @@ class wizard {
 		}
 		$edit_width = trim((string) $ctl->POST("edit_width"));
 		if (!$this->is_valid_note_width($edit_width)) {
-			$ctl->res_error_message("edit_width", "ダイアログ幅は 600 から 1200 の整数で入力してください。");
+			$ctl->res_error_message("edit_width", $ctl->t("wizard.validation.dialog_width_range"));
 			return;
 		}
 
@@ -196,17 +196,17 @@ class wizard {
 		$state["sortkey"] = $sortkey;
 		$list_type = (string) $ctl->POST("list_type");
 		if (!isset($this->get_note_list_type_options()[$list_type])) {
-			$ctl->res_error_message("list_type", "一覧タイプを選択してください。");
+			$ctl->res_error_message("list_type", $ctl->t("wizard.validation.list_type_required"));
 			return;
 		}
 		$show_duplicate = (string) $ctl->POST("show_duplicate");
 		if (!isset($this->get_note_toggle_options()[$show_duplicate])) {
-			$ctl->res_error_message("show_duplicate", "複製アイコンを選択してください。");
+			$ctl->res_error_message("show_duplicate", $ctl->t("wizard.validation.show_duplicate_required"));
 			return;
 		}
 		$show_id = (string) $ctl->POST("show_id");
 		if (!isset($this->get_note_toggle_options()[$show_id])) {
-			$ctl->res_error_message("show_id", "一覧に ID を表示するか選択してください。");
+			$ctl->res_error_message("show_id", $ctl->t("wizard.validation.show_id_required"));
 			return;
 		}
 		$state["sort_order"] = $sort_order;
@@ -217,7 +217,7 @@ class wizard {
 		if ((int) ($state["has_parent_note"] ?? 0) > 0) {
 			$side_list_type = (string) $ctl->POST("side_list_type");
 			if (!isset($this->get_note_side_list_type_options()[$side_list_type])) {
-				$ctl->res_error_message("side_list_type", "サイドパネル一覧タイプを選択してください。");
+				$ctl->res_error_message("side_list_type", $ctl->t("wizard.validation.side_list_type_required"));
 				return;
 			}
 			$cascade_delete_flag = (string) $ctl->POST("cascade_delete_flag");
@@ -227,7 +227,7 @@ class wizard {
 			}
 			$show_icon_on_parent_list = (string) $ctl->POST("show_icon_on_parent_list");
 			if (!isset($this->get_note_parent_icon_options()[$show_icon_on_parent_list])) {
-				$ctl->res_error_message("show_icon_on_parent_list", "親のリストにアイコン表示するか選択してください。");
+				$ctl->res_error_message("show_icon_on_parent_list", $ctl->t("wizard.validation.parent_icon_required"));
 				return;
 			}
 			$state["side_list_type"] = $side_list_type;
@@ -237,7 +237,7 @@ class wizard {
 		$this->save_note_edit_state($ctl, $state);
 		$db_id = $this->normalize_single_id($state["db_id"] ?? "");
 		if ($db_id === "") {
-			$ctl->show_notification_text("対象ノートを選び直してください。", 3);
+			$ctl->show_notification_text($ctl->t("wizard.notification.reselect_target_note"), 3);
 			return;
 		}
 		$db = $ctl->db("db", "db")->get((int) $db_id);
@@ -383,7 +383,7 @@ class wizard {
 	function submit_parent_child_note_basic_next(Controller $ctl) {
 		$state = $this->get_parent_child_note_state($ctl);
 		if ((string) ($state["child_tb_name"] ?? "") === "") {
-			$ctl->show_notification_text("子ノートを選び直してください。", 3);
+			$ctl->show_notification_text($ctl->t("wizard.notification.reselect_child_note"), 3);
 			return;
 		}
 		$dropdown_item_display_type = trim((string) $ctl->POST("dropdown_item_display_type"));
@@ -399,12 +399,12 @@ class wizard {
 		}
 		$dropdown_item_template = trim((string) $ctl->POST("dropdown_item_template"));
 		if ($dropdown_item_display_type === "template" && $dropdown_item_template === "") {
-			$ctl->res_error_message("dropdown_item_template", "親の表示テンプレートを入力してください。");
+			$ctl->res_error_message("dropdown_item_template", $ctl->t("wizard.validation.parent_display_template_required"));
 			return;
 		}
 		$list_width = trim((string) $ctl->POST("list_width"));
 		if (!$this->is_valid_parent_child_side_width($list_width)) {
-			$ctl->res_error_message("list_width", "子テーブルのサイド画面幅は 100 以上の整数で入力してください。");
+			$ctl->res_error_message("list_width", $ctl->t("wizard.validation.child_side_width_required"));
 			return;
 		}
 		$cascade_delete_flag = (string) $ctl->POST("cascade_delete_flag");
@@ -442,7 +442,7 @@ class wizard {
 		$parent_db_id = $this->normalize_single_id($state["parent_db_id"] ?? "");
 		$child_db_id = $this->normalize_single_id($state["child_db_id"] ?? "");
 		if ($parent_db_id === "" || $child_db_id === "") {
-			$ctl->show_notification_text("対象ノートを選び直してください。", 3);
+			$ctl->show_notification_text($ctl->t("wizard.notification.reselect_target_note"), 3);
 			return;
 		}
 		$parent_db = $ctl->db("db", "db")->get((int) $parent_db_id);
@@ -458,7 +458,7 @@ class wizard {
 		$child_db["cascade_delete_flag"] = (int) ($state["cascade_delete_flag"] ?? 0);
 		$ctl->db("db", "db")->update($parent_db);
 		$ctl->db("db", "db")->update($child_db);
-		$ctl->show_notification_text("親子ノート設定を更新しました。", 2);
+		$ctl->show_notification_text($ctl->t("wizard.notification.parent_child_saved"), 2);
 		$this->reflesh_all_screen($ctl);
 	}
 
@@ -486,7 +486,7 @@ class wizard {
 	function submit_purpose_next(Controller $ctl) {
 		$purpose = trim((string) $ctl->POST("purpose"));
 		if ($purpose === "") {
-			$ctl->res_error_message("purpose", "用途を入力してください。");
+			$ctl->res_error_message("purpose", $ctl->t("wizard.validation.purpose_required"));
 			return;
 		}
 		$state = $this->get_table_create_state($ctl);
@@ -498,7 +498,7 @@ class wizard {
 	function submit_table_next(Controller $ctl) {
 		$menu_name = trim((string) $ctl->POST("menu_name"));
 		if ($menu_name === "") {
-			$ctl->res_error_message("menu_name", "ノート名を入力してください。");
+			$ctl->res_error_message("menu_name", $ctl->t("wizard.validation.note_name_required"));
 			return;
 		}
 		$state = $this->get_table_create_state($ctl);
@@ -518,12 +518,12 @@ class wizard {
 		$manual_fields_text = trim((string) $ctl->POST("manual_fields_text"));
 		if ($field_mode === "manual") {
 			if ($manual_fields_text === "") {
-				$ctl->res_error_message("manual_fields_text", "手動設定を選んだ場合は項目を1つ以上入力してください。");
+				$ctl->res_error_message("manual_fields_text", $ctl->t("wizard.validation.manual_fields_required"));
 				return;
 			}
 			$duplicate_input = $this->find_duplicate_in_input_fields($manual_fields_text);
 			if ($duplicate_input !== "") {
-				$ctl->res_error_message("manual_fields_text", "項目が重複しています: " . $duplicate_input);
+				$ctl->res_error_message("manual_fields_text", $ctl->t("wizard.validation.duplicate_fields", ["fields" => $duplicate_input]));
 				return;
 			}
 		}
@@ -545,7 +545,7 @@ class wizard {
 		$ctl->assign("row", $state);
 		$ctl->assign("plan_lines", $plan_lines);
 		$ctl->assign("prompt_text", $prompt_text);
-		$ctl->show_multi_dialog("wizard", "table_create_preview.tpl", "Wizard: 実行確認", 980);
+		$ctl->show_multi_dialog("wizard", "table_create_preview.tpl", $ctl->t("wizard.step_execute_confirm"), 980);
 	}
 
 	function back_to_purpose(Controller $ctl) {
@@ -649,7 +649,7 @@ class wizard {
 		}
 		$tb_name = $this->normalize_table_name((string) ($db["tb_name"] ?? ""));
 		if ($tb_name === "") {
-			$ctl->res_error_message("db_id", "対象テーブルの tb_name が不正です。");
+			$ctl->res_error_message("db_id", $ctl->t("wizard.validation.invalid_target_tb_name"));
 			return;
 		}
 		$state = $this->get_line_message_state($ctl);
@@ -684,7 +684,7 @@ class wizard {
 	function submit_line_message_request_next(Controller $ctl) {
 		$button_title = trim((string) $ctl->POST("button_title"));
 		if ($button_title === "") {
-			$ctl->res_error_message("button_title", "ボタン名を入力してください。");
+			$ctl->res_error_message("button_title", $ctl->t("wizard.validation.button_title_required"));
 			return;
 		}
 		$request_text = trim((string) $ctl->POST("request_text"));
@@ -744,7 +744,7 @@ class wizard {
 		}
 		$tb_name = $this->normalize_table_name((string) ($db["tb_name"] ?? ""));
 		if ($tb_name === "") {
-			$ctl->res_error_message("db_id", "対象テーブルの tb_name が不正です。");
+			$ctl->res_error_message("db_id", $ctl->t("wizard.validation.invalid_target_tb_name"));
 			return;
 		}
 		$state = $this->get_pdf_state($ctl);
@@ -807,7 +807,7 @@ class wizard {
 	function submit_pdf_request_next(Controller $ctl) {
 		$button_title = trim((string) $ctl->POST("button_title"));
 		if ($button_title === "") {
-			$ctl->res_error_message("button_title", "ボタン名を入力してください。");
+			$ctl->res_error_message("button_title", $ctl->t("wizard.validation.button_title_required"));
 			return;
 		}
 		$request_text = trim((string) $ctl->POST("request_text"));
@@ -872,7 +872,7 @@ class wizard {
 		}
 		$tb_name = $this->normalize_table_name((string) ($db["tb_name"] ?? ""));
 		if ($tb_name === "") {
-			$ctl->res_error_message("db_id", "対象テーブルの tb_name が不正です。");
+			$ctl->res_error_message("db_id", $ctl->t("wizard.validation.invalid_target_tb_name"));
 			return;
 		}
 		$state = $this->get_csv_download_state($ctl);
@@ -935,7 +935,7 @@ class wizard {
 	function submit_csv_download_request_next(Controller $ctl) {
 		$button_title = trim((string) $ctl->POST("button_title"));
 		if ($button_title === "") {
-			$ctl->res_error_message("button_title", "ボタン名を入力してください。");
+			$ctl->res_error_message("button_title", $ctl->t("wizard.validation.button_title_required"));
 			return;
 		}
 		$request_text = trim((string) $ctl->POST("request_text"));
@@ -1000,7 +1000,7 @@ class wizard {
 		}
 		$tb_name = $this->normalize_table_name((string) ($db["tb_name"] ?? ""));
 		if ($tb_name === "") {
-			$ctl->res_error_message("db_id", "対象テーブルの tb_name が不正です。");
+			$ctl->res_error_message("db_id", $ctl->t("wizard.validation.invalid_target_tb_name"));
 			return;
 		}
 		$state = $this->get_csv_upload_state($ctl);
@@ -1063,7 +1063,7 @@ class wizard {
 	function submit_csv_upload_request_next(Controller $ctl) {
 		$button_title = trim((string) $ctl->POST("button_title"));
 		if ($button_title === "") {
-			$ctl->res_error_message("button_title", "ボタン名を入力してください。");
+			$ctl->res_error_message("button_title", $ctl->t("wizard.validation.button_title_required"));
 			return;
 		}
 		$request_text = trim((string) $ctl->POST("request_text"));
@@ -1129,7 +1129,7 @@ class wizard {
 		}
 		$tb_name = $this->normalize_table_name((string) ($db["tb_name"] ?? ""));
 		if ($tb_name === "") {
-			$ctl->res_error_message("db_id", "対象テーブルの tb_name が不正です。");
+			$ctl->res_error_message("db_id", $ctl->t("wizard.validation.invalid_target_tb_name"));
 			return;
 		}
 		$state = $this->get_chart_state($ctl);
@@ -1209,7 +1209,7 @@ class wizard {
 	function submit_chart_request_next(Controller $ctl) {
 		$button_title = trim((string) $ctl->POST("button_title"));
 		if ($button_title === "") {
-			$ctl->res_error_message("button_title", "ボタン名を入力してください。");
+			$ctl->res_error_message("button_title", $ctl->t("wizard.validation.button_title_required"));
 			return;
 		}
 		$request_text = trim((string) $ctl->POST("request_text"));
@@ -1366,12 +1366,12 @@ class wizard {
 	function submit_cron_timing_next(Controller $ctl) {
 		$timing_text = trim((string) $ctl->POST("timing_text"));
 		if ($timing_text === "") {
-			$ctl->res_error_message("timing_text", "実行のタイミングを入力してください。");
+			$ctl->res_error_message("timing_text", $ctl->t("wizard.validation.timing_text_required"));
 			return;
 		}
 		$request_text = trim((string) $ctl->POST("request_text"));
 		if ($request_text === "") {
-			$ctl->res_error_message("request_text", "自然文で実行内容を入力してください。");
+			$ctl->res_error_message("request_text", $ctl->t("wizard.validation.cron_request_required"));
 			return;
 		}
 		$state = $this->get_cron_state($ctl);
@@ -1455,12 +1455,12 @@ class wizard {
 	function submit_public_pages_add_info_next(Controller $ctl) {
 		$title = trim((string) $ctl->POST("title"));
 		if ($title === "") {
-			$ctl->res_error_message("title", "ページタイトルを入力してください。");
+			$ctl->res_error_message("title", $ctl->t("wizard.validation.page_title_required"));
 			return;
 		}
 		$function_name = $this->suggest_unique_public_function_name($ctl, $title);
 		if ($function_name === "") {
-			$ctl->res_error_message("title", "function名を自動作成できませんでした。");
+			$ctl->res_error_message("title", $ctl->t("wizard.validation.function_name_auto_failed"));
 			return;
 		}
 		$state = $this->get_public_pages_state($ctl);
@@ -1537,40 +1537,28 @@ class wizard {
 
 	function submit_public_pages_common_header_next(Controller $ctl) {
 		$state = $this->get_public_pages_state($ctl);
-		$state["common_header_text"] = $this->validate_public_pages_common_step($ctl, "ヘッダ要件");
-		if ($state["common_header_text"] === "") {
-			return;
-		}
+		$state["common_header_text"] = trim((string) $ctl->POST("step_value"));
 		$this->save_public_pages_state($ctl, $state);
 		$this->show_public_pages_step_common_footer($ctl, $state);
 	}
 
 	function submit_public_pages_common_footer_next(Controller $ctl) {
 		$state = $this->get_public_pages_state($ctl);
-		$state["common_footer_text"] = $this->validate_public_pages_common_step($ctl, "フッタ要件");
-		if ($state["common_footer_text"] === "") {
-			return;
-		}
+		$state["common_footer_text"] = trim((string) $ctl->POST("step_value"));
 		$this->save_public_pages_state($ctl, $state);
 		$this->show_public_pages_step_common_nav($ctl, $state);
 	}
 
 	function submit_public_pages_common_nav_next(Controller $ctl) {
 		$state = $this->get_public_pages_state($ctl);
-		$state["common_nav_text"] = $this->validate_public_pages_common_step($ctl, "共通導線");
-		if ($state["common_nav_text"] === "") {
-			return;
-		}
+		$state["common_nav_text"] = trim((string) $ctl->POST("step_value"));
 		$this->save_public_pages_state($ctl, $state);
 		$this->show_public_pages_step_common_style($ctl, $state);
 	}
 
 	function submit_public_pages_common_style_next(Controller $ctl) {
 		$state = $this->get_public_pages_state($ctl);
-		$state["common_style_text"] = $this->validate_public_pages_common_step($ctl, "デザイン方針");
-		if ($state["common_style_text"] === "") {
-			return;
-		}
+		$state["common_style_text"] = trim((string) $ctl->POST("step_value"));
 		$state["request_text"] = $this->build_public_pages_common_design_request_text($state);
 		$this->save_public_pages_state($ctl, $state);
 		$this->show_public_pages_step_common_confirm($ctl, $state);
@@ -1667,7 +1655,7 @@ class wizard {
 	function submit_embed_app_basic_next(Controller $ctl) {
 		$title = trim((string) $ctl->POST("title"));
 		if ($title === "") {
-			$ctl->res_error_message("title", "埋め込みアプリ名を入力してください。");
+			$ctl->res_error_message("title", $ctl->t("wizard.validation.embed_app_title_required"));
 			return;
 		}
 		$state = $this->get_embed_app_state($ctl);
@@ -1779,7 +1767,7 @@ class wizard {
 		$title = trim((string) $ctl->POST("title"));
 		$column_width = (string) ((int) $ctl->POST("column_width"));
 		if ($title === "") {
-			$ctl->res_error_message("title", "Dashboard 名を入力してください。");
+			$ctl->res_error_message("title", $ctl->t("wizard.validation.dashboard_title_required"));
 			return;
 		}
 		if (!in_array($column_width, ["1", "2", "3"], true)) {
@@ -1837,7 +1825,7 @@ class wizard {
 		$state = $this->get_public_pages_state($ctl);
 		$state["page_action"] = "";
 		$this->save_public_pages_state($ctl, $state);
-		$ctl->show_notification_text("画像を登録しました。", 2);
+		$ctl->show_notification_text($ctl->t("wizard.notification.image_registered"), 2);
 		$this->show_public_pages_step_select($ctl, $state);
 	}
 
@@ -1885,7 +1873,7 @@ class wizard {
 		$state = $this->get_public_pages_state($ctl);
 		$state["page_action"] = "";
 		$this->save_public_pages_state($ctl, $state);
-		$ctl->show_notification_text("メニュー設定を保存しました。", 2);
+		$ctl->show_notification_text($ctl->t("wizard.notification.menu_saved"), 2);
 		$this->show_public_pages_step_select($ctl, $state);
 	}
 
@@ -1981,9 +1969,10 @@ class wizard {
 			$this->show_line_bot_step_keyword($ctl, $state);
 			return;
 		}
-		$duplicate = $this->find_line_bot_duplicate_keyword($ctl, "[follow]");
+		$duplicate_keyword = $event_type === "unmatch" ? "[unmatch]" : "[follow]";
+		$duplicate = $this->find_line_bot_duplicate_keyword($ctl, $duplicate_keyword);
 		if ($duplicate !== null) {
-			$ctl->res_error_message("event_type", "友達追加イベントは既に登録されています。");
+			$ctl->res_error_message("event_type", $event_type === "unmatch" ? $ctl->t("wizard.validation.line_bot_unmatch_exists") : $ctl->t("wizard.validation.line_bot_follow_exists"));
 			return;
 		}
 		$this->show_line_bot_step_request($ctl, $state);
@@ -1992,12 +1981,12 @@ class wizard {
 	function submit_line_bot_keyword_next(Controller $ctl) {
 		$keyword = trim((string) $ctl->POST("keyword"));
 		if ($keyword === "") {
-			$ctl->res_error_message("keyword", "キーワードを入力してください。");
+			$ctl->res_error_message("keyword", $ctl->t("wizard.validation.keyword_required"));
 			return;
 		}
 		$duplicate = $this->find_line_bot_duplicate_keyword($ctl, $keyword);
 		if ($duplicate !== null) {
-			$ctl->res_error_message("keyword", "このキーワードは既に登録されています。");
+			$ctl->res_error_message("keyword", $ctl->t("wizard.validation.keyword_duplicated"));
 			return;
 		}
 		$state = $this->get_line_bot_state($ctl);
@@ -2065,11 +2054,11 @@ class wizard {
 		$line_accesstoken = trim((string) $ctl->POST("line_accesstoken"));
 
 		if ($line_channel_secret === "" && (string) ($state["line_channel_secret_saved"] ?? "0") !== "1") {
-			$ctl->res_error_message("line_channel_secret", "Channel Secret を入力してください。");
+			$ctl->res_error_message("line_channel_secret", $ctl->t("wizard.validation.line_channel_secret_required"));
 			return;
 		}
 		if ($line_accesstoken === "" && (string) ($state["line_accesstoken_saved"] ?? "0") !== "1") {
-			$ctl->res_error_message("line_accesstoken", "Channel Access Token を入力してください。");
+			$ctl->res_error_message("line_accesstoken", $ctl->t("wizard.validation.line_access_token_required"));
 			return;
 		}
 
@@ -2113,7 +2102,7 @@ class wizard {
 		}
 		$ctl->set_session("setting", $setting);
 		$ctl->close_multi_dialog("wizard");
-		$ctl->show_notification_text("公式LINEとの接続設定を保存しました。", 2);
+		$ctl->show_notification_text($ctl->t("wizard.notification.line_connect_saved"), 2);
 	}
 
 	function back_to_line_bot_connect_intro(Controller $ctl) {
@@ -2171,7 +2160,7 @@ class wizard {
 		$tb_name = $this->normalize_table_name((string) ($state["tb_name"] ?? ""));
 		$list = $ctl->db("db", "db")->select("tb_name", $tb_name);
 		if (is_array($list) && count($list) > 0) {
-			$ctl->res_error_message("line_member_template", "テンプレート用のテーブル " . $tb_name . " は既に使用されています。");
+			$ctl->res_error_message("line_member_template", $ctl->t("wizard.validation.line_member_template_used", ["tb_name" => $tb_name]));
 			return;
 		}
 		$this->save_line_member_link_state($ctl, $state);
@@ -2258,7 +2247,7 @@ class wizard {
 			$state["button_title"] = $state["action_class"];
 		}
 		$this->save_line_bot_edit_state($ctl, $state);
-		if ($state["event_type"] === "follow") {
+		if ($state["event_type"] === "follow" || $state["event_type"] === "unmatch") {
 			$this->show_line_bot_edit_step_request($ctl, $state);
 			return;
 		}
@@ -2281,18 +2270,19 @@ class wizard {
 		if ($event_type === "keyword") {
 			$keyword = trim((string) $ctl->POST("keyword"));
 			if ($keyword === "") {
-				$ctl->res_error_message("keyword", "キーワードを入力してください。");
+				$ctl->res_error_message("keyword", $ctl->t("wizard.validation.keyword_required"));
 				return;
 			}
 			$duplicate = $this->find_line_bot_duplicate_keyword_except($ctl, $keyword, (string) ($state["rule_id"] ?? ""));
 			if ($duplicate !== null) {
-				$ctl->res_error_message("keyword", "このキーワードは既に登録されています。");
+				$ctl->res_error_message("keyword", $ctl->t("wizard.validation.keyword_duplicated"));
 				return;
 			}
 		} else {
-			$duplicate = $this->find_line_bot_duplicate_keyword_except($ctl, "[follow]", (string) ($state["rule_id"] ?? ""));
+			$duplicate_keyword = $event_type === "unmatch" ? "[unmatch]" : "[follow]";
+			$duplicate = $this->find_line_bot_duplicate_keyword_except($ctl, $duplicate_keyword, (string) ($state["rule_id"] ?? ""));
 			if ($duplicate !== null) {
-				$ctl->res_error_message("event_type", "友達追加イベントは既に登録されています。");
+				$ctl->res_error_message("event_type", $event_type === "unmatch" ? $ctl->t("wizard.validation.line_bot_unmatch_exists") : $ctl->t("wizard.validation.line_bot_follow_exists"));
 				return;
 			}
 		}
@@ -2353,7 +2343,7 @@ class wizard {
 		}
 		$tb_name = $this->normalize_table_name((string) ($db["tb_name"] ?? ""));
 		if ($tb_name === "") {
-			$ctl->res_error_message("db_id", "対象テーブルの tb_name が不正です。");
+			$ctl->res_error_message("db_id", $ctl->t("wizard.validation.invalid_target_tb_name"));
 			return;
 		}
 		$state = $this->get_original_form_state($ctl);
@@ -2384,7 +2374,7 @@ class wizard {
 	function submit_original_form_request_next(Controller $ctl) {
 		$button_title = trim((string) $ctl->POST("button_title"));
 		if ($button_title === "") {
-			$ctl->res_error_message("button_title", "ボタン名を入力してください。");
+			$ctl->res_error_message("button_title", $ctl->t("wizard.validation.button_title_required"));
 			return;
 		}
 		$request_text = trim((string) $ctl->POST("request_text"));
@@ -2690,18 +2680,18 @@ class wizard {
 	function submit_table_change_fields_next(Controller $ctl) {
 		$fields_text = trim((string) $ctl->POST("fields_text"));
 		if ($fields_text === "") {
-			$ctl->res_error_message("fields_text", "追加項目を入力してください。");
+			$ctl->res_error_message("fields_text", $ctl->t("wizard.validation.fields_text_required"));
 			return;
 		}
 		$duplicate_input = $this->find_duplicate_in_input_fields($fields_text);
 		if ($duplicate_input !== "") {
-			$ctl->res_error_message("fields_text", "項目が重複しています: " . $duplicate_input);
+			$ctl->res_error_message("fields_text", $ctl->t("wizard.validation.duplicate_fields", ["fields" => $duplicate_input]));
 			return;
 		}
 		$state = $this->get_table_change_state($ctl);
 		$existing_conflict = $this->find_existing_field_conflict($ctl, (string) ($state["target_tb_name"] ?? ""), $fields_text);
 		if ($existing_conflict !== "") {
-			$ctl->res_error_message("fields_text", "既存項目と重複しています: " . $existing_conflict);
+			$ctl->res_error_message("fields_text", $ctl->t("wizard.validation.existing_fields_duplicated", ["fields" => $existing_conflict]));
 			return;
 		}
 		$state["fields_text"] = $this->normalize_fields_text_for_human($fields_text);
@@ -2791,7 +2781,7 @@ class wizard {
 		}
 		$change_text = trim((string) $ctl->POST("update_field_change_text"));
 		if ($change_text === "") {
-			$ctl->res_error_message("update_field_change_text", "変更内容を入力してください。");
+			$ctl->res_error_message("update_field_change_text", $ctl->t("wizard.validation.change_text_required"));
 			return;
 		}
 		$field_options = $this->get_table_field_options($ctl, (string) ($state["target_tb_name"] ?? ""));
@@ -2895,7 +2885,7 @@ class wizard {
 		}
 		$prompt = html_entity_decode($prompt, ENT_QUOTES | ENT_HTML5, "UTF-8");
 		if ($prompt === "") {
-			$ctl->show_notification_text("実行プロンプトがありません。", 3);
+			$ctl->show_notification_text($ctl->t("wizard.notification.prompt_missing"), 3);
 			return;
 		}
 		// 使い回しを防止するため、投入前に一旦クリアする。
@@ -3530,6 +3520,7 @@ class wizard {
 	private function show_public_pages_step_assets(Controller $ctl, array $state) {
 		$ctl->assign("row", $state);
 		$ctl->assign("public_asset_rows", $this->get_public_asset_rows_for_wizard($ctl, $state["public_asset_ids"] ?? []));
+		$ctl->assign("icon_path", "css/images/wizard-icon014.png");
 		$action = (string) ($state["page_action"] ?? "");
 		if ($action === "common_design") {
 			$title = $ctl->t("wizard.public_pages.step_assets_common_design");
@@ -3551,7 +3542,8 @@ class wizard {
 			(string) ($state["common_header_text"] ?? ""),
 			$ctl->t("wizard.public_pages.common_header_example"),
 			"back_to_public_pages_assets",
-			"submit_public_pages_common_header_next"
+			"submit_public_pages_common_header_next",
+			"css/images/wizard-icon010.png"
 		);
 	}
 
@@ -3565,7 +3557,8 @@ class wizard {
 			(string) ($state["common_footer_text"] ?? ""),
 			$ctl->t("wizard.public_pages.common_footer_example"),
 			"back_to_public_pages_common_header",
-			"submit_public_pages_common_footer_next"
+			"submit_public_pages_common_footer_next",
+			"css/images/wizard-icon011.png"
 		);
 	}
 
@@ -3579,7 +3572,8 @@ class wizard {
 			(string) ($state["common_nav_text"] ?? ""),
 			$ctl->t("wizard.public_pages.common_nav_example"),
 			"back_to_public_pages_common_footer",
-			"submit_public_pages_common_nav_next"
+			"submit_public_pages_common_nav_next",
+			"css/images/wizard-icon012.png"
 		);
 	}
 
@@ -3593,7 +3587,8 @@ class wizard {
 			(string) ($state["common_style_text"] ?? ""),
 			$ctl->t("wizard.public_pages.common_style_example"),
 			"back_to_public_pages_common_nav",
-			"submit_public_pages_common_style_next"
+			"submit_public_pages_common_style_next",
+			"css/images/wizard-icon013.png"
 		);
 	}
 
@@ -3606,7 +3601,8 @@ class wizard {
 		string $value,
 		string $example,
 		string $back_function,
-		string $next_function
+		string $next_function,
+		string $icon_path = ""
 	) {
 		$ctl->assign("row", $state);
 		$ctl->assign("selected_public_asset_rows", $this->build_selected_public_asset_rows($ctl, $state["public_asset_ids"] ?? []));
@@ -3616,6 +3612,7 @@ class wizard {
 		$ctl->assign("example_text", $example);
 		$ctl->assign("back_function_name", $back_function);
 		$ctl->assign("next_function_name", $next_function);
+		$ctl->assign("icon_path", $icon_path);
 		$ctl->assign("step_prompt", $ctl->t("wizard.public_pages.common_text.prompt", ["label" => $step_label]));
 		$ctl->assign("example_prompt", $ctl->t("wizard.public_pages.common_text.example", ["example" => $example]));
 		$ctl->show_multi_dialog("wizard", "public_pages_common_design_text.tpl", $title, 900);
@@ -3823,9 +3820,9 @@ class wizard {
 			"menu_name" => trim((string) ($state["menu_name"] ?? "")),
 			"field_mode" => $field_mode,
 			"manual_fields_text" => $this->normalize_fields_text_for_human($manual_fields_text),
-			"field_mode_label" => $field_mode === "manual" ? "自分で入力" : "Codexに任せる",
+			"field_mode_label" => $field_mode === "manual" ? $ctl->t("wizard.field_mode.manual") : $ctl->t("wizard.field_mode.auto"),
 			"create_mode" => $create_mode,
-			"create_mode_label" => $create_mode === "child" ? "子ノート追加" : "ノート追加",
+			"create_mode_label" => $create_mode === "child" ? $ctl->t("wizard.create_mode.child") : $ctl->t("wizard.create_mode.normal"),
 			"parent_tb_name" => $this->normalize_table_name((string) ($state["parent_tb_name"] ?? "")),
 			"parent_db_id" => $this->normalize_single_id($state["parent_db_id"] ?? ""),
 			"parent_menu_name" => trim((string) ($state["parent_menu_name"] ?? ""))
@@ -4432,7 +4429,7 @@ class wizard {
 	}
 
 	private function get_embed_app_options(Controller $ctl): array {
-		$opt = ["" => "選択してください"];
+		$opt = ["" => $ctl->t("wizard.select_placeholder")];
 		$list = $ctl->db("embed_app", "embed_app")->getall("sort", SORT_ASC);
 		if (!is_array($list)) {
 			return $opt;
@@ -4458,7 +4455,7 @@ class wizard {
 	}
 
 	private function get_dashboard_options(Controller $ctl): array {
-		$opt = ["" => "選択してください"];
+		$opt = ["" => $ctl->t("wizard.select_placeholder")];
 		$list = $ctl->db("dashboard", "dashboard")->getall("sort", SORT_ASC);
 		if (!is_array($list)) {
 			return $opt;
@@ -4712,7 +4709,7 @@ class wizard {
 	}
 
 	private function get_cron_options(Controller $ctl): array {
-		$opt = ["" => "選択してください"];
+		$opt = ["" => $ctl->t("wizard.select_placeholder")];
 		$list = $ctl->db("cron", "cron")->getall("sort", SORT_ASC);
 		if (!is_array($list)) {
 			return $opt;
@@ -4776,7 +4773,7 @@ class wizard {
 	}
 
 	private function get_public_pages_registry_options(Controller $ctl): array {
-		$opt = ["" => "選択してください"];
+		$opt = ["" => $ctl->t("wizard.select_placeholder")];
 		$list = $ctl->db("public_pages_registry", "public_pages_registry")->getall("sort", SORT_ASC);
 		if (!is_array($list)) {
 			return $opt;
@@ -5438,7 +5435,8 @@ $this->build_prompt_policy_block() . "\n\n" .
 	private function get_line_bot_event_options(): array {
 		return [
 			"follow" => "友達追加時",
-			"keyword" => "キーワード入力時"
+			"keyword" => "キーワード入力時",
+			"unmatch" => "キーワード未一致時"
 		];
 	}
 
@@ -5446,6 +5444,9 @@ $this->build_prompt_policy_block() . "\n\n" .
 		$event_type = (string) ($state["event_type"] ?? "");
 		if ($event_type === "follow") {
 			return "[follow]";
+		}
+		if ($event_type === "unmatch") {
+			return "[unmatch]";
 		}
 		return trim((string) ($state["keyword"] ?? ""));
 	}
@@ -5457,6 +5458,9 @@ $this->build_prompt_policy_block() . "\n\n" .
 		}
 		if ($event_type === "keyword") {
 			return "Line Botイベント処理（キーワード入力時）";
+		}
+		if ($event_type === "unmatch") {
+			return "Line Botイベント処理（キーワード未一致時）";
 		}
 		return "Line Botイベント処理";
 	}
@@ -5475,7 +5479,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 
 	private function get_table_field_name_options(Controller $ctl, string $tb_name, bool $allow_empty = false): array {
 		$rows = $this->get_table_field_detail_rows($ctl, $tb_name);
-		$opt = $allow_empty ? ["" => "選択してください"] : [];
+		$opt = $allow_empty ? ["" => $ctl->t("wizard.select_placeholder")] : [];
 		foreach ($rows as $one) {
 			$field_name = trim((string) ($one["field_name"] ?? ""));
 			$title = trim((string) ($one["title"] ?? ""));
@@ -5522,7 +5526,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 	}
 
 	private function get_db_additionals_target_options(Controller $ctl): array {
-		$opt = ["" => "選択してください"];
+		$opt = ["" => $ctl->t("wizard.select_placeholder")];
 		$list = $ctl->db("additionals", "db_additionals")->getall("sort", SORT_ASC);
 		if (!is_array($list)) {
 			return $opt;
@@ -5598,7 +5602,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 	}
 
 	private function get_line_bot_edit_rule_options(Controller $ctl): array {
-		$opt = ["" => "選択してください"];
+		$opt = ["" => $ctl->t("wizard.select_placeholder")];
 		$list = $ctl->db("webhook_rule", "webhook_rule")->select("channel", "0", true, "AND", "sort", SORT_ASC);
 		if (!is_array($list)) {
 			return $opt;
@@ -5614,9 +5618,13 @@ $this->build_prompt_policy_block() . "\n\n" .
 			}
 			$keyword = trim((string) ($one["keyword"] ?? ""));
 			$action_class = trim((string) ($one["action_class"] ?? ""));
-			$label = $event_type === "follow"
-				? "[follow] (友達追加時)"
-				: $keyword . " (キーワード入力時)";
+			if ($event_type === "follow") {
+				$label = "[follow] (友達追加時)";
+			} else if ($event_type === "unmatch") {
+				$label = "[unmatch] (キーワード未一致時)";
+			} else {
+				$label = $keyword . " (キーワード入力時)";
+			}
 			if ($action_class !== "") {
 				$label .= " / " . $action_class;
 			}
@@ -5645,6 +5653,9 @@ $this->build_prompt_policy_block() . "\n\n" .
 		$match_type = trim((string) ($rule["match_type"] ?? ""));
 		if ($match_type === "data_type" && $keyword === "[follow]") {
 			return "follow";
+		}
+		if ($match_type === "unmatch" && $keyword === "[unmatch]") {
+			return "unmatch";
 		}
 		if ($match_type === "exact" && $keyword !== "") {
 			return "keyword";
@@ -5679,7 +5690,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 		$button_title = trim((string) ($row["button_title"] ?? ""));
 		$request_text = trim((string) ($row["request_text"] ?? ""));
 		$keyword = $this->build_line_bot_keyword_preview($row);
-		$match_type = $event_type === "follow" ? "data_type" : "exact";
+		$match_type = $event_type === "follow" ? "data_type" : ($event_type === "unmatch" ? "unmatch" : "exact");
 
 		return trim(
 "【変更種別】\n" .
@@ -5699,6 +5710,7 @@ $request_text . "\n\n" .
 "- channel は LINE(0) を使用する\n" .
 "- 友達追加時は [follow] / data_type として扱う\n" .
 "- キーワード入力時は exact として扱う\n" .
+"- キーワード未一致時は [unmatch] / unmatch として扱う\n" .
 "\n" .
 $this->build_prompt_policy_block() . "\n\n" .
 "【完了条件】\n" .
@@ -5716,7 +5728,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 		$button_title = trim((string) ($row["button_title"] ?? ""));
 		$request_text = trim((string) ($row["request_text"] ?? ""));
 		$keyword = $this->build_line_bot_keyword_preview($row);
-		$match_type = $event_type === "follow" ? "data_type" : "exact";
+		$match_type = $event_type === "follow" ? "data_type" : ($event_type === "unmatch" ? "unmatch" : "exact");
 		$action_class = trim((string) ($row["action_class"] ?? ""));
 		$rule_id = $this->normalize_single_id($row["rule_id"] ?? "");
 
@@ -5742,6 +5754,7 @@ $request_text . "\n\n" .
 "- channel は LINE(0) を使用する\n" .
 "- 友達追加時は [follow] / data_type として扱う\n" .
 "- キーワード入力時は exact として扱う\n" .
+"- キーワード未一致時は [unmatch] / unmatch として扱う\n" .
 "- 既存 action_class を起点に必要な変更を行う\n\n" .
 $this->build_prompt_policy_block() . "\n\n" .
 "【完了条件】\n" .
@@ -5952,23 +5965,25 @@ $this->build_prompt_policy_block() . "\n\n" .
 "【対象クラス】\n" .
 "public_pages\n\n" .
 "【対象テンプレート / ファイル】\n" .
-"- fbp/lib/Templates/publicsite_index.tpl\n" .
-"- fbp/Templates/publicsite_header.tpl\n" .
-"- fbp/Templates/publicsite_footer.tpl\n\n" .
+"- classes/app/public_pages/public_pages.php のうち show_public_pages() を呼ぶ箇所\n" .
+"- show_public_pages() の第3引数で使う共通テンプレート\n" .
+"- show_public_pages() の第4引数で使う共通テンプレート\n" .
+"- classes/app/public_pages/style.css\n" .
+"- 必要な場合のみ fbp/Templates/publicsite_index.tpl\n\n" .
 "【設計前提】\n" .
 "- 全公開ページのラップは publicsite_index.tpl を前提にする\n" .
-"- 共通head側の調整は publicsite_header.tpl を優先する\n" .
-"- 共通footer側の調整は publicsite_footer.tpl を優先する\n" .
 "- publicsite_index.tpl は公開ページ共通の骨組みに限定し、ブランド固有文言を固定で持たせない\n" .
-"- ヘッダ内容は publicsite_header.tpl、フッタ内容は publicsite_footer.tpl 側で管理する\n" .
+"- 共通デザインの可視部分は show_public_pages() の第3引数 / 第4引数テンプレート側で管理する\n" .
+"- 共通CSSは classes/app/public_pages/style.css 側で管理する\n" .
 "- ページ固有の本文テンプレートには共通ヘッダ・フッタを重複実装しない\n" .
 "- show_public_pages() 前提の構造を崩さない\n\n" .
 "【実装配置ルール】\n" .
-	"- publicsite_index.tpl 側には header / contents / footer の配置枠だけを置く\n" .
-	"- publicsite_header.tpl / publicsite_footer.tpl が未作成でも壊れないように、必要なら空の class 付き要素で成立する構造にする\n" .
-	"- head内のCSS追加は publicsite_header.tpl 側に置く\n" .
-	"- 末尾scriptや共通JS追加は publicsite_footer.tpl 側に置く\n" .
-	"- 既存scriptや共通DOM責務は publicsite_footer.tpl 側で維持する\n" .
+	"- publicsite_index.tpl 側には html_header / contents_header / contents / contents_footer の配置枠だけを置く\n" .
+	"- 共通デザインの主対象は show_public_pages() の第3引数 / 第4引数テンプレートにする\n" .
+	"- 共通CSS追加は classes/app/public_pages/style.css 側に置く\n" .
+	"- publicsite_header.tpl / publicsite_footer.tpl は head資産や既存script責務が必要な場合だけ触る\n" .
+	"- show_public_pages() を呼ぶ public_pages 関数は、必要に応じて共通テンプレートを第3引数 / 第4引数へそろえる\n" .
+	"- 画像をテンプレートに出す場合は Smartyヘルパー public_asset_img を使う\n" .
 	"- 共通メニューは public_pages_registry から取得して描画する\n" .
 	"- メニュー対象は enabled=1 かつ show_in_menu=1 を前提にする\n" .
 	"- メニュー表示名は menu_label を優先し、未設定時は title を使う\n" .
@@ -5979,9 +5994,11 @@ $this->build_prompt_policy_block() . "\n\n" .
 $request_text . "\n\n" .
 "【実装方針】\n" .
 	"- public_pages の共通デザインを作製または調整する\n" .
-	"- まず既存の publicsite_index.tpl / publicsite_header.tpl / publicsite_footer.tpl の責務を確認し、その責務に沿って実装する\n" .
+	"- まず既存の publicsite_index.tpl と show_public_pages() 第3引数 / 第4引数の共通テンプレート、および style.css の責務を確認し、その責務に沿って実装する\n" .
 	"- show_public_pages() の共通レイアウトに沿って実装する\n" .
 	"- ヘッダ・フッタ・共通ナビゲーションの整合を保つ\n" .
+	"- style.css の調整が必要な場合は、デザイン方針の指示に含めて反映する\n" .
+	"- Public Assets の画像は public_asset_img を使って出力する\n" .
 	"- 共通ナビゲーションは public_pages_registry の menu 設定と整合するように実装する\n" .
 	"- 既存の公開ページと競合しないようにする\n\n" .
 "【共通導線の扱い】\n" .
@@ -6002,18 +6019,10 @@ $this->build_prompt_policy_block() . "\n\n" .
 		$footer = trim((string) ($row["common_footer_text"] ?? ""));
 		$nav = trim((string) ($row["common_nav_text"] ?? ""));
 		$style = trim((string) ($row["common_style_text"] ?? ""));
-		if ($header !== "") {
-			$parts[] = "【ヘッダ要件】\n" . $header;
-		}
-		if ($footer !== "") {
-			$parts[] = "【フッタ要件】\n" . $footer;
-		}
-		if ($nav !== "") {
-			$parts[] = "【共通導線】\n" . $nav;
-		}
-		if ($style !== "") {
-			$parts[] = "【デザイン方針】\n" . $style;
-		}
+		$parts[] = "【本文前共通ブロック要件】\n" . ($header !== "" ? $header : "変更なし");
+		$parts[] = "【本文後共通ブロック要件】\n" . ($footer !== "" ? $footer : "変更なし");
+		$parts[] = "【ナビ・メニュー】\n" . ($nav !== "" ? $nav : "変更なし");
+		$parts[] = "【デザイン方針】\n" . ($style !== "" ? $style : "変更なし");
 		$text = implode("\n\n", $parts);
 		if ($text === "") {
 			return trim((string) ($row["request_text"] ?? ""));
@@ -6024,7 +6033,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 	private function validate_public_pages_common_step(Controller $ctl, string $label): string {
 		$value = trim((string) $ctl->POST("step_value"));
 		if ($value === "") {
-			$ctl->res_error_message("step_value", $label . "を入力してください。");
+			$ctl->res_error_message("step_value", $ctl->t("wizard.validation.step_value_required", ["label" => $label]));
 			return "";
 		}
 		return $value;
@@ -6385,7 +6394,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 
 	private function get_table_options(Controller $ctl): array {
 		$list = $ctl->db("db", "db")->getall("sort", SORT_ASC);
-		$opt = ["" => "選択してください"];
+		$opt = ["" => $ctl->t("wizard.select_placeholder")];
 		if (!is_array($list)) {
 			return $opt;
 		}
@@ -6406,7 +6415,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 
 	private function get_parent_table_options(Controller $ctl): array {
 		$list = $ctl->db("db", "db")->getall("sort", SORT_ASC);
-		$opt = ["" => "選択してください"];
+		$opt = ["" => $ctl->t("wizard.select_placeholder")];
 		if (!is_array($list)) {
 			return $opt;
 		}
@@ -6428,7 +6437,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 
 	private function get_child_table_options(Controller $ctl): array {
 		$list = $ctl->db("db", "db")->getall("sort", SORT_ASC);
-		$opt = ["" => "選択してください"];
+		$opt = ["" => $ctl->t("wizard.select_placeholder")];
 		if (!is_array($list)) {
 			return $opt;
 		}
@@ -6453,7 +6462,7 @@ $this->build_prompt_policy_block() . "\n\n" .
 
 	private function get_table_id_options(Controller $ctl): array {
 		$list = $ctl->db("db", "db")->getall("sort", SORT_ASC);
-		$opt = ["" => "選択してください"];
+		$opt = ["" => $ctl->t("wizard.select_placeholder")];
 		if (!is_array($list)) {
 			return $opt;
 		}

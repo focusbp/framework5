@@ -8,6 +8,7 @@ class webhook_rule {
 		"contains" => "Contains",
 		"regex" => "Regex",
 		"data_type" => "Data Type",
+		"unmatch" => "Unmatch",
 	];
 	private $data_type_keyword_opt = [
 		"[image]",
@@ -30,6 +31,7 @@ class webhook_rule {
 			"contains" => $ctl->t("webhook_rule.match_type.contains"),
 			"regex" => $ctl->t("webhook_rule.match_type.regex"),
 			"data_type" => $ctl->t("webhook_rule.match_type.data_type"),
+			"unmatch" => $ctl->t("webhook_rule.match_type.unmatch"),
 		]);
 		$ctl->assign("channel_opt", $this->channel_opt);
 		$ctl->assign("enabled_opt", [
@@ -159,7 +161,7 @@ class webhook_rule {
 		if (!array_key_exists((int) $channel, $this->channel_opt)) {
 			$errors["channel"] = $ctl->t("webhook_rule.validation.channel_invalid");
 		}
-		if ($keyword === "") {
+		if ($keyword === "" && $match_type !== "unmatch") {
 			$errors["keyword"] = $ctl->t("webhook_rule.validation.keyword_required");
 		}
 		if (!isset($this->match_type_opt[$match_type])) {
@@ -167,6 +169,12 @@ class webhook_rule {
 		}
 		if ($match_type === "data_type" && !$this->is_valid_data_type_keyword($keyword)) {
 			$errors["keyword"] = $ctl->t("webhook_rule.validation.data_type_keyword");
+		}
+		if ($match_type === "unmatch") {
+			$duplicate_unmatch = $this->find_duplicate_unmatch_rule($ctl, $channel, $mode === "edit" ? $id : 0);
+			if ($duplicate_unmatch !== null) {
+				$errors["match_type"] = $ctl->t("webhook_rule.validation.unmatch_duplicate");
+			}
 		}
 		if ($action_class === "") {
 			$errors["action_class"] = $ctl->t("webhook_rule.validation.action_class_required");
@@ -198,8 +206,26 @@ class webhook_rule {
 			if ($token !== "") {
 				$post["keyword"] = "[" . $token . "]";
 			}
+		} else if ($match_type === "unmatch") {
+			$post["keyword"] = "[unmatch]";
 		}
 		return $post;
+	}
+
+	private function find_duplicate_unmatch_rule(Controller $ctl, string $channel, int $exclude_id = 0): ?array {
+		$list = $ctl->db("webhook_rule", "webhook_rule")->select("channel", $channel, true, "AND", "sort", SORT_ASC);
+		if (!is_array($list)) {
+			return null;
+		}
+		foreach ($list as $one) {
+			if ((int) ($one["id"] ?? 0) === $exclude_id) {
+				continue;
+			}
+			if (trim((string) ($one["match_type"] ?? "")) === "unmatch") {
+				return $one;
+			}
+		}
+		return null;
 	}
 
 	private function is_valid_data_type_keyword(string $keyword): bool {

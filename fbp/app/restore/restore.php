@@ -34,6 +34,8 @@ class restore {
 
 		$zip = new ZipArchive();
 		$setting = $ctl->get_setting();
+		$formatter = $ctl->create_ValueFormatter();
+		$timezone = !empty($setting["timezone"]) ? (string) $setting["timezone"] : date_default_timezone_get();
 
 		if ($zip->open($this->zipfile, ZipArchive::CREATE) !== TRUE) {
 			throw new Exception("Can't open zipfile:" . $this->zipfile);
@@ -48,8 +50,8 @@ class restore {
 		$post = $ctl->POST();
 		$info = [
 		    "project_release_code" => $setting["project_release_code"],
-		    "datetime" => $ctl->date("Y/m/d H:i", time(), $ctl->POST("_timezone")),
-		    "timezone" => $ctl->POST("_timezone"),
+		    "datetime" => $formatter->format_datetime(time()),
+		    "timezone" => $timezone,
 		    "memo" => $ctl->POST("memo"),
 		    "type" => "restore"
 		];

@@ -3,6 +3,8 @@
 class password_reset {
 
 	private $ffm_user;
+	private $remember_me_cookie_name = "remember_me";
+	private $remember_me_ttl = 2592000; // 30 days
 
 	function __construct(Controller $ctl) {
 		$called_function = (string) $ctl->get_called_function();
@@ -141,7 +143,8 @@ class password_reset {
 		$data["password_reset_token_expires_at"] = 0;
 		$data["password_reset_token_sent_at"] = 0;
 		$this->ffm_user->update($data);
-		$ctl->res_redirect("app.php?class=login");
+		$this->login_as_reset_user($ctl, $data);
+		$ctl->res_redirect($ctl->get_APP_URL("base"));
 	}
 
 	private function hash_password($password) {
@@ -167,5 +170,53 @@ class password_reset {
 			return null;
 		}
 		return $data;
+	}
+
+	private function login_as_reset_user(Controller $ctl, array $user): void {
+		$this->clear_auth_state($ctl);
+		$ctl->set_session("login", true);
+
+		foreach ($user as $key => $val) {
+			if ($key === "id") {
+				$ctl->set_session("user_id", $user["id"]);
+			} else {
+				$ctl->set_session($key, $val);
+			}
+		}
+
+		if ((int) ($user["type"] ?? -1) === 0) {
+			$ctl->set_session("app_admin", true);
+		}
+
+		$login_id = (string) ($user["login_id"] ?? "");
+		if ($login_id !== "") {
+			$exp = time() + (int) $this->remember_me_ttl;
+			app_setcookie("login_id", $ctl->encrypt($login_id), $exp);
+			app_setcookie("login_status", "logined", $exp);
+			$this->set_remember_me_cookie($ctl, $login_id, $exp);
+		}
+	}
+
+	private function clear_auth_state(Controller $ctl): void {
+		$windowcode = $ctl->get_windowcode();
+		$_SESSION[$windowcode] = [];
+		app_setcookie("login_id", "", time() - 3600);
+		app_setcookie("password", "", time() - 3600);
+		app_setcookie($this->remember_me_cookie_name, "", time() - 3600);
+		app_setcookie("login_status", "", time() - 3600);
+	}
+
+	private function set_remember_me_cookie(Controller $ctl, string $login_id, int $exp): void {
+		$ua = (string) ($_SERVER["HTTP_USER_AGENT"] ?? "");
+		$payload = json_encode([
+			"login_id" => $login_id,
+			"exp" => $exp,
+			"ua" => hash("sha256", $ua),
+		], JSON_UNESCAPED_SLASHES);
+		if (!is_string($payload) || $payload === "") {
+			return;
+		}
+		$token = $ctl->encrypt($payload);
+		app_setcookie($this->remember_me_cookie_name, $token, $exp);
 	}
 }

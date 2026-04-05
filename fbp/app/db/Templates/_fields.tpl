@@ -13,6 +13,7 @@
 			<th class="lang">{t key="db.field_name"}</th>
 			<th class="lang">{t key="db.field_title"}</th>
 			<th class="lang">{t key="db.type"}</th>
+			<th class="lang">{t key="db.display_format"}</th>
 			<th class="lang">{t key="db.length"}</th>
 			<th class="lang">{t key="db.options"}</th>
 			<th></th>
@@ -21,6 +22,7 @@
 
 	<tbody class="sort_parameters">
 		{foreach $parameters as $item}
+			{assign var=field_display_format value=$item.display_format|default:0}
 			<tr id="{$item.id}">
 
 				<td><div class="col col_handle"><span class="material-symbols-outlined handle">swap_vert</span></div></td>
@@ -31,6 +33,7 @@
 				{/if}
 			  >{$item.parameter_title}</td>
 				<td>{$item.type}</td>
+				<td>{$display_format_opt[$field_display_format]}</td>
 				<td>{$item.length}</td>
 				<td>{$item.constant_array_name}
 					<span class="option_list_in_row">

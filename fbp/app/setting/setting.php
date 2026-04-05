@@ -7,6 +7,7 @@
 
 class setting {
 
+	private $ctl;
 	private $ffm;
 	private $sensitive_keys = [
 		"api_key",
@@ -29,22 +30,36 @@ class setting {
 	private $arr_flg_show_lang_on_chat = [0=>"Show",1=>"Hide"];
 	private $arr_show_developer_panel = [0=>"Hide",1=>"Show"];
 	private $arr_framework_language_code = [];
+	private $arr_locale_code = [];
 	private $currency_list = [];
+	private $arr_number_decimal_separator = [];
+	private $arr_number_thousands_separator = [];
+	private $arr_currency_symbol_position = [];
 
 	function __construct(Controller $ctl) {
+		$this->ctl = $ctl;
 		$this->ffm = $ctl->db("setting");
 		$ctl->assign("arr_customize", [0 => "Default", 1 => "Customize"]);
 		$ctl->assign("arr_onoff", [0 => "On", 1 => "Off"]);
 		$ctl->assign("arr_display_errors", $this->arr_display_errors);
 		$ctl->assign("arr_smtp_secure", $this->arr_smtp_secure);
 		$this->arr_framework_language_code = I18nSimple::get_language_options();
+		$this->arr_locale_code = I18nSimple::get_locale_options();
 		$ctl->assign("arr_framework_language_code", $this->arr_framework_language_code);
+		$ctl->assign("arr_locale_code", $this->arr_locale_code);
+		$ctl->assign("locale_option_map_json", json_encode($this->get_locale_option_map(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 		$ctl->assign("arr_force_testmode", $this->arr_force_testmode);
 		$ctl->assign("arr_show_menu", $this->arr_show_menu);
 		$ctl->assign("arr_ssl",$this->arr_ssl);
 		$ctl->assign("arr_flg_show_lang_on_chat",$this->arr_flg_show_lang_on_chat);
 		$ctl->assign("arr_show_developer_panel",$this->arr_show_developer_panel);
 		$ctl->assign("arr_line_forward_unknown_to_manager", $this->get_line_forward_unknown_to_manager_options($ctl));
+		$this->arr_number_decimal_separator = $this->get_number_decimal_separator_options($ctl);
+		$this->arr_number_thousands_separator = $this->get_number_thousands_separator_options($ctl);
+		$this->arr_currency_symbol_position = $this->get_currency_symbol_position_options($ctl);
+		$ctl->assign("arr_number_decimal_separator", $this->arr_number_decimal_separator);
+		$ctl->assign("arr_number_thousands_separator", $this->arr_number_thousands_separator);
+		$ctl->assign("arr_currency_symbol_position", $this->arr_currency_symbol_position);
 		
 		$this->currency_list = include (__DIR__."/currency.php");
 		$ctl->assign("currency_list", $this->currency_list);
@@ -79,9 +94,30 @@ class setting {
 			$setting["robots"] = "User-Agent: *\nAllow: /\n";
 		}
 		if (empty($setting["timezone"])){
-			$setting["timezone"] = 'Asia/Tokyo';
+			$setting["timezone"] = date_default_timezone_get();
+		}
+		if (empty($setting["date_format"])) {
+			$setting["date_format"] = "Y/m/d";
+		}
+		if (empty($setting["datetime_format"])) {
+			$setting["datetime_format"] = "Y/m/d H:i";
+		}
+		if (empty($setting["year_month_format"])) {
+			$setting["year_month_format"] = "Y/m";
+		}
+		$setting["number_decimal_separator"] = $this->normalize_number_decimal_separator($setting["number_decimal_separator"] ?? "");
+		$setting["number_thousands_separator"] = $this->normalize_number_thousands_separator($setting["number_thousands_separator"] ?? "");
+		if (!isset($setting["number_decimal_digits"]) || $setting["number_decimal_digits"] === "") {
+			$setting["number_decimal_digits"] = 2;
+		}
+		if (!isset($setting["currency_symbol_position"]) || $setting["currency_symbol_position"] === "") {
+			$setting["currency_symbol_position"] = "before";
+		}
+		if (!isset($setting["currency_decimal_digits"]) || $setting["currency_decimal_digits"] === "") {
+			$setting["currency_decimal_digits"] = $this->get_default_currency_decimal_digits((string) $setting["currency"]);
 		}
 		$setting["framework_language_code"] = $this->normalize_framework_language_code((string) ($setting["framework_language_code"] ?? "en"));
+		$setting["locale_code"] = $this->normalize_locale_code($setting["locale_code"] ?? "", $setting["framework_language_code"]);
 		$setting["lang_priority"] = 1;
 		$setting["lang_default"] = I18nSimple::get_legacy_lang_code_from_setting($setting);
 		if (!isset($setting["flg_show_lang_on_chat"])) {
@@ -96,12 +132,12 @@ class setting {
 		$ctl->set_session("setting", $setting);
 
 		// Replace .htaccess
-		$path_server = $_SERVER['REQUEST_URI'];
-		$directoryPath = pathinfo($path_server, PATHINFO_DIRNAME);
-		if(endsWith($directoryPath, "/fbp")){
-			$directoryPath = substr($directoryPath,0, strlen($directoryPath)-4);
+		$scriptName = (string) ($_SERVER["SCRIPT_NAME"] ?? "");
+		$directoryPath = pathinfo($scriptName, PATHINFO_DIRNAME);
+		if (endsWith($directoryPath, "/fbp")) {
+			$directoryPath = substr($directoryPath, 0, strlen($directoryPath) - 4);
 		}
-		if($directoryPath == "/"){
+		if ($directoryPath === "/" || $directoryPath === ".") {
 			$directoryPath = "";
 		}
 		$template = file_get_contents(dirname(__FILE__) . "/Templates/htaccess.tpl");
@@ -138,6 +174,7 @@ class setting {
 			$ctl->send_mail_string($setting["smtp_from"], $to, "TEST", "This is test mail from setting.\n" . $_SERVER["HTTP_HOST"]);
 		}
 
+		$ctl->show_notification_text($ctl->t("setting.notification.saved"));
 		$ctl->res_reload();
 	}
 
@@ -153,9 +190,30 @@ class setting {
 			$setting["currency"] = "JPY";
 		}
 		if (empty($setting["timezone"])){
-			$setting["timezone"] = 'Asia/Tokyo';
+			$setting["timezone"] = date_default_timezone_get();
+		}
+		if (empty($setting["date_format"])) {
+			$setting["date_format"] = "Y/m/d";
+		}
+		if (empty($setting["datetime_format"])) {
+			$setting["datetime_format"] = "Y/m/d H:i";
+		}
+		if (empty($setting["year_month_format"])) {
+			$setting["year_month_format"] = "Y/m";
+		}
+		$setting["number_decimal_separator"] = $this->normalize_number_decimal_separator($setting["number_decimal_separator"] ?? "");
+		$setting["number_thousands_separator"] = $this->normalize_number_thousands_separator($setting["number_thousands_separator"] ?? "");
+		if (!isset($setting["number_decimal_digits"]) || $setting["number_decimal_digits"] === "") {
+			$setting["number_decimal_digits"] = 2;
+		}
+		if (!isset($setting["currency_symbol_position"]) || $setting["currency_symbol_position"] === "") {
+			$setting["currency_symbol_position"] = "before";
+		}
+		if (!isset($setting["currency_decimal_digits"]) || $setting["currency_decimal_digits"] === "") {
+			$setting["currency_decimal_digits"] = $this->get_default_currency_decimal_digits((string) $setting["currency"]);
 		}
 		$setting["framework_language_code"] = $this->normalize_framework_language_code((string) ($setting["framework_language_code"] ?? "en"));
+		$setting["locale_code"] = $this->normalize_locale_code($setting["locale_code"] ?? "", $setting["framework_language_code"]);
 		$setting["lang_priority"] = 1;
 		$setting["lang_default"] = I18nSimple::get_legacy_lang_code_from_setting($setting);
 		if (!isset($setting["flg_show_lang_on_chat"])) {
@@ -169,7 +227,7 @@ class setting {
 		$ctl->assign("masked_setting", $this->mask_sensitive_setting($setting));
 		$ctl->assign("line_webhook_url", $ctl->get_APP_URL("webhook_line", "receive"));
 
-		$ctl->show_multi_dialog("setting", "index.tpl", $ctl->t("setting.dialog.index"), 800, "_edit_button.tpl");
+		$ctl->show_main_area("index.tpl", $ctl->t("setting.dialog.index"));
 	}
 
 	function json_upload(Controller $ctl) {
@@ -258,7 +316,7 @@ class setting {
 		if ($value === "") {
 			return "";
 		}
-		return "Configured";
+		return $this->ctl->t("common.configured");
 	}
 
 	private function normalize_framework_language_code(string $code): string {
@@ -269,11 +327,100 @@ class setting {
 		return $code;
 	}
 
+	private function normalize_locale_code($value, string $framework_language_code): string {
+		$value = trim((string) $value);
+		$allowed = $this->get_locale_options_by_language($framework_language_code);
+		if (isset($allowed[$value])) {
+			return $value;
+		}
+		return I18nSimple::get_default_locale_code_from_language_code($framework_language_code);
+	}
+
+	private function get_locale_option_map(): array {
+		return [
+			"ja" => $this->get_locale_options_by_language("ja"),
+			"en" => $this->get_locale_options_by_language("en"),
+			"zh" => $this->get_locale_options_by_language("zh"),
+		];
+	}
+
+	private function get_locale_options_by_language(string $language_code): array {
+		$all = I18nSimple::get_locale_options();
+		$map = [
+			"ja" => ["ja-JP", "ja-OS"],
+			"en" => ["en-US", "en-GB"],
+			"zh" => ["zh-CN", "zh-TW"],
+		];
+		$codes = $map[$language_code] ?? [I18nSimple::get_default_locale_code_from_language_code($language_code)];
+		$options = [];
+		foreach ($codes as $code) {
+			if (isset($all[$code])) {
+				$options[$code] = $all[$code];
+			}
+		}
+		return $options;
+	}
+
 	private function get_line_forward_unknown_to_manager_options(Controller $ctl): array {
 		return [
 			0 => $ctl->t("setting.line_forward_unknown_to_manager.option.forward"),
 			1 => $ctl->t("setting.line_forward_unknown_to_manager.option.no_forward"),
 		];
+	}
+
+	private function get_number_decimal_separator_options(Controller $ctl): array {
+		return [
+			"dot" => "Dot (.)",
+			"comma" => "Comma (,)",
+		];
+	}
+
+	private function get_number_thousands_separator_options(Controller $ctl): array {
+		return [
+			"comma" => "Comma (,)",
+			"dot" => "Dot (.)",
+			"space" => "Space",
+			"none" => "None",
+		];
+	}
+
+	private function get_currency_symbol_position_options(Controller $ctl): array {
+		return [
+			"before" => "Before Amount",
+			"after" => "After Amount",
+		];
+	}
+
+	private function get_default_currency_decimal_digits(string $currency): int {
+		if (in_array(strtoupper($currency), ["JPY", "KRW", "VND"], true)) {
+			return 0;
+		}
+		return 2;
+	}
+
+	private function normalize_number_decimal_separator($value): string {
+		$value = trim((string) $value);
+		if ($value === "," || $value === "comma") {
+			return "comma";
+		}
+		return "dot";
+	}
+
+	private function normalize_number_thousands_separator($value): string {
+		$value = (string) $value;
+		if ($value === "," || $value === "comma") {
+			return "comma";
+		}
+		if ($value === "." || $value === "dot") {
+			return "dot";
+		}
+		if ($value === " " || $value === "space") {
+			return "space";
+		}
+		if ($value === "" || $value === "none") {
+			return "none";
+		}
+		return "comma";
 	}
 
 }

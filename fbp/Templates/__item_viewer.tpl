@@ -12,10 +12,10 @@ $row : array of the values.
 	<p>{$row.$name}</p>
 	
 {else if $type == "number"}
-	<p style="white-space: nowrap;text-align: right;" class="number_max_width">{if $row[$name]|is_numeric}{$row[$name]|number_format}{else}{$row[$name]}{/if}</p>
+	<p style="white-space: nowrap;text-align: right;" class="number_max_width">{html_display_value field=$field value=$row[$name]}</p>
 	
 {else if $type == "float"}
-	<p style="white-space: nowrap;text-align: right;" class="number_max_width">{$row.$name}</p>
+	<p style="white-space: nowrap;text-align: right;" class="number_max_width">{html_display_value field=$field value=$row[$name]}</p>
 	
 {else if $type == "textarea"}
 	<p>{$row.$name|escape|nl2br nofilter}</p>
@@ -48,7 +48,7 @@ $row : array of the values.
 	<p class="world_datetime">{$row.$name}</p>
 	
 {else if $type == "year_month"}
-	<p style="white-space: nowrap">{$row.$name}</p>
+	<p style="white-space: nowrap">{html_year_month value=$row.$name}</p>
 	
 {else if $type == "checkbox"}
 	<p>

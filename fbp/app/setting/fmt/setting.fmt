@@ -24,6 +24,7 @@ api_key_map,255,T
 lang_priority,1,N
 lang_default,2,T
 framework_language_code,2,T
+locale_code,10,T
 force_testmode,1,N
 system_name,255,T
 system_tag_line,255,T
@@ -42,6 +43,15 @@ flg_show_lang_on_chat,1,N
 default_class_name,255,T
 show_menu_homepage,1,N
 timezone,50,T
+date_format,50,T
+datetime_format,50,T
+year_month_format,50,T
+number_decimal_separator,5,T
+number_thousands_separator,5,T
+number_decimal_digits,2,N
+currency_symbol,20,T
+currency_symbol_position,10,T
+currency_decimal_digits,2,N
 line_channel_secret,50,T
 line_accesstoken,255,T
 line_logfile,255,T

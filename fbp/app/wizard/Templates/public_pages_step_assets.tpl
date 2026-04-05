@@ -1,18 +1,25 @@
 <form id="wizard_public_pages_assets_form">
 	<input type="hidden" name="page_action" value="{$row.page_action|escape}">
-	{if $row.page_action == 'common_design'}
-		<p style="font-size:13px;color:#374151;margin:0 0 8px 0;">{t key="wizard.public_pages.assets_common_design.description"}</p>
-	{elseif $row.page_action == 'edit'}
-		<table class="moredata" style="margin-top:0px;margin-bottom:12px;">
-			<tr><th style="width:30%;">{t key="wizard.public_pages.title"}</th><td>{$row.title|escape}</td></tr>
-		</table>
-		<p style="font-size:13px;color:#374151;margin:0 0 8px 0;">{t key="wizard.public_pages.assets_edit.description"}</p>
-	{else}
-		<table class="moredata" style="margin-top:0px;margin-bottom:12px;">
-			<tr><th style="width:30%;">{t key="wizard.public_pages.title"}</th><td>{$row.title|escape}</td></tr>
-		</table>
-		<p style="font-size:13px;color:#374151;margin:0 0 8px 0;">{t key="wizard.public_pages.assets_add.description"}</p>
-	{/if}
+	<div style="margin:0 0 8px 0;overflow:hidden;">
+		{if $icon_path|default:'' != ''}
+			<img src="{$icon_path|escape}" alt="" style="float:left;width:88px;height:88px;object-fit:contain;margin-left:12px;margin-right:10px;margin-top:-13px;margin-bottom:-10px;">
+		{/if}
+		<div>
+			{if $row.page_action == 'common_design'}
+				<p style="font-size:13px;color:#374151;margin:0 0 8px 0;">{t key="wizard.public_pages.assets_common_design.description"}</p>
+			{elseif $row.page_action == 'edit'}
+				<table class="moredata" style="margin-top:0px;margin-bottom:12px;">
+					<tr><th style="width:30%;">{t key="wizard.public_pages.title"}</th><td>{$row.title|escape}</td></tr>
+				</table>
+				<p style="font-size:13px;color:#374151;margin:0 0 8px 0;">{t key="wizard.public_pages.assets_edit.description"}</p>
+			{else}
+				<table class="moredata" style="margin-top:0px;margin-bottom:12px;">
+					<tr><th style="width:30%;">{t key="wizard.public_pages.title"}</th><td>{$row.title|escape}</td></tr>
+				</table>
+				<p style="font-size:13px;color:#374151;margin:0 0 8px 0;">{t key="wizard.public_pages.assets_add.description"}</p>
+			{/if}
+		</div>
+	</div>
 
 	{if count($public_asset_rows) > 0}
 		<table class="moredata" style="margin-top:0px;">

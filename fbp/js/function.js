@@ -113,6 +113,19 @@ function ensureClassStylesheet(classname) {
 	document.head.appendChild(link);
 }
 
+function get_client_localized_text(key) {
+	var lang = get_server_language_code();
+	var texts = {
+		year_month_set: {ja: "設定", en: "Set", zh: "设置"},
+		year_month_clear: {ja: "クリア", en: "Clear", zh: "清除"},
+		year_month_error: {ja: "入力エラー", en: "Error", zh: "输入错误"}
+	};
+	if (texts[key] === undefined) {
+		return "";
+	}
+	return texts[key][lang] || texts[key].en;
+}
+
 // embed_app iframe auto-height support (child side).
 (function setupEmbedAppAutoHeight() {
 	if (window.parent === window) {
@@ -235,7 +248,7 @@ var year_month_picker = false;
 			html += '<option value="12">12</option>';
 			html += '</select>';
 			html += "</div>";
-			html += '<button class="picker_set lang">Set</button><button class="picker_blank lang">Clear</button>';
+			html += '<button class="picker_set">' + escapeHtml(get_client_localized_text("year_month_set")) + '</button><button class="picker_blank">' + escapeHtml(get_client_localized_text("year_month_clear")) + '</button>';
 			html += '<div style="clear;both;"></div>'
 			html += '<p class="picker_error"></p>'
 			html += '</div>';
@@ -243,13 +256,16 @@ var year_month_picker = false;
 			var year;
 			var month;
 			var hiduke = new Date();
+			var yearMonthFormat = get_server_year_month_format();
 			if ($(this).val() == "") {
 				year = hiduke.getFullYear();
 				month = hiduke.getMonth() + 1;
 			} else {
-				var ex = $(this).val().split("/");
-				year = ex[0];
-				month = ex[1];
+				var parsedYearMonth = parse_year_month_by_format($(this).val(), yearMonthFormat);
+				if (parsedYearMonth) {
+					year = parsedYearMonth.year;
+					month = parsedYearMonth.month;
+				}
 				if (year == undefined || isNaN(year))
 					year = hiduke.getFullYear();
 				if (month == undefined || isNaN(month))
@@ -299,12 +315,18 @@ var year_month_picker = false;
 					flg = false;
 				}
 				if (flg) {
-					$(textobj).val(year + "/" + month);
+					$(textobj).val(format_php_datetime({
+						year: year,
+						month: month,
+						day: "01",
+						hour: "00",
+						minute: "00"
+					}, yearMonthFormat));
 					$(obj).change();
 					$(".year_month_picker_panel").remove();
 					$(".selectorclose").remove();
 				} else {
-					$(".year_month_picker_panel .picker_error").html("Error");
+					$(".year_month_picker_panel .picker_error").html(escapeHtml(get_client_localized_text("year_month_error")));
 				}
 				year_month_picker = false;
 				return false;
@@ -318,12 +340,20 @@ function get_formdata_with_strtotime(form) {
 	$(form).find("input").each(function (index, element) {
 		if ($(this).data("strtotime") == "1") {
 			var val = $(this).val();
-			var time = Date.parse(val) / 1000;
-			if (isNaN(time)) {
+			var time = parse_date_string_to_timestamp(val, get_server_date_format());
+			if (time === "") {
 				time = "";
 			}
 			$(this).val(time);
 			$(this).attr("data-before", val);
+		}
+		if ($(this).hasClass("year_month_picker")) {
+			var yearMonthVal = $(this).val();
+			var parsedYearMonth = parse_year_month_by_format(yearMonthVal, get_server_year_month_format());
+			if (parsedYearMonth) {
+				$(this).val(parsedYearMonth.year + parsedYearMonth.month);
+			}
+			$(this).attr("data-before-year-month", yearMonthVal);
 		}
 	});
 	var fd = new FormData(form);
@@ -333,6 +363,12 @@ function get_formdata_with_strtotime(form) {
 		if ($(this).data("strtotime") == "1") {
 			var val = $(this).attr("data-before");
 			$(this).val(val);
+		}
+		if ($(this).hasClass("year_month_picker")) {
+			var yearMonthVal = $(this).attr("data-before-year-month");
+			if (yearMonthVal !== undefined) {
+				$(this).val(yearMonthVal);
+			}
 		}
 	});
 
@@ -536,6 +572,295 @@ function get_dialog_height() {
 var myChart = new Array(); //チャート用オブジェクト
 var waitTimer;
 var flg_reloadarea_fade = true;
+
+function get_server_timezone() {
+	var timezone = $("#server_timezone").text();
+	if (timezone === undefined || timezone === null || timezone === "") {
+		return "UTC";
+	}
+	return timezone;
+}
+
+function get_server_language_code() {
+	var languageCode = $("#server_language_code").text();
+	if (languageCode) {
+		return languageCode;
+	}
+	var legacyLang = $("#lang_default").text();
+	if (legacyLang === "jp") {
+		return "ja";
+	}
+	if (legacyLang) {
+		return legacyLang;
+	}
+	return "en";
+}
+
+function get_server_date_format() {
+	var format = $("#server_date_format").text();
+	return format ? format : "Y/m/d";
+}
+
+function get_server_datetime_format() {
+	var format = $("#server_datetime_format").text();
+	return format ? format : "Y/m/d H:i";
+}
+
+function get_server_year_month_format() {
+	var format = $("#server_year_month_format").text();
+	return format ? format : "Y/m";
+}
+
+function get_server_time_format() {
+	return extract_time_format_from_php_datetime_format(get_server_datetime_format());
+}
+
+function extract_time_format_from_php_datetime_format(format) {
+	var match = format.match(/([HhGg][^YmdnjiAa]*i(?:[^YmdnjiAa]*[Aa])?)/);
+	if (match && match[1]) {
+		return match[1].trim();
+	}
+	return "H:i";
+}
+
+function php_date_format_to_datepicker_format(format) {
+	return format
+			.replace(/Y/g, "yy")
+			.replace(/m/g, "mm")
+			.replace(/d/g, "dd")
+			.replace(/n/g, "m")
+			.replace(/j/g, "d");
+}
+
+function build_placeholder_from_php_date_format(format) {
+	return format
+			.replace(/Y/g, "yyyy")
+			.replace(/m/g, "mm")
+			.replace(/d/g, "dd")
+			.replace(/n/g, "m")
+			.replace(/j/g, "d")
+			.replace(/H/g, "hh")
+			.replace(/h/g, "hh")
+			.replace(/G/g, "h")
+			.replace(/g/g, "h")
+			.replace(/i/g, "mm")
+			.replace(/A/g, "AM/PM")
+			.replace(/a/g, "am/pm");
+}
+
+function php_time_format_to_timepicker_format(format) {
+	return format
+			.replace(/H/g, "H")
+			.replace(/G/g, "H")
+			.replace(/h/g, "hh")
+			.replace(/g/g, "h")
+			.replace(/i/g, "mm")
+			.replace(/A/g, "p")
+			.replace(/a/g, "a");
+}
+
+function extract_date_parts_by_format(value, format) {
+	var tokens = [];
+	var pattern = format.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/Y|m|d|n|j|H|i/g, function (token) {
+		tokens.push(token);
+		if (token === "Y") {
+			return "(\\d{4})";
+		}
+		return "(\\d{1,2})";
+	});
+	var match = new RegExp("^" + pattern + "$").exec(value);
+	if (!match) {
+		return null;
+	}
+	var parts = {};
+	for (var i = 0; i < tokens.length; i++) {
+		parts[tokens[i]] = match[i + 1];
+	}
+	return parts;
+}
+
+function extract_time_parts_by_format(value, format) {
+	var tokens = [];
+	var pattern = format.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/H|G|h|g|i|A|a/g, function (token) {
+		tokens.push(token);
+		if (token === "A" || token === "a") {
+			return "([aApP][mM])";
+		}
+		return "(\\d{1,2})";
+	});
+	var match = new RegExp("^" + pattern + "$").exec(value);
+	if (!match) {
+		return null;
+	}
+	var parts = {};
+	for (var i = 0; i < tokens.length; i++) {
+		parts[tokens[i]] = match[i + 1];
+	}
+	return parts;
+}
+
+function format_php_datetime(parts, format) {
+	return format.replace(/Y|m|d|n|j|H|G|h|g|i|A|a/g, function (token) {
+		var hour24 = parseInt(parts.hour, 10);
+		var hour12 = hour24 % 12;
+		if (hour12 === 0) {
+			hour12 = 12;
+		}
+		if (token === "Y") {
+			return parts.year;
+		}
+		if (token === "m") {
+			return parts.month;
+		}
+		if (token === "d") {
+			return parts.day;
+		}
+		if (token === "n") {
+			return String(parseInt(parts.month, 10));
+		}
+		if (token === "j") {
+			return String(parseInt(parts.day, 10));
+		}
+		if (token === "H") {
+			return parts.hour;
+		}
+		if (token === "G") {
+			return String(hour24);
+		}
+		if (token === "h") {
+			return ('0' + hour12).slice(-2);
+		}
+		if (token === "g") {
+			return String(hour12);
+		}
+		if (token === "i") {
+			return parts.minute;
+		}
+		if (token === "A") {
+			return hour24 >= 12 ? "PM" : "AM";
+		}
+		if (token === "a") {
+			return hour24 >= 12 ? "pm" : "am";
+		}
+		return token;
+	});
+}
+
+function parse_date_string_to_timestamp(value, format) {
+	var parts = extract_date_parts_by_format(value, format);
+	if (!parts || !parts.Y) {
+		return "";
+	}
+	var year = parseInt(parts.Y, 10);
+	var month = parseInt(parts.m || parts.n, 10);
+	var day = parseInt(parts.d || parts.j, 10);
+	if ([year, month, day].some(function (part) {
+			return Number.isNaN(part);
+		})) {
+		return "";
+	}
+	return Math.floor(new Date(year, month - 1, day).getTime() / 1000);
+}
+
+function parse_year_month_by_format(value, format) {
+	var parts = extract_date_parts_by_format(value, format);
+	if (!parts || !parts.Y) {
+		return null;
+	}
+	var month = parts.m || parts.n;
+	if (!month) {
+		return null;
+	}
+	return {
+		year: parts.Y,
+		month: ('0' + parseInt(month, 10)).slice(-2)
+	};
+}
+
+function parse_time_string_by_format(value, format) {
+	var parts = extract_time_parts_by_format(value, format);
+	if (!parts) {
+		return null;
+	}
+	var hour = parseInt(parts.H || parts.G || parts.h || parts.g, 10);
+	var minute = parseInt(parts.i, 10);
+	if ([hour, minute].some(function (part) {
+			return Number.isNaN(part);
+		})) {
+		return null;
+	}
+	if (parts.h || parts.g) {
+		var meridiem = (parts.A || parts.a || "").toLowerCase();
+		if (meridiem === "pm" && hour < 12) {
+			hour += 12;
+		}
+		if (meridiem === "am" && hour === 12) {
+			hour = 0;
+		}
+	}
+	return {
+		hour: hour,
+		minute: minute
+	};
+}
+
+function get_datetime_parts_in_timezone(timestamp, timezone) {
+	var formatter = new Intl.DateTimeFormat("en-CA", {
+		timeZone: timezone,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		hourCycle: "h23"
+	});
+	var rawParts = formatter.formatToParts(new Date(timestamp * 1000));
+	var parts = {};
+	rawParts.forEach(function (part) {
+		if (part.type !== "literal") {
+			parts[part.type] = part.value;
+		}
+	});
+	return {
+		year: parts.year,
+		month: parts.month,
+		day: parts.day,
+		hour: parts.hour,
+		minute: parts.minute
+	};
+}
+
+function datetime_strings_to_timestamp_in_timezone(dateText, timeText, timezone) {
+	var dateParts = extract_date_parts_by_format(dateText, get_server_date_format());
+	var timeParts = parse_time_string_by_format(timeText, get_server_time_format());
+
+	if (!dateParts || !timeParts) {
+		return "";
+	}
+
+	var year = parseInt(dateParts.Y, 10);
+	var month = parseInt(dateParts.m || dateParts.n, 10);
+	var day = parseInt(dateParts.d || dateParts.j, 10);
+	var hour = parseInt(timeParts.hour, 10);
+	var minute = parseInt(timeParts.minute, 10);
+
+	if ([year, month, day, hour, minute].some(function (value) {
+			return Number.isNaN(value);
+		})) {
+		return "";
+	}
+
+	var guessMs = Date.UTC(year, month - 1, day, hour, minute, 0);
+	for (var i = 0; i < 2; i++) {
+		var actualParts = get_datetime_parts_in_timezone(Math.floor(guessMs / 1000), timezone);
+		var desiredMs = Date.UTC(year, month - 1, day, hour, minute, 0);
+		var actualMs = Date.UTC(parseInt(actualParts.year, 10), parseInt(actualParts.month, 10) - 1, parseInt(actualParts.day, 10), parseInt(actualParts.hour, 10), parseInt(actualParts.minute, 10), 0);
+		guessMs += desiredMs - actualMs;
+	}
+
+	return Math.floor(guessMs / 1000);
+}
+
 function appcon(url, fd, nextfunction) {
 
 	// 同期処理のため
@@ -547,9 +872,8 @@ function appcon(url, fd, nextfunction) {
 	;
 	fd.append("_call_from", "appcon");
 
-	// Timezone
-	var intl_tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-	fd.append("_timezone", intl_tz);
+	// Server timezone
+	fd.append("_timezone", get_server_timezone());
 
 	if (url == ".php") {
 		alert("appcon: URLが不正です:" + url);
@@ -1910,9 +2234,8 @@ $("body").on("click", ".download-link", function (e) {
 	  fd.append("function", invokeFunction);
 	}
 
-	// Timezone
-	var intl_tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-	fd.append("_timezone", intl_tz);
+	// Server timezone
+	fd.append("_timezone", get_server_timezone());
 
 	// open_new_tab は blob URL を使わず、POSTをそのまま新規タブへ送る
 	// （PDFビューア保存時のUUID名化を回避）
@@ -2712,7 +3035,7 @@ $(function () {
 //-----------------------------------
 append_function_dialog("__all__", function (dialog_id, flg_window = false) {
 
-	var selected_lang = "jp";
+	var selected_lang = get_server_language_code();
 
 	// World_date_time
 	exec_world_datetime();
@@ -2733,7 +3056,9 @@ append_function_dialog("__all__", function (dialog_id, flg_window = false) {
 			$(this).parent().find(".datepicker").val("");
 			$(this).parent().find(".datepicker").trigger("change");
 		});
-		if (selected_lang == "jp") {
+		var serverDateFormat = get_server_date_format();
+		var datepickerFormat = php_date_format_to_datepicker_format(serverDateFormat);
+		if (selected_lang == "ja") {
 			$.datepicker.setDefaults({
 				closeText: "閉じる",
 				prevText: "&#x3C;前",
@@ -2747,7 +3072,27 @@ append_function_dialog("__all__", function (dialog_id, flg_window = false) {
 				dayNamesShort: ["日", "月", "火", "水", "木", "金", "土"],
 				dayNamesMin: ["日", "月", "火", "水", "木", "金", "土"],
 				weekHeader: "週",
-				dateFormat: "yy/mm/dd",
+				dateFormat: datepickerFormat,
+				firstDay: 0,
+				isRTL: false,
+				showMonthAfterYear: true,
+				yearSuffix: "年"
+			});
+		} else if (selected_lang == "zh") {
+			$.datepicker.setDefaults({
+				closeText: "关闭",
+				prevText: "上一月",
+				nextText: "下一月",
+				currentText: "今天",
+				monthNames: ["1月", "2月", "3月", "4月", "5月", "6月",
+					"7月", "8月", "9月", "10月", "11月", "12月"],
+				monthNamesShort: ["1月", "2月", "3月", "4月", "5月", "6月",
+					"7月", "8月", "9月", "10月", "11月", "12月"],
+				dayNames: ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"],
+				dayNamesShort: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+				dayNamesMin: ["日", "一", "二", "三", "四", "五", "六"],
+				weekHeader: "周",
+				dateFormat: datepickerFormat,
 				firstDay: 0,
 				isRTL: false,
 				showMonthAfterYear: true,
@@ -2767,7 +3112,7 @@ append_function_dialog("__all__", function (dialog_id, flg_window = false) {
 				dayNamesShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
 				dayNamesMin: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
 				weekHeader: "Week",
-				dateFormat: "yy/mm/dd",
+				dateFormat: datepickerFormat,
 				firstDay: 0,
 				isRTL: false,
 				showMonthAfterYear: false,
@@ -2813,8 +3158,9 @@ append_function_dialog("__all__", function (dialog_id, flg_window = false) {
 	});
 	$(dialog_id + ' .timepicker').each(function () {
 		var t = $(this).val();
+		var timeFormat = get_server_time_format();
 		$(this).timepicker({
-			timeFormat: 'H:mm',
+			timeFormat: php_time_format_to_timepicker_format(timeFormat),
 			interval: 60,
 			minTime: '0',
 			maxTime: '23',
@@ -3369,55 +3715,67 @@ function exec_world_datetime() {
 		element.after(wrapDiv);
 		wrapDiv.append(element);
 
-		// elementのvalueから日付と時間を分割して設定（ローカルタイムゾーンを考慮）
+		// elementのvalueから日付と時間を分割して設定（サーバータイムゾーン基準）
+		var timezone = get_server_timezone();
 		if (element.is('input')) {
 			if (element.val() > 0) {
-				var datetime = new Date(element.val() * 1000);
+				var datetime = get_datetime_parts_in_timezone(parseInt(element.val(), 10), timezone);
 			} else {
 				var datetime = null;
 			}
 		} else {
 			if (element.html() > 0) {
-				var datetime = new Date(element.html() * 1000);
+				var datetime = get_datetime_parts_in_timezone(parseInt(element.html(), 10), timezone);
 			} else {
 				var datetime = null;
 			}
 		}
 
 		if (datetime !== null) {
-			var year = datetime.getFullYear();
-			var month = ('0' + (datetime.getMonth() + 1)).slice(-2);
-			var day = ('0' + datetime.getDate()).slice(-2);
-			var hours = ('0' + datetime.getHours()).slice(-2);
-			var minutes = ('0' + datetime.getMinutes()).slice(-2);
+			var year = datetime.year;
+			var month = datetime.month;
+			var day = datetime.day;
+			var hours = datetime.hour;
+			var minutes = datetime.minute;
 		}
-		var timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+		var dateFormat = get_server_date_format();
+		var datetimeFormat = get_server_datetime_format();
+		var timeFormat = get_server_time_format();
+		var datetimeParts = null;
+		if (datetime !== null) {
+			datetimeParts = {
+				year: year,
+				month: month,
+				day: day,
+				hour: hours,
+				minute: minutes
+			};
+		}
 
 		if (element.is('input')) {
 			// テキストボックスを２つ追加する
-			var tag_date = $('<input type="text" class="datepicker" placeholder="yyyy/mm/dd">');
-			var tag_time = $('<input type="text" class="timepicker" placeholder="hh:mm">');
-			var tag_timezone = $(`<span>${timezone}</span>`);
+			var tag_date = $('<input type="text" class="datepicker" placeholder="' + build_placeholder_from_php_date_format(dateFormat) + '">');
+			var tag_time = $('<input type="text" class="timepicker" placeholder="' + build_placeholder_from_php_date_format(timeFormat) + '">');
 			wrapDiv.append(tag_date);
 			wrapDiv.append(tag_time);
-			wrapDiv.append(tag_timezone);
-			if (datetime !== null) {
-				tag_date.val(year + '/' + month + '/' + day);
-				tag_time.val(hours + ':' + minutes);
+			if (datetimeParts !== null) {
+				tag_date.val(format_php_datetime(datetimeParts, dateFormat));
+				tag_time.val(format_php_datetime(datetimeParts, timeFormat));
 			} else {
 				tag_date.val("");
-				tag_time.val("00:00");
+				tag_time.val(format_php_datetime({
+					year: "2000",
+					month: "01",
+					day: "01",
+					hour: "00",
+					minute: "00"
+				}, timeFormat));
 			}
 
-			// tag_date, tag_timeに変化があったら、elementのvalueを更新（UTCに変換）
+			// tag_date, tag_timeに変化があったら、elementのvalueを更新（サーバータイムゾーン基準で変換）
 			function updateElementValue() {
-				var dateParts = tag_date.val().split('/');
-				var timeParts = tag_time.val().split(':');
-
-				if (dateParts.length === 3 && timeParts.length === 2) {
-					// 新しい日付と時間のローカルタイムを取得
-					var newDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], timeParts[0], timeParts[1]);
-					var newTimestamp = Math.floor(newDate.getTime() / 1000);
+				var newTimestamp = datetime_strings_to_timestamp_in_timezone(tag_date.val(), tag_time.val(), timezone);
+				if (newTimestamp !== "") {
 					element.val(newTimestamp);
 				} else {
 					element.val("");
@@ -3428,7 +3786,7 @@ function exec_world_datetime() {
 			tag_time.on('change', updateElementValue);
 		} else {
 			if (datetime !== null) {
-				var tag_p = $(`<div class="datetime_timestamp">${year}/${month}/${day} ${hours}:${minutes} <div class="datetime_timezone">(${timezone})</div></div>`);
+				var tag_p = $(`<p class="datetime_timestamp">${format_php_datetime(datetimeParts, datetimeFormat)}</p>`);
 			} else {
 				var tag_p = "";
 			}
