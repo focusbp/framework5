@@ -89,6 +89,7 @@ function fbp_register_php_compat_modifiers($smarty): void {
 		'str_replace' => 'fbp_smarty_phpfunc_str_replace',
 		'ucfirst' => 'fbp_smarty_phpfunc_ucfirst',
 		'implode' => 'fbp_smarty_phpfunc_implode',
+		'array_merge' => 'fbp_smarty_phpfunc_array_merge',
 		'serialize' => 'fbp_smarty_phpfunc_serialize',
 		'strtotime' => 'fbp_smarty_phpfunc_strtotime',
 		'count' => 'fbp_smarty_phpfunc_count',
@@ -166,6 +167,16 @@ function fbp_smarty_phpfunc_implode($separator, $array = null) {
 		return "";
 	}
 	return implode((string) $separator, $array);
+}
+
+function fbp_smarty_phpfunc_array_merge($value, ...$arrays) {
+	$result = is_array($value) ? $value : [];
+	foreach ($arrays as $array) {
+		if (is_array($array)) {
+			$result = array_merge($result, $array);
+		}
+	}
+	return $result;
 }
 
 function fbp_smarty_phpfunc_serialize($value) {

@@ -521,8 +521,6 @@ class DefaultExtension extends Base {
 	 */
 	public function smarty_modifier_explode($separator, $string, ?int $limit = null)
 	{
-		trigger_error("Using explode is deprecated. " .
-			"Use split, using the array first, separator second.", E_USER_DEPRECATED);
 		// provide $string default to prevent deprecation errors in PHP >=8.1
 		return explode($separator, $string ?? '', $limit ?? PHP_INT_MAX);
 	}

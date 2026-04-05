@@ -3126,14 +3126,21 @@ append_function_dialog("__all__", function (dialog_id, flg_window = false) {
 			yearRange: "1930:+30",
 			beforeShow: function (input, inst) {
 				var cal = inst.dpDiv;
-				var top = dp_txt.offset().top - $(window).scrollTop() + dp_txt.outerHeight();
-				var left = dp_txt.offset().left;
-
-				if (top + 300 > $(window).innerHeight()) {
-					top = top - dp_txt.outerHeight() - 300;
-				}
-
 				setTimeout(function () {
+					var rect = input.getBoundingClientRect();
+					var top = window.scrollY + rect.bottom;
+					var left = window.scrollX + rect.left;
+					var calendarHeight = cal.outerHeight() || 0;
+					var viewportTop = $(window).scrollTop();
+					var viewportBottom = viewportTop + $(window).innerHeight();
+
+					if (top + calendarHeight > viewportBottom) {
+						top = window.scrollY + rect.top - calendarHeight;
+					}
+					if (top < viewportTop) {
+						top = viewportTop + 8;
+					}
+
 					cal.css({
 						'top': top,
 						'left': left
