@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/shared.fields_render.php';
+
 /**
  * {fields_form_original
  *   name="field_name"            // required
@@ -56,10 +58,10 @@ function smarty_function_fields_form_original(array $params, Smarty_Internal_Tem
 	];
 
 	// サブテンプレート変数（fields_form_direct と同じ流れ）
-	$template->assign('row', $row);
-	$template->assign('field', $field);
-
-	$inner = $template->fetch($file);
+	$inner = fields_render_partial_template($template, $file, [
+		'row' => $row,
+		'field' => $field,
+	]);
 
 	// ラップ（fields_form_direct と同系）
 	$out = '<div class="'

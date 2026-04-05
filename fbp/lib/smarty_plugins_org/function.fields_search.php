@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/shared.fields_render.php';
+
 /**
  * {fields_search
  *    field_group="group_search"           // 既存のフィールド定義配列 or そのテンプレ変数名
@@ -93,10 +95,10 @@ function smarty_function_fields_search(array $params, Smarty_Internal_Template $
 
 		// 検索フォームでは required は通常付けないが、
 		// __item_search.tpl が判断できるように元データはそのまま渡す
-		$template->assign('row', $row);
-		$template->assign('field', $field);
-
-		$inner = $template->fetch($file);
+			$inner = fields_render_partial_template($template, $file, [
+				'row' => $row,
+				'field' => $field,
+			]);
 
 		$out .= '<div class="search_form_item '
 			. htmlspecialchars($fieldPref, ENT_QUOTES, 'UTF-8')

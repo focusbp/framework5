@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/shared.fields_render.php';
+
 /**
  * {fields_view_direct
  *    field_group="group1"                 // 既存互換: フィールド定義配列 or そのテンプレ変数名
@@ -106,10 +108,10 @@ function smarty_function_fields_view_direct(array $params, Smarty_Internal_Templ
 		$paramName = (is_array($field) && isset($field['parameter_name'])) ? (string) $field['parameter_name'] : '';
 		$paramTitle = (is_array($field) && isset($field['parameter_title'])) ? (string) $field['parameter_title'] : '';
 
-		$template->assign('row', $row);
-		$template->assign('field', $field);
-
-		$inner = $template->fetch($file);
+			$inner = fields_render_partial_template($template, $file, [
+				'row' => $row,
+				'field' => $field,
+			]);
 
 		// ★ラッパーの class を決定
 		if ($wrapperClass !== null && $wrapperClass !== '') {

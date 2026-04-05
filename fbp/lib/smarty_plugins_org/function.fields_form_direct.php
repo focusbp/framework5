@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/shared.fields_render.php';
+
 /**
  * {fields_edit
  *    field_group="group_line_member"      // 既存互換: 配列 or 変数名
@@ -108,11 +110,11 @@ function smarty_function_fields_form_direct(array $params, Smarty_Internal_Templ
 		$paramName = (is_array($field) && isset($field['parameter_name'])) ? (string) $field['parameter_name'] : '';
 
 		// サブテンプレート変数
-		$template->assign('row', $row);
-		$template->assign('field', $field);
-
-		// パーツ描画
-		$inner = $template->fetch($file);
+			// パーツ描画
+			$inner = fields_render_partial_template($template, $file, [
+				'row' => $row,
+				'field' => $field,
+			]);
 
 		// ラップ
 		$out .= '<div class="'
