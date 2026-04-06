@@ -1213,8 +1213,5 @@
   "orders_picker_test.description": "Dropdown で表示対象を選び、後表示の picker 挙動を確認します。",
   "orders_picker_test.target": "表示対象",
   "orders_picker_test.select_placeholder": "選択してください",
-  "orders_picker_test.original_time_picker": "Original Time Picker",
-  "orders_picker_test.show_all": "すべて表示",
-  "orders_picker_test.original_time_placeholder": "時刻を選択",
-  "orders_picker_test.original_time_help": "時と分を分けた独自 picker です。"
+  "orders_picker_test.show_all": "すべて表示"
 }

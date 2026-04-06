@@ -411,7 +411,7 @@ function open_original_time_picker_panel(input) {
 			'</div>';
 	}
 	var panel = $(
-		'<div class="fbp-original-time-panel" style="background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,0.18);padding:14px;min-width:260px;">' +
+		'<div class="fbp-original-time-panel" style="background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,0.18);padding:14px;min-width:260px;max-width:320px;">' +
 			'<div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px;font-size:12px;color:#475569;gap:8px;">' +
 				'<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="fbp_original_time_step" value="10" checked>10</label>' +
 				'<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="fbp_original_time_step" value="5">5</label>' +
@@ -436,7 +436,6 @@ function open_original_time_picker_panel(input) {
 	);
 
 	$("body").append(panel);
-	panel.css("width", Math.max(input.outerWidth(), 260));
 	panel.find(".fbp-original-time-hour").val(hourValue);
 	panel.find(".fbp-original-time-meridiem").val(meridiemValue);
 
@@ -489,6 +488,178 @@ function open_original_time_picker_panel(input) {
 		});
 	}, 0);
 }
+
+function get_locale_weekday_names(locale) {
+	var weekdayNames = [];
+	for (var dayIndex = 0; dayIndex < 7; dayIndex++) {
+		var date = new Date(Date.UTC(2024, 0, 7 + dayIndex));
+		weekdayNames.push(new Intl.DateTimeFormat(locale, {
+			weekday: "short",
+			timeZone: "UTC"
+		}).format(date));
+	}
+	return weekdayNames;
+}
+
+function close_original_datepicker_panel() {
+	$(".fbp-original-datepicker-panel").remove();
+	$(document).off("mousedown.originalDatepicker");
+}
+
+function open_original_datepicker_panel(input) {
+	close_original_datepicker_panel();
+
+	var dateFormat = get_server_date_format();
+	var locale = get_server_locale_code();
+	var currentValue = input.val();
+	var parsed = extract_date_parts_by_format(currentValue, dateFormat);
+	var baseDate = new Date();
+	var selectedYear = null;
+	var selectedMonth = null;
+	var selectedDay = null;
+
+	if (parsed && parsed.Y && (parsed.m || parsed.n) && (parsed.d || parsed.j)) {
+		selectedYear = parseInt(parsed.Y, 10);
+		selectedMonth = parseInt(parsed.m || parsed.n, 10);
+		selectedDay = parseInt(parsed.d || parsed.j, 10);
+		baseDate = new Date(selectedYear, selectedMonth - 1, selectedDay);
+	}
+
+	var viewYear = baseDate.getFullYear();
+	var viewMonth = baseDate.getMonth() + 1;
+	var maxYear = new Date().getFullYear() + 30;
+	var monthNames = [];
+	for (var monthIndex = 0; monthIndex < 12; monthIndex++) {
+		monthNames.push(new Intl.DateTimeFormat(locale, {
+			month: "long",
+			timeZone: "UTC"
+		}).format(new Date(Date.UTC(2000, monthIndex, 1))));
+	}
+	var weekdayNames = get_locale_weekday_names(locale);
+	var panel = $('<div class="fbp-original-datepicker-panel" style="background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,0.18);padding:14px;min-width:372px;max-width:372px;"></div>');
+
+	function renderCalendar() {
+		panel.empty();
+		var yearOptions = "";
+		for (var yearOption = 1930; yearOption <= maxYear; yearOption++) {
+			yearOptions += '<option value="' + yearOption + '"' + (yearOption === viewYear ? ' selected="selected"' : '') + '>' + yearOption + '</option>';
+		}
+		var monthOptions = "";
+		for (var monthOption = 1; monthOption <= 12; monthOption++) {
+			monthOptions += '<option value="' + monthOption + '"' + (monthOption === viewMonth ? ' selected="selected"' : '') + '>' + escapeHtml(monthNames[monthOption - 1]) + '</option>';
+		}
+
+		var header = $(
+			'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;">' +
+				'<button type="button" class="fbp-original-datepicker-prev" style="min-width:36px;margin-top:0;margin-left:0;">&lt;</button>' +
+				'<div style="flex:1;display:flex;gap:8px;align-items:center;">' +
+					'<select class="fbp-original-datepicker-year" style="flex:1;min-width:0;">' + yearOptions + '</select>' +
+					'<select class="fbp-original-datepicker-month" style="flex:1;min-width:0;">' + monthOptions + '</select>' +
+				'</div>' +
+				'<button type="button" class="fbp-original-datepicker-next" style="min-width:36px;margin-top:0;margin-left:0;">&gt;</button>' +
+			'</div>'
+		);
+		panel.append(header);
+
+		var weekRow = $('<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;"></div>');
+		for (var weekdayIndex = 0; weekdayIndex < 7; weekdayIndex++) {
+			weekRow.append('<div style="text-align:center;font-size:12px;color:#64748b;padding:4px 0;">' + escapeHtml(weekdayNames[weekdayIndex]) + '</div>');
+		}
+		panel.append(weekRow);
+
+		var daysGrid = $('<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-right:20px;"></div>');
+		var firstDayOfMonth = new Date(viewYear, viewMonth - 1, 1);
+		var startWeekday = firstDayOfMonth.getDay();
+		var daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
+		var totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
+		var today = new Date();
+		var todayYear = today.getFullYear();
+		var todayMonth = today.getMonth() + 1;
+		var todayDay = today.getDate();
+
+		for (var cellIndex = 0; cellIndex < totalCells; cellIndex++) {
+			var dayNumber = cellIndex - startWeekday + 1;
+			if (dayNumber < 1 || dayNumber > daysInMonth) {
+				daysGrid.append('<div style="height:34px;"></div>');
+				continue;
+			}
+
+			var isSelected = selectedYear === viewYear && selectedMonth === viewMonth && selectedDay === dayNumber;
+			var isToday = todayYear === viewYear && todayMonth === viewMonth && todayDay === dayNumber;
+			var borderColor = isSelected ? '#2563eb' : (isToday ? '#f59e0b' : '#cbd5e1');
+			var backgroundColor = isSelected ? '#dbeafe' : (isToday ? '#fef3c7' : '#fff');
+			var dayButton = $('<button type="button" class="fbp-original-datepicker-day" style="width:100%;height:34px;padding:0;box-sizing:border-box;border:1px solid ' + borderColor + ';background:' + backgroundColor + ';border-radius:8px;color:#0f172a;">' + dayNumber + '</button>');
+			dayButton.attr("data-day", dayNumber);
+			daysGrid.append(dayButton);
+		}
+		panel.append(daysGrid);
+	}
+
+	function moveMonth(diff) {
+		viewMonth += diff;
+		if (viewMonth < 1) {
+			viewMonth = 12;
+			viewYear -= 1;
+		} else if (viewMonth > 12) {
+			viewMonth = 1;
+			viewYear += 1;
+		}
+		renderCalendar();
+		bindCalendarEvents();
+		setTimeout(function () {
+			reposition_fixed_panel_below_input(panel, input.get(0));
+		}, 0);
+	}
+
+	function bindCalendarEvents() {
+		panel.find(".fbp-original-datepicker-prev").off("click").on("click", function () {
+			moveMonth(-1);
+		});
+		panel.find(".fbp-original-datepicker-next").off("click").on("click", function () {
+			moveMonth(1);
+		});
+		panel.find(".fbp-original-datepicker-year").off("change").on("change", function () {
+			viewYear = parseInt($(this).val(), 10);
+			renderCalendar();
+			bindCalendarEvents();
+		});
+		panel.find(".fbp-original-datepicker-month").off("change").on("change", function () {
+			viewMonth = parseInt($(this).val(), 10);
+			renderCalendar();
+			bindCalendarEvents();
+		});
+		panel.find(".fbp-original-datepicker-day").off("click").on("click", function () {
+			var pickedDay = parseInt($(this).attr("data-day"), 10);
+			input.val(format_php_datetime({
+				year: String(viewYear),
+				month: String(viewMonth).padStart(2, "0"),
+				day: String(pickedDay).padStart(2, "0"),
+				hour: "00",
+				minute: "00"
+			}, dateFormat)).trigger("change");
+			close_original_datepicker_panel();
+		});
+	}
+
+	renderCalendar();
+	bindCalendarEvents();
+	$("body").append(panel);
+	setTimeout(function () {
+		reposition_fixed_panel_below_input(panel, input.get(0));
+	}, 0);
+
+	setTimeout(function () {
+		$(document).on("mousedown.originalDatepicker", function (e) {
+			if ($(e.target).closest(".fbp-original-datepicker-panel").length > 0) {
+				return;
+			}
+			if ($(e.target).closest(".datepicker").length > 0 || $(e.target).closest(".datepicker_clear").length > 0) {
+				return;
+			}
+			close_original_datepicker_panel();
+		});
+	}, 0);
+}
 (function ($) {
 	$.fn.year_month_picker = function () {
 		return this.each(function () {
@@ -535,8 +706,8 @@ function open_original_time_picker_panel(input) {
 				html += "</div>";
 				html += "</div>";
 				html += '<div style="display:flex;gap:8px;justify-content:flex-end;">';
-				html += '<button type="button" class="picker_blank">' + escapeHtml(get_client_localized_text("year_month_clear")) + '</button>';
-				html += '<button type="button" class="picker_set">' + escapeHtml(get_client_localized_text("year_month_set")) + '</button>';
+				html += '<button type="button" class="picker_blank" style="margin-top:0;">' + escapeHtml(get_client_localized_text("year_month_clear")) + '</button>';
+				html += '<button type="button" class="picker_set" style="margin-top:0;">' + escapeHtml(get_client_localized_text("year_month_set")) + '</button>';
 				html += '</div>';
 				html += '<p class="picker_error" style="margin:8px 0 0 0;color:#dc2626;font-size:12px;"></p>';
 				html += '</div>';
@@ -3392,66 +3563,16 @@ $(function () {
 //-----------------------------------
 append_function_dialog("__all__", function (dialog_id, flg_window = false) {
 
-	var selected_lang = get_server_language_code();
-
 	// World_date_time
 	exec_world_datetime();
 
 
 	// Datepicker
-	function reposition_datepicker_panel(inputElement, inst) {
-		var cal = inst.dpDiv;
-		var rect = inputElement.getBoundingClientRect();
-		var margin = 8;
-		var viewportTop = 0;
-		var viewportLeft = 0;
-		var viewportBottom = $(window).innerHeight();
-		var viewportRight = $(window).innerWidth();
-		var calendarHeight = cal.outerHeight() || 0;
-		var calendarWidth = cal.outerWidth() || 0;
-		var spaceBelow = viewportBottom - rect.bottom;
-		var spaceAbove = rect.top;
-		var top;
-		if (spaceBelow >= calendarHeight + margin) {
-			top = rect.bottom;
-		} else if (spaceAbove >= calendarHeight + margin) {
-			top = rect.top - calendarHeight;
-		} else if (spaceBelow >= spaceAbove) {
-			top = viewportBottom - calendarHeight - margin;
-		} else {
-			top = viewportTop + margin;
-		}
-
-		var left = rect.left;
-		if (left + calendarWidth > viewportRight - margin) {
-			left = viewportRight - calendarWidth - margin;
-		}
-		if (left < viewportLeft + margin) {
-			left = viewportLeft + margin;
-		}
-
-		var dialogZ = parseInt($(inputElement).closest(".multi_dialog").css("z-index"), 10);
-		if (isNaN(dialogZ)) {
-			dialogZ = 10000;
-		}
-		if (top + calendarHeight > viewportBottom - margin) {
-			top = viewportBottom - calendarHeight - margin;
-		}
-		if (top < viewportTop + margin) {
-			top = viewportTop + margin;
-		}
-
-		cal.css({
-			'position': 'fixed',
-			'top': top,
-			'left': left,
-			'z-index': dialogZ + 2
-		});
-	}
 	function initialize_datepicker_input(input) {
-		if (input.hasClass("hasDatepicker")) {
+		if (input.data("originalDatepickerInitialized")) {
 			return;
 		}
+		input.data("originalDatepickerInitialized", true);
 
 		input.prop('readOnly', true);
 		if (!input.parent().hasClass("datepicker_area")) {
@@ -3464,99 +3585,14 @@ append_function_dialog("__all__", function (dialog_id, flg_window = false) {
 		input.parent().find(".datepicker_clear").off("click.datepickerClear").on("click.datepickerClear", function () {
 			$(this).parent().find(".datepicker").val("");
 			$(this).parent().find(".datepicker").trigger("change");
+			close_original_datepicker_panel();
 		});
-		var serverDateFormat = get_server_date_format();
-		var datepickerFormat = php_date_format_to_datepicker_format(serverDateFormat);
-		if (selected_lang == "ja") {
-			$.datepicker.setDefaults({
-				closeText: "閉じる",
-				prevText: "&#x3C;前",
-				nextText: "次&#x3E;",
-				currentText: "今日",
-				monthNames: ["1月", "2月", "3月", "4月", "5月", "6月",
-					"7月", "8月", "9月", "10月", "11月", "12月"],
-				monthNamesShort: ["1月", "2月", "3月", "4月", "5月", "6月",
-					"7月", "8月", "9月", "10月", "11月", "12月"],
-				dayNames: ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"],
-				dayNamesShort: ["日", "月", "火", "水", "木", "金", "土"],
-				dayNamesMin: ["日", "月", "火", "水", "木", "金", "土"],
-				weekHeader: "週",
-				dateFormat: datepickerFormat,
-				firstDay: 0,
-				isRTL: false,
-				showMonthAfterYear: true,
-				yearSuffix: "年"
-			});
-		} else if (selected_lang == "zh") {
-			$.datepicker.setDefaults({
-				closeText: "关闭",
-				prevText: "上一月",
-				nextText: "下一月",
-				currentText: "今天",
-				monthNames: ["1月", "2月", "3月", "4月", "5月", "6月",
-					"7月", "8月", "9月", "10月", "11月", "12月"],
-				monthNamesShort: ["1月", "2月", "3月", "4月", "5月", "6月",
-					"7月", "8月", "9月", "10月", "11月", "12月"],
-				dayNames: ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"],
-				dayNamesShort: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
-				dayNamesMin: ["日", "一", "二", "三", "四", "五", "六"],
-				weekHeader: "周",
-				dateFormat: datepickerFormat,
-				firstDay: 0,
-				isRTL: false,
-				showMonthAfterYear: true,
-				yearSuffix: "年"
-			});
-		} else {
-			$.datepicker.setDefaults({
-				closeText: "Close",
-				prevText: "&#x3C;Prev",
-				nextText: "Next&#x3E;",
-				currentText: "Today",
-				monthNames: ["January", "February", "March", "April", "May", "June",
-					"July", "August", "Septempber", "October", "November", "December"],
-				monthNamesShort: ["Jan", "Feb", "Mar", "Apl", "May", "June",
-					"July", "Aug", "Sept", "Oct", "Nov", "Dec"],
-				dayNames: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-				dayNamesShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-				dayNamesMin: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
-				weekHeader: "Week",
-				dateFormat: datepickerFormat,
-				firstDay: 0,
-				isRTL: false,
-				showMonthAfterYear: false,
-				yearSuffix: ""
-			});
-		}
-		input.datepicker({
-			changeMonth: true,
-			changeYear: true,
-			yearRange: "1930:+30",
-				beforeShow: function (inputElement, inst) {
-					setTimeout(function () {
-						reposition_datepicker_panel(inputElement, inst);
-					}, 10);
-				},
-				onChangeMonthYear: function (year, month, inst) {
-					setTimeout(function () {
-						reposition_datepicker_panel(input, inst);
-					}, 10);
-				}
-			});
 	}
 	$(dialog_id).off("click.datepickerInit focus.datepickerInit", ".datepicker")
 		.on("click.datepickerInit focus.datepickerInit", ".datepicker", function () {
 			var c = $(this);
 			initialize_datepicker_input(c);
-			if (c.hasClass("hasDatepicker")) {
-				c.datepicker("show");
-				setTimeout(function () {
-					var inst = c.data("datepicker");
-					if (inst) {
-						reposition_datepicker_panel(c.get(0), inst);
-					}
-				}, 10);
-			}
+			open_original_datepicker_panel(c);
 		});
 	$(dialog_id + " .datepicker").each(function () {
 		if ($(this).is(":visible")) {

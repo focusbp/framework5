@@ -7,7 +7,6 @@
 <script src="js/chart.min.js"></script>
 <script src="js/select2.min.js"></script>
 <script src="js/js.cookie.js"></script>
-<script src="js/jquery.timepicker.min.js"></script>
 <script src="js/player.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css">
 <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>

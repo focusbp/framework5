@@ -975,11 +975,19 @@ section {
 	color:#fff;
 }
 
-.year_month_picker_panel .picker_blank, .year_month_picker_panel .picker_set, .year_month_picker_panel .picker_cancel {
-    float: right;
-    text-align: center;
-    padding: 8px 12px;
+.year_month_picker_panel .picker_blank,
+.year_month_picker_panel .picker_set,
+.year_month_picker_panel .picker_cancel,
+.fbp-original-time-panel .fbp-original-time-clear,
+.fbp-original-time-panel .fbp-original-time-set {
+	float: none;
+	text-align: center;
+	padding: 8px 12px;
 	white-space: nowrap;
+	margin-top: 0;
+	margin-left: 0;
+	font-size: 16px;
+	line-height: 1;
 }
 
 .year_month_picker_panel .picker_error {

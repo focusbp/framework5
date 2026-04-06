@@ -1213,8 +1213,5 @@
   "orders_picker_test.description": "Select what to display from the dropdown and verify picker behavior after showing it.",
   "orders_picker_test.target": "Display Target",
   "orders_picker_test.select_placeholder": "Please select",
-  "orders_picker_test.original_time_picker": "Original Time Picker",
-  "orders_picker_test.show_all": "Show All",
-  "orders_picker_test.original_time_placeholder": "Select time",
-  "orders_picker_test.original_time_help": "A custom picker that separates hour and minute."
+  "orders_picker_test.show_all": "Show All"
 }

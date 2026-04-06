@@ -7,7 +7,6 @@
 			<option value="">{t key="orders_picker_test.select_placeholder"}</option>
 			<option value="date">Datepicker</option>
 			<option value="time">Timepicker</option>
-			<option value="original_time">{t key="orders_picker_test.original_time_picker"}</option>
 			<option value="year_month">Year Month Picker</option>
 			<option value="all">{t key="orders_picker_test.show_all"}</option>
 		</select>
@@ -21,12 +20,6 @@
 	<div class="orders_picker_test_field orders_picker_test_time" style="display:none;margin-bottom:14px;">
 		<p style="font-weight:bold;margin:0 0 6px 0;">Timepicker</p>
 		<input type="text" name="test_time" class="timepicker" placeholder="時間を選択">
-	</div>
-
-	<div class="orders_picker_test_field orders_picker_test_original_time" style="display:none;margin-bottom:14px;">
-		<p style="font-weight:bold;margin:0 0 6px 0;">{t key="orders_picker_test.original_time_picker"}</p>
-		<input type="text" name="test_original_time" class="orders-original-time-input" placeholder="{t key='orders_picker_test.original_time_placeholder'}" readonly>
-		<p style="margin:6px 0 0 0;font-size:12px;color:#64748b;">{t key="orders_picker_test.original_time_help"}</p>
 	</div>
 
 	<div class="orders_picker_test_field orders_picker_test_year_month" style="display:none;margin-bottom:14px;">
