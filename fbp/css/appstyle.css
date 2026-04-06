@@ -1379,20 +1379,30 @@ form p {
 
 .wrap_datetime {
 	position: relative;
-	display: block;
+	display: flex;
     overflow: hidden;
 }
 
+.wrap_datetime .datepicker_area {
+	width: 50% !important;
+	display: block !important;
+	flex: 0 0 50%;
+	box-sizing: border-box;
+}
+
 .wrap_datetime .datepicker {
-	width: 50%;
-    float: left;
+	width: 100%;
 	padding-left:20px;
+	box-sizing: border-box;
+	float: none;
 }
 
 .wrap_datetime .timepicker {
-	width:50%;
-	float:left;
+	width: 50%;
+	flex: 0 0 50%;
 	border-left:0px;
+	box-sizing: border-box;
+	float: none;
 }
 
 .wrap_datetime span {

@@ -34,7 +34,12 @@
 						</tr>
 						<tr>
 							<td>{t key="setting.locale_code"}</td>
-							<td>{html_options name="locale_code" options=$arr_locale_code selected=$setting.locale_code}</td>
+							<td>
+								{html_options name="locale_code" options=$arr_locale_code selected=$setting.locale_code}
+								<div style="margin-top:6px;">
+									<a href="#" class="setting_apply_locale_preset_link" style="color:#2563eb;">{t key="setting.apply_locale_preset_link"}</a>
+								</div>
+							</td>
 						</tr>
 						<tr>
 							<th>{t key="setting.timezone_section"}</th>
@@ -377,8 +382,35 @@
 		$("#setting_tabs").tabs();
 
 		var localeOptionMap = {$locale_option_map_json nofilter};
+		var localePresetMap = {$locale_preset_map_json nofilter};
+		var presetFieldLabelMap = {$preset_field_label_map_json nofilter};
 		var $languageSelect = $('select[name="framework_language_code"]');
 		var $localeSelect = $('select[name="locale_code"]');
+		var presetFieldNames = [
+			"date_format",
+			"datetime_format",
+			"year_month_format",
+			"number_decimal_separator",
+			"number_thousands_separator",
+			"currency",
+			"currency_symbol",
+			"currency_symbol_position",
+			"currency_decimal_digits"
+		];
+		var getField = function (fieldName) {
+			return $('[name="' + fieldName + '"]');
+		};
+
+		var getDefaultLocaleForLanguage = function (languageCode) {
+			var options = localeOptionMap[languageCode] || {};
+			var firstValue = "";
+			$.each(options, function (value) {
+				if (firstValue === "") {
+					firstValue = value;
+				}
+			});
+			return firstValue;
+		};
 
 		var refreshLocaleOptions = function () {
 			var languageCode = $languageSelect.val() || "en";
@@ -401,7 +433,70 @@
 			}
 		};
 
-		$languageSelect.on("change", refreshLocaleOptions);
+		var buildPresetChanges = function (localeCode) {
+			var preset = localePresetMap[localeCode] || null;
+			var changes = [];
+			if (!preset) {
+				return changes;
+			}
+
+			changes.push({
+				field: "locale_code",
+				label: presetFieldLabelMap.locale_code || "Locale Code",
+				value: localeCode
+			});
+
+			$.each(presetFieldNames, function (_, fieldName) {
+				var $field = getField(fieldName);
+				if ($field.length === 0) {
+					return;
+				}
+				var currentValue = String($field.val() === undefined ? "" : $field.val());
+				var nextValue = String(preset[fieldName] === undefined ? "" : preset[fieldName]);
+				if (currentValue !== nextValue) {
+					changes.push({
+						field: fieldName,
+						label: presetFieldLabelMap[fieldName] || fieldName,
+						value: nextValue
+					});
+				}
+			});
+
+			return changes;
+		};
+
+		var applyPresetChanges = function (changes) {
+			$.each(changes, function (_, change) {
+				getField(change.field).val(change.value);
+			});
+		};
+
+		var confirmAndApplyPreset = function (localeCode) {
+			var changes = buildPresetChanges(localeCode);
+			if (changes.length === 0) {
+				return;
+			}
+			applyPresetChanges(changes);
+		};
+
+		$languageSelect.on("change", function () {
+			refreshLocaleOptions();
+		});
+
+		$(".setting_apply_locale_preset_link").on("click", function (e) {
+			e.preventDefault();
+			var localeCode = $localeSelect.val() || "";
+			if (!localeCode) {
+				var languageCode = $languageSelect.val() || "en";
+				localeCode = getDefaultLocaleForLanguage(languageCode);
+			}
+			if (!localeCode) {
+				return false;
+			}
+			confirmAndApplyPreset(localeCode);
+			return false;
+		});
+
 		refreshLocaleOptions();
 	});
 </script>

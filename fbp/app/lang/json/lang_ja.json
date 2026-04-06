@@ -439,6 +439,7 @@
   "setting.square_result": "Square 結果",
   "setting.notification.login_logo_deleted": "ログインロゴを削除しました。",
   "setting.notification.favicon_deleted": "Favicon を削除しました。",
+  "setting.apply_locale_preset_link": "日付/数字/通貨にプリセットを適用する",
   "setting.notification.saved": "保存しました",
   "setting.json_upload": "システム設定 JSON アップロード",
   "common.back": "前へ",
@@ -1208,5 +1209,12 @@
   "wizard.field_mode.auto": "Codexに任せる",
   "wizard.create_mode.child": "子ノート追加",
   "wizard.create_mode.normal": "ノート追加",
-  "common.configured": "設定済み"
+  "common.configured": "設定済み",
+  "orders_picker_test.description": "Dropdown で表示対象を選び、後表示の picker 挙動を確認します。",
+  "orders_picker_test.target": "表示対象",
+  "orders_picker_test.select_placeholder": "選択してください",
+  "orders_picker_test.original_time_picker": "Original Time Picker",
+  "orders_picker_test.show_all": "すべて表示",
+  "orders_picker_test.original_time_placeholder": "時刻を選択",
+  "orders_picker_test.original_time_help": "時と分を分けた独自 picker です。"
 }

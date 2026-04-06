@@ -439,6 +439,7 @@
     "setting.square_result": "Square 结果",
     "setting.notification.login_logo_deleted": "登录 Logo 已删除。",
     "setting.notification.favicon_deleted": "favicon 已删除。",
+    "setting.apply_locale_preset_link": "将预设应用到日期/数字/货币",
     "setting.notification.saved": "已保存。",
     "setting.json_upload": "系统设置 JSON 上传",
     "common.back": "返回",
@@ -1199,5 +1200,12 @@
     "login.dialog.language_locale": "语言和区域设置",
     "login.language_locale_help": "请选择初始设置中要使用的语言和区域设置。",
     "login.validation.initial_account_session_expired": "初始账号信息已丢失，请从头重新开始。",
-    "wizard.home.group.embed_app.item_code": "显示嵌入代码"
+    "wizard.home.group.embed_app.item_code": "显示嵌入代码",
+    "orders_picker_test.description": "请从下拉框选择显示对象，并确认显示后的 picker 行为。",
+    "orders_picker_test.target": "显示对象",
+    "orders_picker_test.select_placeholder": "请选择",
+    "orders_picker_test.original_time_picker": "Original Time Picker",
+    "orders_picker_test.show_all": "全部显示",
+    "orders_picker_test.original_time_placeholder": "选择时间",
+    "orders_picker_test.original_time_help": "这是一个将小时和分钟分开的自定义 picker。"
 }

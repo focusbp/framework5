@@ -439,6 +439,7 @@
   "setting.square_result": "Square Result",
   "setting.notification.login_logo_deleted": "Login Logo has been deleted.",
   "setting.notification.favicon_deleted": "Favicon has been deleted.",
+  "setting.apply_locale_preset_link": "Apply preset to date/number/currency",
   "setting.notification.saved": "Saved.",
   "setting.json_upload": "System Setting JSON Upload",
   "common.back": "Back",
@@ -1208,5 +1209,12 @@
   "wizard.field_mode.auto": "Let Codex Decide",
   "wizard.create_mode.child": "Add Child Note",
   "wizard.create_mode.normal": "Add Note",
-  "common.configured": "Configured"
+  "common.configured": "Configured",
+  "orders_picker_test.description": "Select what to display from the dropdown and verify picker behavior after showing it.",
+  "orders_picker_test.target": "Display Target",
+  "orders_picker_test.select_placeholder": "Please select",
+  "orders_picker_test.original_time_picker": "Original Time Picker",
+  "orders_picker_test.show_all": "Show All",
+  "orders_picker_test.original_time_placeholder": "Select time",
+  "orders_picker_test.original_time_help": "A custom picker that separates hour and minute."
 }

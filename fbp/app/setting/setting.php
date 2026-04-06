@@ -48,6 +48,8 @@ class setting {
 		$ctl->assign("arr_framework_language_code", $this->arr_framework_language_code);
 		$ctl->assign("arr_locale_code", $this->arr_locale_code);
 		$ctl->assign("locale_option_map_json", json_encode($this->get_locale_option_map(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+		$ctl->assign("locale_preset_map_json", json_encode($this->get_locale_preset_map(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+		$ctl->assign("preset_field_label_map_json", json_encode($this->get_preset_field_label_map($ctl), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 		$ctl->assign("arr_force_testmode", $this->arr_force_testmode);
 		$ctl->assign("arr_show_menu", $this->arr_show_menu);
 		$ctl->assign("arr_ssl",$this->arr_ssl);
@@ -341,6 +343,92 @@ class setting {
 			"ja" => $this->get_locale_options_by_language("ja"),
 			"en" => $this->get_locale_options_by_language("en"),
 			"zh" => $this->get_locale_options_by_language("zh"),
+		];
+	}
+
+	private function get_locale_preset_map(): array {
+		return [
+			"ja-JP" => [
+				"date_format" => "Y/m/d",
+				"datetime_format" => "Y/m/d H:i",
+				"year_month_format" => "Y/m",
+				"number_decimal_separator" => "dot",
+				"number_thousands_separator" => "comma",
+				"currency" => "JPY",
+				"currency_symbol" => "¥",
+				"currency_symbol_position" => "before",
+				"currency_decimal_digits" => 0,
+			],
+			"ja-OS" => [
+				"date_format" => "Y/m/d",
+				"datetime_format" => "Y/m/d H:i",
+				"year_month_format" => "Y/m",
+				"number_decimal_separator" => "dot",
+				"number_thousands_separator" => "comma",
+				"currency" => "JPY",
+				"currency_symbol" => "¥",
+				"currency_symbol_position" => "before",
+				"currency_decimal_digits" => 0,
+			],
+			"en-US" => [
+				"date_format" => "m/d/Y",
+				"datetime_format" => "m/d/Y h:i A",
+				"year_month_format" => "M Y",
+				"number_decimal_separator" => "dot",
+				"number_thousands_separator" => "comma",
+				"currency" => "USD",
+				"currency_symbol" => "$",
+				"currency_symbol_position" => "before",
+				"currency_decimal_digits" => 2,
+			],
+			"en-GB" => [
+				"date_format" => "d/m/Y",
+				"datetime_format" => "d/m/Y H:i",
+				"year_month_format" => "M Y",
+				"number_decimal_separator" => "dot",
+				"number_thousands_separator" => "comma",
+				"currency" => "GBP",
+				"currency_symbol" => "£",
+				"currency_symbol_position" => "before",
+				"currency_decimal_digits" => 2,
+			],
+			"zh-CN" => [
+				"date_format" => "Y/m/d",
+				"datetime_format" => "Y/m/d H:i",
+				"year_month_format" => "Y/m",
+				"number_decimal_separator" => "dot",
+				"number_thousands_separator" => "comma",
+				"currency" => "CNY",
+				"currency_symbol" => "¥",
+				"currency_symbol_position" => "before",
+				"currency_decimal_digits" => 2,
+			],
+			"zh-TW" => [
+				"date_format" => "Y/m/d",
+				"datetime_format" => "Y/m/d H:i",
+				"year_month_format" => "Y/m",
+				"number_decimal_separator" => "dot",
+				"number_thousands_separator" => "comma",
+				"currency" => "TWD",
+				"currency_symbol" => "NT$",
+				"currency_symbol_position" => "before",
+				"currency_decimal_digits" => 0,
+			],
+		];
+	}
+
+	private function get_preset_field_label_map(Controller $ctl): array {
+		return [
+			"locale_code" => $ctl->t("setting.locale_code"),
+			"date_format" => $ctl->t("setting.date_format"),
+			"datetime_format" => $ctl->t("setting.datetime_format"),
+			"year_month_format" => $ctl->t("setting.year_month_format"),
+			"number_decimal_separator" => $ctl->t("setting.number_decimal_separator"),
+			"number_thousands_separator" => $ctl->t("setting.number_thousands_separator"),
+			"currency" => $ctl->t("setting.currency"),
+			"currency_symbol" => $ctl->t("setting.currency_symbol"),
+			"currency_symbol_position" => $ctl->t("setting.currency_symbol_position"),
+			"currency_decimal_digits" => $ctl->t("setting.currency_decimal_digits"),
 		];
 	}
 

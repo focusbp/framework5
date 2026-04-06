@@ -118,7 +118,14 @@ function get_client_localized_text(key) {
 	var texts = {
 		year_month_set: {ja: "設定", en: "Set", zh: "设置"},
 		year_month_clear: {ja: "クリア", en: "Clear", zh: "清除"},
-		year_month_error: {ja: "入力エラー", en: "Error", zh: "输入错误"}
+		year_month_error: {ja: "入力エラー", en: "Error", zh: "输入错误"},
+		year_month_year: {ja: "年", en: "Year", zh: "年"},
+		year_month_month: {ja: "月", en: "Month", zh: "月"},
+		original_time_hour: {ja: "時", en: "Hour", zh: "小时"},
+		original_time_minute: {ja: "分", en: "Minute", zh: "分钟"},
+		original_time_meridiem: {ja: "AM/PM", en: "AM/PM", zh: "上午/下午"},
+		original_time_clear: {ja: "クリア", en: "Clear", zh: "清除"},
+		original_time_set: {ja: "設定", en: "Set", zh: "设置"}
 	};
 	if (texts[key] === undefined) {
 		return "";
@@ -218,121 +225,396 @@ function cookieOpt() {
 // 年・月 Picker
 //----------------------------
 var year_month_picker = false;
+function reposition_fixed_panel_below_input(panel, inputElement, panelHeightOverride = null) {
+	var rect = inputElement.getBoundingClientRect();
+	var margin = 8;
+	var viewportTop = 0;
+	var viewportLeft = 0;
+	var viewportBottom = $(window).innerHeight();
+	var viewportRight = $(window).innerWidth();
+	var panelHeight = panelHeightOverride !== null ? panelHeightOverride : (panel.outerHeight() || 0);
+	var panelWidth = panel.outerWidth() || 0;
+	var spaceBelow = viewportBottom - rect.bottom;
+	var spaceAbove = rect.top;
+	var top;
+	if (spaceBelow >= panelHeight + margin) {
+		top = rect.bottom;
+	} else if (spaceAbove >= panelHeight + margin) {
+		top = rect.top - panelHeight;
+	} else if (spaceBelow >= spaceAbove) {
+		top = viewportBottom - panelHeight - margin;
+	} else {
+		top = viewportTop + margin;
+	}
+
+	var left = rect.left;
+	if (left + panelWidth > viewportRight - margin) {
+		left = viewportRight - panelWidth - margin;
+	}
+	if (left < viewportLeft + margin) {
+		left = viewportLeft + margin;
+	}
+	if (top + panelHeight > viewportBottom - margin) {
+		top = viewportBottom - panelHeight - margin;
+	}
+	if (top < viewportTop + margin) {
+		top = viewportTop + margin;
+	}
+	var dialogZ = parseInt($(inputElement).closest(".multi_dialog").css("z-index"), 10);
+	if (isNaN(dialogZ)) {
+		dialogZ = 10000;
+	}
+
+	panel.css({
+		position: "fixed",
+		top: top,
+		left: left,
+		"z-index": dialogZ + 2
+	});
+}
+
+function get_original_time_picker_mode() {
+	var timeFormat = get_server_time_format();
+	return {
+		format: timeFormat,
+		usesMeridiem: /[gaA]/.test(timeFormat),
+		uppercaseMeridiem: /A/.test(timeFormat),
+		padHour: /h/.test(timeFormat)
+	};
+}
+
+function parse_original_time_value(value, mode) {
+	if (typeof parse_time_string_by_format === "function") {
+		var parsedByFormat = parse_time_string_by_format(value, mode.format);
+		if (parsedByFormat) {
+			var parsedHour24 = parseInt(parsedByFormat.hour, 10);
+			var parsedMinute = String(parsedByFormat.minute).padStart(2, "0");
+			if (mode.usesMeridiem) {
+				var parsedMeridiem = parsedHour24 >= 12 ? "PM" : "AM";
+				var parsedHour12 = parsedHour24 % 12;
+				if (parsedHour12 === 0) {
+					parsedHour12 = 12;
+				}
+				return {
+					hour: String(parsedHour12),
+					minute: parsedMinute,
+					meridiem: parsedMeridiem
+				};
+			}
+			return {
+				hour: String(parsedHour24).padStart(2, "0"),
+				minute: parsedMinute,
+				meridiem: "AM"
+			};
+		}
+	}
+
+	if (mode.usesMeridiem) {
+		var match12 = value.match(/^\s*(\d{1,2}):(\d{2})\s*([AaPp][Mm])\s*$/);
+		if (match12) {
+			return {
+				hour: String(parseInt(match12[1], 10)),
+				minute: match12[2],
+				meridiem: match12[3].toUpperCase()
+			};
+		}
+	}
+
+	var match24 = value.match(/^\s*(\d{1,2}):(\d{2})\s*$/);
+	if (match24) {
+		var hour24 = parseInt(match24[1], 10);
+		if (mode.usesMeridiem) {
+			var meridiem = hour24 >= 12 ? "PM" : "AM";
+			var hour12 = hour24 % 12;
+			if (hour12 === 0) {
+				hour12 = 12;
+			}
+			return {
+				hour: String(hour12),
+				minute: match24[2],
+				meridiem: meridiem
+			};
+		}
+		return {
+			hour: String(hour24).padStart(2, "0"),
+			minute: match24[2],
+			meridiem: "AM"
+		};
+	}
+
+	return {
+		hour: mode.usesMeridiem ? "9" : "09",
+		minute: "00",
+		meridiem: "AM"
+	};
+}
+
+function format_original_time_value(hourValue, minuteValue, meridiemValue, mode) {
+	var hour24 = parseInt(hourValue, 10);
+	if (mode.usesMeridiem) {
+		if (meridiemValue === "PM" && hour24 < 12) {
+			hour24 += 12;
+		}
+		if (meridiemValue === "AM" && hour24 === 12) {
+			hour24 = 0;
+		}
+	}
+	if (typeof format_php_datetime === "function") {
+		return format_php_datetime({
+			year: "2000",
+			month: "01",
+			day: "01",
+			hour: String(hour24).padStart(2, "0"),
+			minute: minuteValue
+		}, mode.format);
+	}
+	if (mode.usesMeridiem) {
+		var displayHour = mode.padHour ? String(hourValue).padStart(2, "0") : String(parseInt(hourValue, 10));
+		var suffix = mode.uppercaseMeridiem ? meridiemValue.toUpperCase() : meridiemValue.toLowerCase();
+		return displayHour + ":" + minuteValue + " " + suffix;
+	}
+	return String(hourValue).padStart(2, "0") + ":" + minuteValue;
+}
+
+function close_original_time_picker_panel() {
+	$(".fbp-original-time-panel").remove();
+	$(document).off("mousedown.originalTimePicker");
+}
+
+function open_original_time_picker_panel(input) {
+	close_original_time_picker_panel();
+
+	var current = input.val();
+	var mode = get_original_time_picker_mode();
+	var minuteStep = "10";
+	var parsed = parse_original_time_value(current, mode);
+	var hourValue = parsed.hour;
+	var minuteValue = parsed.minute;
+	var meridiemValue = parsed.meridiem;
+
+	var hourOptions = "";
+	var hourStart = mode.usesMeridiem ? 1 : 0;
+	var hourEnd = mode.usesMeridiem ? 12 : 23;
+	for (var h = hourStart; h <= hourEnd; h++) {
+		var hh = mode.usesMeridiem ? String(h) : String(h).padStart(2, "0");
+		hourOptions += '<option value="' + hh + '">' + hh + '</option>';
+	}
+	var meridiemSelectHtml = "";
+	if (mode.usesMeridiem) {
+		meridiemSelectHtml =
+			'<div style="width:84px;">' +
+				'<div style="font-size:12px;color:#64748b;margin-bottom:4px;">' + escapeHtml(get_client_localized_text("original_time_meridiem")) + '</div>' +
+				'<select class="fbp-original-time-meridiem" style="width:100%;">' +
+					'<option value="AM">AM</option>' +
+					'<option value="PM">PM</option>' +
+				'</select>' +
+			'</div>';
+	}
+	var panel = $(
+		'<div class="fbp-original-time-panel" style="background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,0.18);padding:14px;min-width:260px;">' +
+			'<div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px;font-size:12px;color:#475569;gap:8px;">' +
+				'<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="fbp_original_time_step" value="10" checked>10</label>' +
+				'<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="fbp_original_time_step" value="5">5</label>' +
+				'<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="fbp_original_time_step" value="1">1</label>' +
+			'</div>' +
+			'<div style="display:flex;gap:10px;align-items:end;margin-bottom:12px;">' +
+				'<div style="flex:1;">' +
+					'<div style="font-size:12px;color:#64748b;margin-bottom:4px;">' + escapeHtml(get_client_localized_text("original_time_hour")) + '</div>' +
+					'<select class="fbp-original-time-hour" style="width:100%;">' + hourOptions + '</select>' +
+				'</div>' +
+				'<div style="flex:1;">' +
+					'<div style="font-size:12px;color:#64748b;margin-bottom:4px;">' + escapeHtml(get_client_localized_text("original_time_minute")) + '</div>' +
+					'<select class="fbp-original-time-minute" style="width:100%;"></select>' +
+				'</div>' +
+				meridiemSelectHtml +
+			'</div>' +
+			'<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+				'<button type="button" class="fbp-original-time-clear">' + escapeHtml(get_client_localized_text("original_time_clear")) + '</button>' +
+				'<button type="button" class="fbp-original-time-set">' + escapeHtml(get_client_localized_text("original_time_set")) + '</button>' +
+			'</div>' +
+		'</div>'
+	);
+
+	$("body").append(panel);
+	panel.css("width", Math.max(input.outerWidth(), 260));
+	panel.find(".fbp-original-time-hour").val(hourValue);
+	panel.find(".fbp-original-time-meridiem").val(meridiemValue);
+
+	function rebuild_minute_options(step, selectedMinute) {
+		var minuteOptions = "";
+		for (var m = 0; m < 60; m += step) {
+			var mm = String(m).padStart(2, "0");
+			minuteOptions += '<option value="' + mm + '">' + mm + '</option>';
+		}
+		var minuteSelect = panel.find(".fbp-original-time-minute");
+		minuteSelect.html(minuteOptions);
+		var normalizedMinute = String(Math.floor(parseInt(selectedMinute || "0", 10) / step) * step).padStart(2, "0");
+		minuteSelect.val(normalizedMinute);
+	}
+
+	panel.find('input[name="fbp_original_time_step"][value="' + minuteStep + '"]').prop("checked", true);
+	rebuild_minute_options(parseInt(minuteStep, 10), minuteValue);
+
+	panel.find('input[name="fbp_original_time_step"]').on("change", function () {
+		minuteStep = $(this).val();
+		rebuild_minute_options(parseInt(minuteStep, 10), panel.find(".fbp-original-time-minute").val());
+	});
+
+	setTimeout(function () {
+		reposition_fixed_panel_below_input(panel, input.get(0));
+	}, 0);
+
+	panel.find(".fbp-original-time-clear").on("click", function () {
+		input.val("").trigger("change");
+		close_original_time_picker_panel();
+	});
+	panel.find(".fbp-original-time-set").on("click", function () {
+		var selectedHour = panel.find(".fbp-original-time-hour").val();
+		var selectedMinute = panel.find(".fbp-original-time-minute").val();
+		var selectedMeridiem = panel.find(".fbp-original-time-meridiem").val() || "AM";
+		var value = format_original_time_value(selectedHour, selectedMinute, selectedMeridiem, mode);
+		input.val(value).trigger("change");
+		close_original_time_picker_panel();
+	});
+
+	setTimeout(function () {
+		$(document).on("mousedown.originalTimePicker", function (e) {
+			if ($(e.target).closest(".fbp-original-time-panel").length > 0) {
+				return;
+			}
+			if ($(e.target).closest(".timepicker").length > 0) {
+				return;
+			}
+			close_original_time_picker_panel();
+		});
+	}, 0);
+}
 (function ($) {
 	$.fn.year_month_picker = function () {
-		$(this).wrap('<div style="position:relative;display: inline;"></div>');
-		$(this).attr('autocomplete', 'off');
-		var obj = this;
-
-		// フォーカスがあたった時の処理
-		this.focus(function (e) {
-			$(obj).blur();
-
-			$(".year_month_picker_panel").remove();
-			$(".selectorclose").remove();
-
-			var html = '';
-			html += '<div class="year_month_picker_panel">';
-			html += '<div class="picker_year"><input type="text" class="picker_year_input">&nbsp;/&nbsp;<select class="picker_month_select">';
-			html += '<option value="01">1</option>';
-			html += '<option value="02">2</option>';
-			html += '<option value="03">3</option>';
-			html += '<option value="04">4</option>';
-			html += '<option value="05">5</option>';
-			html += '<option value="06">6</option>';
-			html += '<option value="07">7</option>';
-			html += '<option value="08">8</option>';
-			html += '<option value="09">9</option>';
-			html += '<option value="10">10</option>';
-			html += '<option value="11">11</option>';
-			html += '<option value="12">12</option>';
-			html += '</select>';
-			html += "</div>";
-			html += '<button class="picker_set">' + escapeHtml(get_client_localized_text("year_month_set")) + '</button><button class="picker_blank">' + escapeHtml(get_client_localized_text("year_month_clear")) + '</button>';
-			html += '<div style="clear;both;"></div>'
-			html += '<p class="picker_error"></p>'
-			html += '</div>';
-			$(this).after(html);
-			var year;
-			var month;
-			var hiduke = new Date();
-			var yearMonthFormat = get_server_year_month_format();
-			if ($(this).val() == "") {
-				year = hiduke.getFullYear();
-				month = hiduke.getMonth() + 1;
-			} else {
-				var parsedYearMonth = parse_year_month_by_format($(this).val(), yearMonthFormat);
-				if (parsedYearMonth) {
-					year = parsedYearMonth.year;
-					month = parsedYearMonth.month;
-				}
-				if (year == undefined || isNaN(year))
-					year = hiduke.getFullYear();
-				if (month == undefined || isNaN(month))
-					month = hiduke.getMonth() + 1;
+		return this.each(function () {
+			var input = $(this);
+			if (input.data("yearMonthPickerInitialized")) {
+				return;
 			}
-			var pad_month = ('0' + month).slice(-2);
-			$(".year_month_picker_panel .picker_year_input").val(year);
-			$(".year_month_picker_panel .picker_month_select").val(pad_month);
-			//表示位置修正
-			var target = ".year_month_picker_panel";
-			var top = $(this).offset().top - $(window).scrollTop();
-			var left = $(this).offset().left - $(window).scrollLeft();
-			var height = $(this).outerHeight();
-			var objheight = $(".year_month_picker_panel").outerHeight();
-			var wh = $(window).height();
-			if (top + height > wh - objheight) {
-				top = wh - objheight;
-			} else {
-				top = top + height;
+			input.data("yearMonthPickerInitialized", true);
+			if (!input.parent().hasClass("year_month_picker_wrap")) {
+				input.wrap('<div class="year_month_picker_wrap" style="position:relative;display:inline;"></div>');
 			}
-			$(target).css("top", top);
-			$(target).css("left", left);
-			$(target).addClass('detect_outside_click');
-			setTimeout(function () {
-				year_month_picker = true;
-			}, 200);
+			input.attr('autocomplete', 'off');
 
-			var textobj = this;
-			$(".year_month_picker_panel .picker_blank").click(function () {
-				$(textobj).val("");
+			// フォーカスがあたった時の処理
+			input.on("focus.yearMonthPicker", function () {
+				input.blur();
+
 				$(".year_month_picker_panel").remove();
 				$(".selectorclose").remove();
-				$(obj).change();
-				year_month_picker = false;
-				return false;
-			});
-			$(".year_month_picker_panel .picker_set").click(function () {
-				year = $(".year_month_picker_panel .picker_year_input").val();
-				month = $(".year_month_picker_panel .picker_month_select").val();
 
-				//年のバリデート
-				var flg = true;
-				if (year.length != 4) {
-					flg = false;
-				}
-				if (year.match(/[^0-9]+/)) {
-					flg = false;
-				}
-				if (flg) {
-					$(textobj).val(format_php_datetime({
-						year: year,
-						month: month,
-						day: "01",
-						hour: "00",
-						minute: "00"
-					}, yearMonthFormat));
-					$(obj).change();
-					$(".year_month_picker_panel").remove();
-					$(".selectorclose").remove();
+				var html = '';
+				html += '<div class="year_month_picker_panel" style="background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,0.18);padding:14px;min-width:260px;">';
+				html += '<div style="display:flex;gap:10px;align-items:end;margin-bottom:12px;">';
+				html += '<div style="flex:1;">';
+				html += '<div style="font-size:12px;color:#64748b;margin-bottom:4px;">' + escapeHtml(get_client_localized_text("year_month_year")) + '</div>';
+				html += '<input type="text" class="picker_year_input" style="width:100%;">';
+				html += '</div>';
+				html += '<div style="flex:1;">';
+				html += '<div style="font-size:12px;color:#64748b;margin-bottom:4px;">' + escapeHtml(get_client_localized_text("year_month_month")) + '</div>';
+				html += '<select class="picker_month_select" style="width:100%;">';
+				html += '<option value="01">1</option>';
+				html += '<option value="02">2</option>';
+				html += '<option value="03">3</option>';
+				html += '<option value="04">4</option>';
+				html += '<option value="05">5</option>';
+				html += '<option value="06">6</option>';
+				html += '<option value="07">7</option>';
+				html += '<option value="08">8</option>';
+				html += '<option value="09">9</option>';
+				html += '<option value="10">10</option>';
+				html += '<option value="11">11</option>';
+				html += '<option value="12">12</option>';
+				html += '</select>';
+				html += "</div>";
+				html += "</div>";
+				html += '<div style="display:flex;gap:8px;justify-content:flex-end;">';
+				html += '<button type="button" class="picker_blank">' + escapeHtml(get_client_localized_text("year_month_clear")) + '</button>';
+				html += '<button type="button" class="picker_set">' + escapeHtml(get_client_localized_text("year_month_set")) + '</button>';
+				html += '</div>';
+				html += '<p class="picker_error" style="margin:8px 0 0 0;color:#dc2626;font-size:12px;"></p>';
+				html += '</div>';
+				$("body").append(html);
+				var panel = $(".year_month_picker_panel");
+				var year;
+				var month;
+				var hiduke = new Date();
+				var yearMonthFormat = get_server_year_month_format();
+				var monthNames = get_locale_short_month_names(get_server_locale_code());
+				panel.find(".picker_month_select option").each(function () {
+					var optionMonth = parseInt($(this).val(), 10);
+					if (yearMonthFormat.indexOf("M") !== -1 && !isNaN(optionMonth)) {
+						$(this).text(monthNames[optionMonth - 1] || optionMonth);
+					}
+				});
+				if (input.val() == "") {
+					year = hiduke.getFullYear();
+					month = hiduke.getMonth() + 1;
 				} else {
-					$(".year_month_picker_panel .picker_error").html(escapeHtml(get_client_localized_text("year_month_error")));
+					var parsedYearMonth = parse_year_month_by_format(input.val(), yearMonthFormat);
+					if (parsedYearMonth) {
+						year = parsedYearMonth.year;
+						month = parsedYearMonth.month;
+					}
+					if (year == undefined || isNaN(year))
+						year = hiduke.getFullYear();
+					if (month == undefined || isNaN(month))
+						month = hiduke.getMonth() + 1;
 				}
-				year_month_picker = false;
-				return false;
+				var pad_month = ('0' + month).slice(-2);
+				panel.find(".picker_year_input").val(year);
+				panel.find(".picker_month_select").val(pad_month);
+				reposition_fixed_panel_below_input(panel, input.get(0));
+				panel.addClass('detect_outside_click');
+				setTimeout(function () {
+					year_month_picker = true;
+				}, 200);
+
+				panel.find(".picker_blank").off("click.yearMonthPicker").on("click.yearMonthPicker", function () {
+					input.val("");
+					panel.remove();
+					$(".selectorclose").remove();
+					input.change();
+					year_month_picker = false;
+					return false;
+				});
+				panel.find(".picker_set").off("click.yearMonthPicker").on("click.yearMonthPicker", function () {
+					year = panel.find(".picker_year_input").val();
+					month = panel.find(".picker_month_select").val();
+
+					//年のバリデート
+					var flg = true;
+					if (year.length != 4) {
+						flg = false;
+					}
+					if (year.match(/[^0-9]+/)) {
+						flg = false;
+					}
+					if (flg) {
+						input.val(format_php_datetime({
+							year: year,
+							month: month,
+							day: "01",
+							hour: "00",
+							minute: "00"
+						}, yearMonthFormat));
+						input.change();
+						panel.remove();
+						$(".selectorclose").remove();
+					} else {
+						panel.find(".picker_error").html(escapeHtml(get_client_localized_text("year_month_error")));
+					}
+					year_month_picker = false;
+					return false;
+				});
 			});
 		});
-		return this;
 	};
 })(jQuery);
 
@@ -599,6 +881,21 @@ function get_server_language_code() {
 	return "en";
 }
 
+function get_server_locale_code() {
+	var localeCode = $("#server_locale_code").text();
+	if (localeCode) {
+		return localeCode;
+	}
+	var languageCode = get_server_language_code();
+	if (languageCode === "ja") {
+		return "ja-JP";
+	}
+	if (languageCode === "zh") {
+		return "zh-CN";
+	}
+	return "en-US";
+}
+
 function get_server_date_format() {
 	var format = $("#server_date_format").text();
 	return format ? format : "Y/m/d";
@@ -635,9 +932,21 @@ function php_date_format_to_datepicker_format(format) {
 			.replace(/j/g, "d");
 }
 
+function get_locale_short_month_names(locale) {
+	var monthNames = [];
+	for (var monthIndex = 0; monthIndex < 12; monthIndex++) {
+		monthNames.push(new Intl.DateTimeFormat(locale, {
+			month: "short",
+			timeZone: "UTC"
+		}).format(new Date(Date.UTC(2000, monthIndex, 1))));
+	}
+	return monthNames;
+}
+
 function build_placeholder_from_php_date_format(format) {
 	return format
 			.replace(/Y/g, "yyyy")
+			.replace(/M/g, "mmm")
 			.replace(/m/g, "mm")
 			.replace(/d/g, "dd")
 			.replace(/n/g, "m")
@@ -664,10 +973,16 @@ function php_time_format_to_timepicker_format(format) {
 
 function extract_date_parts_by_format(value, format) {
 	var tokens = [];
-	var pattern = format.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/Y|m|d|n|j|H|i/g, function (token) {
+	var pattern = format.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/Y|M|m|d|n|j|H|i/g, function (token) {
 		tokens.push(token);
 		if (token === "Y") {
 			return "(\\d{4})";
+		}
+		if (token === "M") {
+			var monthNames = get_locale_short_month_names(get_server_locale_code()).map(function (name) {
+				return name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			});
+			return "(" + monthNames.join("|") + ")";
 		}
 		return "(\\d{1,2})";
 	});
@@ -703,7 +1018,8 @@ function extract_time_parts_by_format(value, format) {
 }
 
 function format_php_datetime(parts, format) {
-	return format.replace(/Y|m|d|n|j|H|G|h|g|i|A|a/g, function (token) {
+	var localeMonthNames = null;
+	return format.replace(/Y|M|m|d|n|j|H|G|h|g|i|A|a/g, function (token) {
 		var hour24 = parseInt(parts.hour, 10);
 		var hour12 = hour24 % 12;
 		if (hour12 === 0) {
@@ -711,6 +1027,12 @@ function format_php_datetime(parts, format) {
 		}
 		if (token === "Y") {
 			return parts.year;
+		}
+		if (token === "M") {
+			if (localeMonthNames === null) {
+				localeMonthNames = get_locale_short_month_names(get_server_locale_code());
+			}
+			return localeMonthNames[Math.max(0, parseInt(parts.month, 10) - 1)] || parts.month;
 		}
 		if (token === "m") {
 			return parts.month;
@@ -771,6 +1093,15 @@ function parse_year_month_by_format(value, format) {
 		return null;
 	}
 	var month = parts.m || parts.n;
+	if (!month && parts.M) {
+		var monthNames = get_locale_short_month_names(get_server_locale_code());
+		var monthIndex = monthNames.findIndex(function (name) {
+			return String(name).toLowerCase() === String(parts.M).toLowerCase();
+		});
+		if (monthIndex >= 0) {
+			month = String(monthIndex + 1).padStart(2, "0");
+		}
+	}
 	if (!month) {
 		return null;
 	}
@@ -1564,12 +1895,35 @@ function appcon(url, fd, nextfunction) {
 
 		dfd.resolve();
 
-	}).fail(function ($xhr) {
+	}).fail(function ($xhr, textStatus, errorThrown) {
 
-		data = $xhr.responseText;
-		if (data != undefined) {
-			//alert(data);
+		var data = $xhr.responseText;
+		var statusLine = "AJAX request failed";
+		if ($xhr && $xhr.status) {
+			statusLine += " (" + $xhr.status + " " + ($xhr.statusText || "") + ")";
 		}
+		if (textStatus) {
+			statusLine += " : " + textStatus;
+		}
+		if (errorThrown) {
+			statusLine += " / " + errorThrown;
+		}
+
+		append_debug_window(statusLine, data || "", "error");
+
+		var detail = "";
+		if (typeof data === "string" && data !== "") {
+			detail = escapeHtml(data);
+		} else {
+			detail = "No response body";
+		}
+		var html = "<div class=\"error error_window_message\"><div style=\"font-weight:bold;margin-bottom:8px;\">"
+				+ escapeHtml(statusLine)
+				+ "</div><pre style=\"white-space:pre-wrap;word-break:break-word;max-height:60vh;overflow:auto;\">"
+				+ detail
+				+ "</pre></div>";
+		multi_dialog("error", html, "AJAX ERROR", 700, "error", $("#testserver").html() == "true", multi_dialog_zindex);
+		multi_dialog_zindex++;
 
 		dfd.resolve();
 	});
@@ -3045,17 +3399,69 @@ append_function_dialog("__all__", function (dialog_id, flg_window = false) {
 
 
 	// Datepicker
-	$(dialog_id + " .datepicker").on("click", function () {
+	function reposition_datepicker_panel(inputElement, inst) {
+		var cal = inst.dpDiv;
+		var rect = inputElement.getBoundingClientRect();
+		var margin = 8;
+		var viewportTop = 0;
+		var viewportLeft = 0;
+		var viewportBottom = $(window).innerHeight();
+		var viewportRight = $(window).innerWidth();
+		var calendarHeight = cal.outerHeight() || 0;
+		var calendarWidth = cal.outerWidth() || 0;
+		var spaceBelow = viewportBottom - rect.bottom;
+		var spaceAbove = rect.top;
+		var top;
+		if (spaceBelow >= calendarHeight + margin) {
+			top = rect.bottom;
+		} else if (spaceAbove >= calendarHeight + margin) {
+			top = rect.top - calendarHeight;
+		} else if (spaceBelow >= spaceAbove) {
+			top = viewportBottom - calendarHeight - margin;
+		} else {
+			top = viewportTop + margin;
+		}
 
-		if ($(this).hasClass("hasDatepicker")) {
+		var left = rect.left;
+		if (left + calendarWidth > viewportRight - margin) {
+			left = viewportRight - calendarWidth - margin;
+		}
+		if (left < viewportLeft + margin) {
+			left = viewportLeft + margin;
+		}
+
+		var dialogZ = parseInt($(inputElement).closest(".multi_dialog").css("z-index"), 10);
+		if (isNaN(dialogZ)) {
+			dialogZ = 10000;
+		}
+		if (top + calendarHeight > viewportBottom - margin) {
+			top = viewportBottom - calendarHeight - margin;
+		}
+		if (top < viewportTop + margin) {
+			top = viewportTop + margin;
+		}
+
+		cal.css({
+			'position': 'fixed',
+			'top': top,
+			'left': left,
+			'z-index': dialogZ + 2
+		});
+	}
+	function initialize_datepicker_input(input) {
+		if (input.hasClass("hasDatepicker")) {
 			return;
 		}
 
-		$(this).prop('readOnly', true);
-		var width = $(this).width();
-			$(this).wrap('<div class="datepicker_area" style="width:' + width + 'px;display:block;">');
-		$(this).after('<div class="datepicker_clear">x</div>');
-		$(this).parent().find(".datepicker_clear").on("click", function () {
+		input.prop('readOnly', true);
+		if (!input.parent().hasClass("datepicker_area")) {
+			var width = input.outerWidth();
+			input.wrap('<div class="datepicker_area" style="width:' + width + 'px;display:block;">');
+		}
+		if (input.siblings(".datepicker_clear").length === 0) {
+			input.after('<div class="datepicker_clear">x</div>');
+		}
+		input.parent().find(".datepicker_clear").off("click.datepickerClear").on("click.datepickerClear", function () {
 			$(this).parent().find(".datepicker").val("");
 			$(this).parent().find(".datepicker").trigger("change");
 		});
@@ -3122,85 +3528,76 @@ append_function_dialog("__all__", function (dialog_id, flg_window = false) {
 				yearSuffix: ""
 			});
 		}
-		var dp_txt = $(this);
-		$(this).datepicker({
+		input.datepicker({
 			changeMonth: true,
 			changeYear: true,
 			yearRange: "1930:+30",
-				beforeShow: function (input, inst) {
-					var cal = inst.dpDiv;
+				beforeShow: function (inputElement, inst) {
 					setTimeout(function () {
-						var rect = input.getBoundingClientRect();
-						var top = window.scrollY + rect.bottom;
-						var left = window.scrollX + rect.left;
-						var calendarHeight = cal.outerHeight() || 0;
-						var viewportTop = $(window).scrollTop();
-						var viewportBottom = viewportTop + $(window).innerHeight();
-						var dialogZ = parseInt($(input).closest(".multi_dialog").css("z-index"), 10);
-						if (isNaN(dialogZ)) {
-							dialogZ = 10000;
-						}
-
-						if (top + calendarHeight > viewportBottom) {
-							top = window.scrollY + rect.top - calendarHeight;
-						}
-						if (top < viewportTop) {
-							top = viewportTop + 8;
-						}
-
-						cal.css({
-							'top': top,
-							'left': left,
-							'z-index': dialogZ + 2
-						});
+						reposition_datepicker_panel(inputElement, inst);
+					}, 10);
+				},
+				onChangeMonthYear: function (year, month, inst) {
+					setTimeout(function () {
+						reposition_datepicker_panel(input, inst);
 					}, 10);
 				}
 			});
-		var c = $(this);
-		setTimeout(function () {
-			c.datepicker("show");
-		}, 1);
+	}
+	$(dialog_id).off("click.datepickerInit focus.datepickerInit", ".datepicker")
+		.on("click.datepickerInit focus.datepickerInit", ".datepicker", function () {
+			var c = $(this);
+			initialize_datepicker_input(c);
+			if (c.hasClass("hasDatepicker")) {
+				c.datepicker("show");
+				setTimeout(function () {
+					var inst = c.data("datepicker");
+					if (inst) {
+						reposition_datepicker_panel(c.get(0), inst);
+					}
+				}, 10);
+			}
+		});
+	$(dialog_id + " .datepicker").each(function () {
+		if ($(this).is(":visible")) {
+			initialize_datepicker_input($(this));
+		}
 	});
 
 	// Timepicker
-	var timepicker_change = true;
-	// 二重送信を防ぐ
-	$(dialog_id + ' .timepicker').on("change", function () {
-		timepicker_change = false;
-		setTimeout(function () {
-			timepicker_change = true;
-		}, 1000);
-	});
-	$(dialog_id + ' .timepicker').each(function () {
-		var t = $(this).val();
-		var timeFormat = get_server_time_format();
-		$(this).timepicker({
-			timeFormat: php_time_format_to_timepicker_format(timeFormat),
-			interval: 60,
-			minTime: '0',
-			maxTime: '23',
-			defaultTime: t,
-			dynamic: false,
-			dropdown: true,
-			scrollbar: false,
-			zindex: 99999999999999,
-			change: function (time) {
-				// 多重送信を防ぐ
-				if (timepicker_change) {
-					timepicker_change = false;
-					$(this).change();
-					setTimeout(function () {
-						timepicker_change = true;
-					}, 1000);
-				} else {
-					return;
-				}
-			}
+	function initialize_timepicker_input(input) {
+		if (input.data("originalTimePickerInitialized")) {
+			return;
+		}
+		input.data("originalTimePickerInitialized", true);
+		input.prop("readOnly", true);
+	}
+	$(dialog_id).off("focus.timepickerInit click.timepickerInit", ".timepicker")
+		.on("focus.timepickerInit click.timepickerInit", ".timepicker", function () {
+			var c = $(this);
+			initialize_timepicker_input(c);
+			open_original_time_picker_panel(c);
 		});
+	$(dialog_id + ' .timepicker').each(function () {
+		if ($(this).is(":visible")) {
+			initialize_timepicker_input($(this));
+		}
 	});
 
 	// YearMonth picker
-	$('.year_month_picker').year_month_picker();
+	$(dialog_id).off("focus.yearMonthPickerInit click.yearMonthPickerInit", ".year_month_picker")
+		.on("focus.yearMonthPickerInit click.yearMonthPickerInit", ".year_month_picker", function () {
+			var c = $(this);
+			if (!c.data("yearMonthPickerInitialized")) {
+				c.year_month_picker();
+				setTimeout(function () {
+					c.trigger("focus");
+				}, 0);
+			}
+		});
+	$(dialog_id + ' .year_month_picker').each(function () {
+		$(this).year_month_picker();
+	});
 
 	// RADIO
 	$(".checkboxradio").checkboxradio({
