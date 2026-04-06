@@ -160,13 +160,6 @@ interface ctl_fw {
 	function testserver();
 	
 	/**
-	 * Retrieves the language setting.
-	 *
-	 * @return string The current language.
-	 */
-	function get_lang();
-
-	/**
 	 * Translates a key using the lightweight i18n catalog.
 	 *
 	 * @param string $key Translation key.

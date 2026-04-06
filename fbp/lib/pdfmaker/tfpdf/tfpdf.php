@@ -985,9 +985,9 @@ function MultiCell($w, $h, $txt, $border=0, $align='J', $fill=false, $span_x=0,$
 			if($border && $nl==2){
 				$b = $b2;
 			}
-			if($this->page_max_height[$this->page] < $this->y+$this->CSMargin_y){
-				$this->page_max_height[$this->page] = $this->y+$this->CSMargin_y;
-			}
+				if(!isset($this->page_max_height[$this->page]) || $this->page_max_height[$this->page] < $this->y+$this->CSMargin_y){
+					$this->page_max_height[$this->page] = $this->y+$this->CSMargin_y;
+				}
 			continue;
 		}
 		
@@ -1060,15 +1060,15 @@ function MultiCell($w, $h, $txt, $border=0, $align='J', $fill=false, $span_x=0,$
 			if($border && $nl==2){
 				$b = $b2;
 			}
-			if($this->page_max_height[$this->page] < $this->y+$this->CSMargin_y){
-				$this->page_max_height[$this->page] = $this->y+$this->CSMargin_y;
-			}
+				if(!isset($this->page_max_height[$this->page]) || $this->page_max_height[$this->page] < $this->y+$this->CSMargin_y){
+					$this->page_max_height[$this->page] = $this->y+$this->CSMargin_y;
+				}
 		}else{
 			$i++;
 		}
-		if($this->page_max_height[$this->page] < $this->y){
-			$this->page_max_height[$this->page] = $this->y;
-		}
+			if(!isset($this->page_max_height[$this->page]) || $this->page_max_height[$this->page] < $this->y){
+				$this->page_max_height[$this->page] = $this->y;
+			}
 	}
 
 	
@@ -1093,7 +1093,7 @@ function MultiCell($w, $h, $txt, $border=0, $align='J', $fill=false, $span_x=0,$
 	if($flg_dulble_line){
 		$this->y += $this->CSMargin_y*2;
 	}
-	if($this->page_max_height[$this->page] < $this->y){
+	if(!isset($this->page_max_height[$this->page]) || $this->page_max_height[$this->page] < $this->y){
 		$this->page_max_height[$this->page] = $this->y;
 	}
 	
@@ -1853,7 +1853,7 @@ function _newobj()
 	// Begin a new object
 	$this->n++;
 	//$this->offsets[$this->n] = strlen($this->buffer);
-	$this->offsets[$this->n] = $this->len_buffer;
+	$this->offsets[$this->n] = $this->len_buffer();
 	$this->_out($this->n.' 0 obj');
 }
 
@@ -1943,7 +1943,7 @@ function _putpages()
 	}
 	// Pages root
 	$this->offsets[1] = strlen($this->buffer);
-	$this->offsets[1] = $this->len_buffer;
+	$this->offsets[1] = $this->len_buffer();
 	$this->_out('1 0 obj');
 	$this->_out('<</Type /Pages');
 	$kids = '/Kids [';
@@ -2398,7 +2398,7 @@ function _putresources()
 	$this->_putimages();
 	// Resource dictionary
 	//$this->offsets[2] = strlen($this->buffer);
-	$this->offsets[2] = $this->len_buffer;
+	$this->offsets[2] = $this->len_buffer();
 	$this->_out('2 0 obj');
 	$this->_out('<<');
 	$this->_putresourcedict();

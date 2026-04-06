@@ -145,6 +145,9 @@ class pdfmaker_class {
 				}
 			} else {
 				// 本文
+				if (!isset($body[$c])) {
+					$body[$c] = "";
+				}
 				$body[$c] .= $line . "\n";
 			}
 		}
@@ -320,7 +323,7 @@ class pdfmaker_class {
 			$set = $this->setParameter($pdf, $parameter[$c], $default);
 
 			// フォーム除外
-			if ($set["print"] == "false") {
+			if (($set["print"] ?? null) == "false") {
 				continue;
 			}
 

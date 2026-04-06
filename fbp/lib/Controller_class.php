@@ -1820,7 +1820,7 @@ class Controller_class implements Controller {
 	}
 
 	function get_lang() {
-		return I18nSimple::get_language_code_from_setting($this->get_setting());
+		return "jp";
 	}
 
 	function t($key, $params = [], $lang = null) {

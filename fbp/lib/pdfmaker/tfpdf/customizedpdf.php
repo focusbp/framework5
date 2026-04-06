@@ -101,7 +101,7 @@ class CustomizedPDF extends tFPDF {
 			$resetpage = 1;
 			$pcount=1;
 			for($i=1;$i<=$this->page;$i++){
-				if($this->totalPageNumber[$i]== "reset"){
+				if(($this->totalPageNumber[$i] ?? null) == "reset"){
 					$resetpage = $i;
 					$pcount=1;
 					$this->totalPageNumber[$i] = $pcount;
@@ -194,7 +194,7 @@ class CustomizedPDF extends tFPDF {
 					// Page number
 					$tpn = 1;
 					for($i=1;$i<=$this->PageNo();$i++){
-						if($this->totalPageNumber[$i]== "reset"){
+						if(($this->totalPageNumber[$i] ?? null) == "reset"){
 							$tpn = 1;
 						}else{
 							$tpn++;
@@ -247,7 +247,7 @@ class CustomizedPDF extends tFPDF {
 		}
 		
 		//いきなりブレイクする場合があるので、先にブレイクしておく
-		if($this->y+$h > $this->PageBreakTrigger &&$this->AcceptPageBreak())
+		if($this->y+$lineheight > $this->PageBreakTrigger &&$this->AcceptPageBreak())
 		{
 			$this->pagebreak_for_morepagestable();
 		}
@@ -425,10 +425,14 @@ class CustomizedPDF extends tFPDF {
 				//横のライン
 				if(!empty($tableline[$this->page])){
 					foreach($tableline[$this->page] as $arr){
-						if(strpos($set["table_border"],"H") !== false ){
-							$this->Line($arr[0],$arr[1],$arr[2],$arr[3],$arr[4]);
+							if(strpos($set["table_border"],"H") !== false ){
+								if (isset($arr[4])) {
+									$this->Line($arr[0],$arr[1],$arr[2],$arr[3],$arr[4]);
+								} else {
+									$this->Line($arr[0],$arr[1],$arr[2],$arr[3]);
+								}
+							}
 						}
-					}
 				}
 
 				// 下のライン
