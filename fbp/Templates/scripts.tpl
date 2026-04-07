@@ -1,11 +1,7 @@
 
 <script src="js/jquery-3.6.4.min.js"></script>
 <script src="js/jquery-ui.min.js"></script>
-<script src="js/jquery-asColor.min.js"></script>
-<script src="js/jquery-asGradient.min.js"></script>
-<script src="js/jquery-asColorPicker.min.js"></script>
 <script src="js/chart.min.js"></script>
-<script src="js/select2.min.js"></script>
 <script src="js/js.cookie.js"></script>
 <script src="js/player.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css">

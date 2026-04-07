@@ -1204,5 +1204,8 @@
     "orders_picker_test.description": "请从下拉框选择显示对象，并确认显示后的 picker 行为。",
     "orders_picker_test.target": "显示对象",
     "orders_picker_test.select_placeholder": "请选择",
-    "orders_picker_test.show_all": "全部显示"
+    "orders_picker_test.show_all": "全部显示",
+    "orders_picker_test.large_dropdown": "Large Dropdown",
+    "orders_picker_test.large_dropdown_description": "后显示一个拥有 10 个以上选项的下拉框，并确认带搜索的筛选行为。",
+    "orders_picker_test.unselected": "未选择"
 }

@@ -30,11 +30,7 @@
         window.localStorage.setItem(STORAGE_KEY, String(current));
 		
 		$("select").each(function (index, element) {
-			if ($(this).children().length > 10) {
-				$(this).select2({
-					language: "ja" //日本語化
-				});
-			}
+			ensure_original_searchable_select($(this));
 		});
 		
       }

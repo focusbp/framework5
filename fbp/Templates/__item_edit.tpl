@@ -71,7 +71,7 @@ $row : array of the values.
 	
 {else if $type == "date"}
 	
-	{html_input_date name="{$name}" value="{$row.$name}" style="padding-left:20px;"}
+	{html_input_date name="{$name}" value="{$row.$name}"}
 	
 {else if $type == "datetime"}
 	

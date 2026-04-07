@@ -1213,5 +1213,8 @@
   "orders_picker_test.description": "Select what to display from the dropdown and verify picker behavior after showing it.",
   "orders_picker_test.target": "Display Target",
   "orders_picker_test.select_placeholder": "Please select",
-  "orders_picker_test.show_all": "Show All"
+  "orders_picker_test.show_all": "Show All",
+  "orders_picker_test.large_dropdown": "Large Dropdown",
+  "orders_picker_test.large_dropdown_description": "Show a dropdown with more than 10 options after display and verify searchable filtering behavior.",
+  "orders_picker_test.unselected": "Unselected"
 }

@@ -72,7 +72,10 @@
 	$(document).off("click", addBtnId).on("click", addBtnId, function () {
 		var $row = $(rowHtml());
 		$(tableId).append($row);
-		$row.find(".colorpicker").asColorPicker();
+		$row.find(".colorpicker").each(function () {
+			ensure_original_colorpicker_input($(this));
+			update_original_colorpicker_preview($(this));
+		});
 	});
 
 	$(document).off("click", tableId + " .pc-delete-row").on("click", tableId + " .pc-delete-row", function () {

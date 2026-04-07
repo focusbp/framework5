@@ -1213,5 +1213,8 @@
   "orders_picker_test.description": "Dropdown で表示対象を選び、後表示の picker 挙動を確認します。",
   "orders_picker_test.target": "表示対象",
   "orders_picker_test.select_placeholder": "選択してください",
-  "orders_picker_test.show_all": "すべて表示"
+  "orders_picker_test.show_all": "すべて表示",
+  "orders_picker_test.large_dropdown": "Large Dropdown",
+  "orders_picker_test.large_dropdown_description": "11件以上の候補を持つ dropdown を後表示し、検索付きの挙動を確認します。",
+  "orders_picker_test.unselected": "未選択"
 }

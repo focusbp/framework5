@@ -120,6 +120,11 @@ function get_client_localized_text(key) {
 		year_month_clear: {ja: "クリア", en: "Clear", zh: "清除"},
 		year_month_error: {ja: "入力エラー", en: "Error", zh: "输入错误"},
 		date_picker_clear: {ja: "クリア", en: "Clear", zh: "清除"},
+		color_picker_set: {ja: "設定", en: "Set", zh: "设置"},
+		color_picker_clear: {ja: "クリア", en: "Clear", zh: "清除"},
+		select_unselected: {ja: "未選択", en: "Unselected", zh: "未选择"},
+		select_no_results: {ja: "該当なし", en: "No results", zh: "无匹配项"},
+		select_search_placeholder: {ja: "検索", en: "Search", zh: "搜索"},
 		year_month_year: {ja: "年", en: "Year", zh: "年"},
 		year_month_month: {ja: "月", en: "Month", zh: "月"},
 		original_time_hour: {ja: "時", en: "Hour", zh: "小时"},
@@ -380,6 +385,475 @@ function format_original_time_value(hourValue, minuteValue, meridiemValue, mode)
 function close_original_time_picker_panel() {
 	$(".fbp-original-time-panel").remove();
 	$(document).off("mousedown.originalTimePicker");
+}
+
+function normalize_hex_color(value) {
+	if (typeof value !== "string") {
+		return "";
+	}
+	var normalized = value.trim().replace(/^#/, "");
+	if (/^[0-9a-fA-F]{3}$/.test(normalized)) {
+		normalized = normalized.charAt(0) + normalized.charAt(0) +
+			normalized.charAt(1) + normalized.charAt(1) +
+			normalized.charAt(2) + normalized.charAt(2);
+	}
+	if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+		return "";
+	}
+	return "#" + normalized.toUpperCase();
+}
+
+function hsv_to_rgb(h, s, v) {
+	var hue = ((h % 360) + 360) % 360;
+	var saturation = Math.max(0, Math.min(1, s));
+	var value = Math.max(0, Math.min(1, v));
+	var c = value * saturation;
+	var x = c * (1 - Math.abs((hue / 60) % 2 - 1));
+	var m = value - c;
+	var r1 = 0;
+	var g1 = 0;
+	var b1 = 0;
+
+	if (hue < 60) {
+		r1 = c; g1 = x; b1 = 0;
+	} else if (hue < 120) {
+		r1 = x; g1 = c; b1 = 0;
+	} else if (hue < 180) {
+		r1 = 0; g1 = c; b1 = x;
+	} else if (hue < 240) {
+		r1 = 0; g1 = x; b1 = c;
+	} else if (hue < 300) {
+		r1 = x; g1 = 0; b1 = c;
+	} else {
+		r1 = c; g1 = 0; b1 = x;
+	}
+
+	return {
+		r: Math.round((r1 + m) * 255),
+		g: Math.round((g1 + m) * 255),
+		b: Math.round((b1 + m) * 255)
+	};
+}
+
+function rgb_to_hex(rgb) {
+	function component_to_hex(component) {
+		return Math.max(0, Math.min(255, component)).toString(16).toUpperCase().padStart(2, "0");
+	}
+	return "#" + component_to_hex(rgb.r) + component_to_hex(rgb.g) + component_to_hex(rgb.b);
+}
+
+function hex_to_rgb(hex) {
+	var normalized = normalize_hex_color(hex);
+	if (normalized === "") {
+		return null;
+	}
+	return {
+		r: parseInt(normalized.substr(1, 2), 16),
+		g: parseInt(normalized.substr(3, 2), 16),
+		b: parseInt(normalized.substr(5, 2), 16)
+	};
+}
+
+function rgb_to_hsv(rgb) {
+	var r = rgb.r / 255;
+	var g = rgb.g / 255;
+	var b = rgb.b / 255;
+	var max = Math.max(r, g, b);
+	var min = Math.min(r, g, b);
+	var delta = max - min;
+	var h = 0;
+
+	if (delta !== 0) {
+		if (max === r) {
+			h = 60 * (((g - b) / delta) % 6);
+		} else if (max === g) {
+			h = 60 * (((b - r) / delta) + 2);
+		} else {
+			h = 60 * (((r - g) / delta) + 4);
+		}
+	}
+	if (h < 0) {
+		h += 360;
+	}
+
+	return {
+		h: h,
+		s: max === 0 ? 0 : delta / max,
+		v: max
+	};
+}
+
+function close_original_colorpicker_panel() {
+	$(".fbp-original-colorpicker-panel").remove();
+	$(document).off("mousedown.originalColorPicker");
+	$(document).off("mousemove.originalColorPicker");
+	$(document).off("mouseup.originalColorPicker");
+}
+
+function sort_select_options($select, direction) {
+	var currentValue = $select.val();
+	var localeCode = get_server_locale_code() || undefined;
+	var options = $select.find("option").toArray();
+	var blankOptions = [];
+	var normalOptions = [];
+
+	for (var i = 0; i < options.length; i++) {
+		var option = options[i];
+		if ($(option).val() === "") {
+			blankOptions.push(option);
+		} else {
+			normalOptions.push(option);
+		}
+	}
+
+	normalOptions.sort(function (a, b) {
+		var textA = ($(a).text() || "").trim();
+		var textB = ($(b).text() || "").trim();
+		return textA.localeCompare(textB, localeCode, {
+			numeric: true,
+			sensitivity: "base"
+		});
+	});
+
+	if (direction === "desc") {
+		normalOptions.reverse();
+	}
+
+	$select.empty();
+	for (var blankIndex = 0; blankIndex < blankOptions.length; blankIndex++) {
+		$select.append(blankOptions[blankIndex]);
+	}
+	for (var optionIndex = 0; optionIndex < normalOptions.length; optionIndex++) {
+		$select.append(normalOptions[optionIndex]);
+	}
+	$select.val(currentValue).trigger("change");
+}
+
+function get_original_select_display_text($select) {
+	var $selectedOption = $select.find("option:selected").first();
+	if ($selectedOption.length === 0) {
+		$selectedOption = $select.find("option").first();
+	}
+	if ($selectedOption.val() === "") {
+		return "";
+	}
+	var text = ($selectedOption.text() || "").trim();
+	return text;
+}
+
+function close_original_searchable_select_panel() {
+	$(".fbp-original-select-panel").remove();
+	$(".fbp-original-select-source").data("originalSearchableSelectOpen", false);
+	$(document).off("mousedown.originalSearchableSelect");
+}
+
+function refresh_original_searchable_select_display($select) {
+	var $wrap = $select.next(".fbp-original-select-wrap");
+	if ($wrap.length === 0) {
+		return;
+	}
+	var $button = $wrap.find(".fbp-original-select-button");
+	$button.find(".fbp-original-select-label").text(get_original_select_display_text($select));
+	$button.prop("disabled", $select.prop("disabled"));
+}
+
+function build_original_searchable_select_options($select, $panel, filterText) {
+	var normalizedFilter = String(filterText || "").toLowerCase();
+	var currentValue = $select.val();
+	var $list = $panel.find(".fbp-original-select-options");
+	$list.empty();
+
+	var matchedCount = 0;
+	$select.find("option").each(function () {
+		var $option = $(this);
+		var optionValue = $option.val();
+		var optionText = ($option.text() || "").trim();
+		if (optionText === "" && optionValue === "") {
+			optionText = get_client_localized_text("select_unselected");
+		}
+		if (normalizedFilter !== "" && optionText.toLowerCase().indexOf(normalizedFilter) === -1) {
+			return;
+		}
+
+		var $item = $('<button type="button" class="fbp-original-select-option"></button>');
+		$item.attr("data-value", optionValue);
+		$item.text(optionText);
+		if (optionValue === currentValue) {
+			$item.addClass("is-selected");
+		}
+		if ($option.prop("disabled")) {
+			$item.prop("disabled", true);
+		}
+		$list.append($item);
+		matchedCount++;
+	});
+
+	if (matchedCount === 0) {
+		$list.append('<div class="fbp-original-select-empty">' + escapeHtml(get_client_localized_text("select_no_results")) + '</div>');
+	}
+}
+
+function open_original_searchable_select($select) {
+	close_original_searchable_select_panel();
+	refresh_original_searchable_select_display($select);
+
+	var $panel = $(
+		'<div class="fbp-original-select-panel">' +
+			'<div class="fbp-original-select-toolbar">' +
+				'<input type="text" class="fbp-original-select-search" autocomplete="off" placeholder="' + escapeHtml(get_client_localized_text("select_search_placeholder")) + '">' +
+				'<div class="fbp-original-select-sort-controls">' +
+					'<button type="button" class="fbp-original-select-sort-button" data-sort-direction="asc">▲</button>' +
+					'<button type="button" class="fbp-original-select-sort-button" data-sort-direction="desc">▼</button>' +
+				'</div>' +
+			'</div>' +
+			'<div class="fbp-original-select-options"></div>' +
+		'</div>'
+	);
+
+	$("body").append($panel);
+	build_original_searchable_select_options($select, $panel, "");
+	setTimeout(function () {
+		reposition_fixed_panel_below_input($panel, $select.next(".fbp-original-select-wrap").find(".fbp-original-select-button").get(0));
+		$panel.find(".fbp-original-select-search").trigger("focus");
+	}, 0);
+
+	$panel.find(".fbp-original-select-search").on("input", function () {
+		build_original_searchable_select_options($select, $panel, $(this).val());
+	});
+
+	$panel.find(".fbp-original-select-sort-button").on("click", function (e) {
+		e.preventDefault();
+		var direction = $(this).data("sort-direction");
+		var currentSearch = $panel.find(".fbp-original-select-search").val() || "";
+		sort_select_options($select, direction);
+		build_original_searchable_select_options($select, $panel, currentSearch);
+		refresh_original_searchable_select_display($select);
+	});
+
+	$panel.find(".fbp-original-select-options").on("click", ".fbp-original-select-option", function () {
+		if ($(this).prop("disabled")) {
+			return;
+		}
+		$select.val($(this).attr("data-value")).trigger("change");
+		refresh_original_searchable_select_display($select);
+		close_original_searchable_select_panel();
+	});
+
+	setTimeout(function () {
+		$(document).on("mousedown.originalSearchableSelect", function (e) {
+			if ($(e.target).closest(".fbp-original-select-panel").length > 0) {
+				return;
+			}
+			if ($(e.target).closest(".fbp-original-select-wrap").length > 0) {
+				return;
+			}
+			close_original_searchable_select_panel();
+		});
+	}, 0);
+}
+
+function destroy_original_searchable_select($select) {
+	var $wrap = $select.next(".fbp-original-select-wrap");
+	if ($wrap.length > 0) {
+		if ($wrap.find(".fbp-original-select-button").is(":focus")) {
+			close_original_searchable_select_panel();
+		}
+		$wrap.remove();
+	}
+	$select.removeClass("fbp-original-select-source").show();
+	$select.removeData("originalSearchableSelectInitialized");
+}
+
+function get_original_searchable_select_width($select) {
+	var inlineWidth = $select[0].style.width;
+	if (inlineWidth && inlineWidth !== "") {
+		return inlineWidth;
+	}
+	var computedWidth = $select.css("width");
+	if (computedWidth && computedWidth !== "0px" && computedWidth !== "auto") {
+		return computedWidth;
+	}
+	return "100%";
+}
+
+function ensure_original_searchable_select($select) {
+	if ($select.prop("multiple") || $select.children().length < 3) {
+		destroy_original_searchable_select($select);
+		return;
+	}
+	if ($select.data("originalSearchableSelectInitialized")) {
+		refresh_original_searchable_select_display($select);
+		return;
+	}
+
+	var wrapWidth = get_original_searchable_select_width($select);
+	var $wrap = $('<div class="fbp-original-select-wrap"></div>');
+	$wrap.css("width", wrapWidth);
+	var $button = $(
+		'<button type="button" class="fbp-original-select-button">' +
+			'<span class="fbp-original-select-label"></span>' +
+			'<span class="fbp-original-select-arrow">▼</span>' +
+		'</button>'
+	);
+	$wrap.append($button);
+	$select.addClass("fbp-original-select-source").hide().after($wrap);
+	$select.data("originalSearchableSelectInitialized", true);
+	refresh_original_searchable_select_display($select);
+
+	$button.on("click", function (e) {
+		e.preventDefault();
+		if ($button.prop("disabled")) {
+			return;
+		}
+		var isOpen = $(".fbp-original-select-panel").length > 0 && $select.data("originalSearchableSelectOpen") === true;
+		close_original_searchable_select_panel();
+		$(".fbp-original-select-source").data("originalSearchableSelectOpen", false);
+		if (!isOpen) {
+			$select.data("originalSearchableSelectOpen", true);
+			open_original_searchable_select($select);
+		}
+	});
+
+	$select.on("change.originalSearchableSelect", function () {
+		refresh_original_searchable_select_display($select);
+	});
+}
+
+function ensure_original_colorpicker_input(input) {
+	if (input.data("originalColorpickerInitialized")) {
+		return;
+	}
+	input.data("originalColorpickerInitialized", true);
+	input.attr("autocomplete", "off");
+
+	if (!input.parent().hasClass("fbp-original-colorpicker-wrap")) {
+		input.wrap('<div class="fbp-original-colorpicker-wrap" style="position:relative;display:flex;align-items:center;gap:8px;"></div>');
+	}
+	if (input.siblings(".fbp-original-colorpicker-trigger").length === 0) {
+		input.after('<button type="button" class="fbp-original-colorpicker-trigger" aria-label="Open color picker" style="flex:0 0 28px;width:28px;height:28px;border:1px solid #cbd5e1;border-radius:6px;padding:0;cursor:pointer;background:#ffffff;"></button>');
+	}
+	update_original_colorpicker_preview(input);
+}
+
+function update_original_colorpicker_preview(input) {
+	var normalized = normalize_hex_color(input.val());
+	var preview = input.siblings(".fbp-original-colorpicker-trigger");
+	var color = normalized === "" ? "#FFFFFF" : normalized;
+	var background = normalized === "" ? "linear-gradient(135deg,#f8fafc 0%,#f8fafc 45%,#e2e8f0 45%,#e2e8f0 55%,#f8fafc 55%,#f8fafc 100%)" : color;
+	preview.css({
+		background: background,
+		"box-shadow": normalized === "" ? "inset 0 0 0 1px #e2e8f0" : "inset 0 0 0 1px rgba(15,23,42,0.08)"
+	});
+}
+
+function open_original_colorpicker_panel(input) {
+	close_original_colorpicker_panel();
+	ensure_original_colorpicker_input(input);
+
+	var rgb = hex_to_rgb(input.val()) || {r: 59, g: 130, b: 246};
+	var hsv = rgb_to_hsv(rgb);
+	var draftHex = rgb_to_hex(rgb);
+	var panel = $(
+		'<div class="fbp-original-colorpicker-panel" style="background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,0.18);padding:14px;min-width:286px;max-width:286px;">' +
+			'<div style="display:flex;gap:12px;align-items:flex-start;">' +
+				'<div class="fbp-original-colorpicker-sv" style="position:relative;width:180px;height:180px;border-radius:8px;overflow:hidden;cursor:crosshair;background:red;">' +
+					'<div style="position:absolute;inset:0;background:linear-gradient(to right,#fff 0%,rgba(255,255,255,0) 100%);"></div>' +
+					'<div style="position:absolute;inset:0;background:linear-gradient(to top, #000 0%, rgba(0,0,0,0) 100%);"></div>' +
+					'<div class="fbp-original-colorpicker-sv-knob" style="position:absolute;width:12px;height:12px;margin-left:-6px;margin-top:-6px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px rgba(15,23,42,0.25);pointer-events:none;"></div>' +
+				'</div>' +
+				'<div class="fbp-original-colorpicker-hue" style="position:relative;width:22px;height:180px;border-radius:8px;overflow:hidden;cursor:row-resize;background:linear-gradient(to bottom,#ff0000 0%,#ff00ff 16.66%,#0000ff 33.33%,#00ffff 50%,#00ff00 66.66%,#ffff00 83.33%,#ff0000 100%);">' +
+					'<div class="fbp-original-colorpicker-hue-knob" style="position:absolute;left:0;width:100%;height:4px;margin-top:-2px;background:#fff;box-shadow:0 0 0 1px rgba(15,23,42,0.2);pointer-events:none;"></div>' +
+				'</div>' +
+				'<div class="fbp-original-colorpicker-preview-block" style="display:flex;flex-direction:column;gap:8px;align-items:stretch;">' +
+					'<div class="fbp-original-colorpicker-preview" style="width:42px;height:42px;border:1px solid #cbd5e1;border-radius:8px;"></div>' +
+				'</div>' +
+			'</div>' +
+			'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">' +
+				'<button type="button" class="fbp-original-colorpicker-clear">' + escapeHtml(get_client_localized_text("color_picker_clear")) + '</button>' +
+				'<button type="button" class="fbp-original-colorpicker-set">' + escapeHtml(get_client_localized_text("color_picker_set")) + '</button>' +
+			'</div>' +
+		'</div>'
+	);
+
+	$("body").append(panel);
+
+	function render() {
+		var hueColor = rgb_to_hex(hsv_to_rgb(hsv.h, 1, 1));
+		var knobLeft = hsv.s * 180;
+		var knobTop = (1 - hsv.v) * 180;
+		var hueTop = (hsv.h / 360) * 180;
+		draftHex = rgb_to_hex(hsv_to_rgb(hsv.h, hsv.s, hsv.v));
+
+		panel.find(".fbp-original-colorpicker-sv").css("background", hueColor);
+		panel.find(".fbp-original-colorpicker-sv-knob").css({
+			left: Math.max(0, Math.min(180, knobLeft)),
+			top: Math.max(0, Math.min(180, knobTop))
+		});
+		panel.find(".fbp-original-colorpicker-hue-knob").css("top", Math.max(0, Math.min(180, hueTop)));
+		panel.find(".fbp-original-colorpicker-preview").css("background", draftHex);
+	}
+
+	function bind_drag(selector, moveHandler) {
+		panel.find(selector).on("mousedown", function (event) {
+			event.preventDefault();
+			moveHandler(event);
+			$(document).off("mousemove.originalColorPicker").on("mousemove.originalColorPicker", function (moveEvent) {
+				moveHandler(moveEvent);
+			});
+			$(document).off("mouseup.originalColorPicker").on("mouseup.originalColorPicker", function () {
+				$(document).off("mousemove.originalColorPicker");
+				$(document).off("mouseup.originalColorPicker");
+			});
+		});
+	}
+
+	bind_drag(".fbp-original-colorpicker-sv", function (event) {
+		var svRect = panel.find(".fbp-original-colorpicker-sv").get(0).getBoundingClientRect();
+		var localX = Math.max(0, Math.min(svRect.width, event.clientX - svRect.left));
+		var localY = Math.max(0, Math.min(svRect.height, event.clientY - svRect.top));
+		hsv.s = localX / svRect.width;
+		hsv.v = 1 - (localY / svRect.height);
+		render();
+	});
+
+	bind_drag(".fbp-original-colorpicker-hue", function (event) {
+		var hueRect = panel.find(".fbp-original-colorpicker-hue").get(0).getBoundingClientRect();
+		var localY = Math.max(0, Math.min(hueRect.height, event.clientY - hueRect.top));
+		hsv.h = (localY / hueRect.height) * 360;
+		if (hsv.h >= 360) {
+			hsv.h = 359.999;
+		}
+		render();
+	});
+
+	panel.find(".fbp-original-colorpicker-clear").on("click", function () {
+		input.val("").trigger("change");
+		update_original_colorpicker_preview(input);
+		close_original_colorpicker_panel();
+	});
+
+	panel.find(".fbp-original-colorpicker-set").on("click", function () {
+		input.val(draftHex).trigger("change");
+		update_original_colorpicker_preview(input);
+		close_original_colorpicker_panel();
+	});
+
+	render();
+	setTimeout(function () {
+		reposition_fixed_panel_below_input(panel, input.get(0));
+	}, 0);
+
+	setTimeout(function () {
+		$(document).on("mousedown.originalColorPicker", function (e) {
+			if ($(e.target).closest(".fbp-original-colorpicker-panel").length > 0) {
+				return;
+			}
+			if ($(e.target).closest(".fbp-original-colorpicker-wrap").length > 0 || $(e.target).closest(".colorpicker").length > 0) {
+				return;
+			}
+			close_original_colorpicker_panel();
+		});
+	}, 0);
 }
 
 function open_original_time_picker_panel(input) {
@@ -3750,8 +4224,31 @@ append_function_dialog("__all__", function (dialog_id, flg_window = false) {
 		}
 
 	// color picker
-	jQuery(function ($) {
-		$('.colorpicker').asColorPicker();
+	$(dialog_id).off("focus.originalColorPicker click.originalColorPicker", ".colorpicker")
+		.on("focus.originalColorPicker click.originalColorPicker", ".colorpicker", function (e) {
+			e.preventDefault();
+			var input = $(this);
+			ensure_original_colorpicker_input(input);
+			open_original_colorpicker_panel(input);
+		})
+		.off("click.originalColorPickerTrigger", ".fbp-original-colorpicker-trigger")
+		.on("click.originalColorPickerTrigger", ".fbp-original-colorpicker-trigger", function (e) {
+			e.preventDefault();
+			var input = $(this).siblings(".colorpicker").first();
+			if (input.length === 0) {
+				return;
+			}
+			ensure_original_colorpicker_input(input);
+			open_original_colorpicker_panel(input);
+		})
+		.off("input.originalColorPicker change.originalColorPicker", ".colorpicker")
+		.on("input.originalColorPicker change.originalColorPicker", ".colorpicker", function () {
+			update_original_colorpicker_preview($(this));
+		});
+
+	$(dialog_id + " .colorpicker").each(function () {
+		ensure_original_colorpicker_input($(this));
+		update_original_colorpicker_preview($(this));
 	});
 
 	// 文字バイトカウンター
@@ -3763,23 +4260,7 @@ append_function_dialog("__all__", function (dialog_id, flg_window = false) {
 	// ドロップダウンに検索機能
 	$(dialog_id + " select").each(function () {
 		var $sel = $(this);
-
-		// 既に select2 済みなら破棄してクリーンにする
-		if ($sel.hasClass("select2-hidden-accessible")) {
-			try {
-				$sel.select2("destroy");
-			} catch (e) {
-				// destroy 失敗は無視（壊れてる時にここに来ることがある）
-			}
-		}
-
-		// optionが一定数以上なら select2 を付ける
-		if ($sel.children().length > 10) {
-			$sel.select2({
-				language: "ja",
-				dropdownParent: $(document.body)
-			});
-		}
+		ensure_original_searchable_select($sel);
 	});
 
 	//Vimeo
@@ -3817,11 +4298,6 @@ append_function_dialog("__all__", function (dialog_id, flg_window = false) {
 
 		get_geometry_location($(this), $(input_tag));
 
-	});
-
-	// select2のアイテムからtitle属性を削除
-	$('.select2-selection__rendered').hover(function () {
-		$(this).removeAttr('title');
 	});
 
 	// Vimeo thumbnail

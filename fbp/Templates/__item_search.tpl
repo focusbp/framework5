@@ -65,7 +65,7 @@ $row : array of the values.
 	
 {else if $type == "date"}
 	
-	{html_input_date name="{$name}" value="{$row.$name}" style="padding-left:20px;"}
+	{html_input_date name="{$name}" value="{$row.$name}"}
 	
 {else if $type == "datetime"}
 	<input type="text" name="{$name}" value="{$row.$name}" class="world_datetime" data-search-name="{$name|escape}" data-search-title="{$title|escape}" data-search-type="{$type|escape}">
