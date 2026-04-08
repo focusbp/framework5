@@ -9,6 +9,7 @@ class panel {
 
 
 	function __construct(Controller $ctl) {
+		aaa
 	}
 
 	function page(Controller $ctl) {
