@@ -48,6 +48,15 @@
   "public_pages_registry.validation.function_name_exists": "その関数名、もう使われてるで。",
   "public_pages_registry.validation.title_required": "タイトル入れてや。",
   "public_pages_registry.validation.menu_sort": "メニュー順は 0 以上で入れてな。",
+  "system_error.dialog_title": "システムエラーやで",
+  "system_error.detail.unconfigured": "システムエラーが発生してもうた。管理者に報告しといてや。",
+  "system_error.detail.failed": "システムエラーが発生してもうた。",
+  "system_error.detail.reported": "システムエラーが発生して、エンジニアにレポートを自動送信して受理されたで。",
+  "system_error.detail.tail": "進捗は下のリンクから確認できるさかい、修正完了まで待っといてや。",
+  "system_error.report_id_label": "受付ID",
+  "system_error.progress_link": "サーバーエラー対応状況",
+  "system_error.detail_toggle_show": "エラーの詳細を表示する",
+  "system_error.detail_toggle_hide": "エラーの詳細を閉じる",
   "public_assets.validation.store_failed": "画像の保存、うまいこといかへんかったわ。",
   "public_assets.validation.asset_key_required": "アセットキーは必須やで。",
   "public_assets.validation.asset_key_format": "アセットキーは英小文字始まりで、英小文字・数字・アンダースコアだけやで。",
@@ -75,5 +84,9 @@
   "wizard.validation.button_title_required": "ボタン名を入れてや。",
   "wizard.validation.timing_text_required": "実行のタイミングを入れてな。",
   "wizard.validation.cron_request_required": "自然文で実行内容を入れてや。",
-  "wizard.validation.page_title_required": "ページタイトルを入れてな。"
+  "wizard.validation.page_title_required": "ページタイトルを入れてな。",
+  "login.release_api_help": "リリース受信用の API Key / Secret を入れてな。いったんスキップもできるで。",
+  "setting.release_api_hmac": "Release API 認証",
+  "setting.release_api_key": "Release API Key",
+  "setting.release_api_secret": "Release API Secret"
 }

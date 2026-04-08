@@ -27,8 +27,16 @@ class ReleaseManager {
 			$projectRoot = dirname(__FILE__) . "/../../../";
 		}
 		$projectRoot = rtrim($projectRoot, "/");
+		$resolvedProjectRoot = realpath($projectRoot);
+		if ($resolvedProjectRoot !== false && $resolvedProjectRoot !== "") {
+			$projectRoot = $resolvedProjectRoot;
+		}
 
 		$classesRoot = $projectRoot . "/classes";
+		$resolvedClassesRoot = realpath($classesRoot);
+		if ($resolvedClassesRoot !== false && $resolvedClassesRoot !== "") {
+			$classesRoot = $resolvedClassesRoot;
+		}
 		$this->appdir = $classesRoot . "/app";
 		$this->datadir = $classesRoot . "/data";
 		$this->extractdir = $classesRoot;

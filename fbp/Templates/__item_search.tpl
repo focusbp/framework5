@@ -30,11 +30,7 @@ $row : array of the values.
 	
 {else if $type == "textarea"}
 	
-	{if $field.max_bytes > 0}
-		<textarea name="{$name}" class="wordcounter" data-counter_max="{$field.max_bytes}" data-search-name="{$name|escape}" data-search-title="{$title|escape}" data-search-type="{$type|escape}">{$row.$name}</textarea>
-	{else}
-		<textarea name="{$name}" data-search-name="{$name|escape}" data-search-title="{$title|escape}" data-search-type="{$type|escape}">{$row.$name}</textarea>
-	{/if}
+	<input type="text" name="{$name}" value="{$row.$name}" data-search-name="{$name|escape}" data-search-title="{$title|escape}" data-search-type="{$type|escape}">
 	
 {else if $type == "textarea_links"}
 	

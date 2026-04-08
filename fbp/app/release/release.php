@@ -27,12 +27,24 @@ class release {
 
 	function download_zip_exe(Controller $ctl) {
 		$zipFile = $this->release_manager->create_release_zip($ctl);
+		if (!is_file($zipFile)) {
+			throw new Exception("Release zip was not created.");
+		}
 
-		// Output zip file data
+		while (ob_get_level() > 0) {
+			ob_end_clean();
+		}
+
+		header("Content-Type: application/zip");
+		header("Content-Disposition: attachment; filename=\"" . basename($zipFile) . "\"");
+		header("Content-Length: " . filesize($zipFile));
+		header("Cache-Control: no-store, no-cache, must-revalidate");
+		header("Pragma: public");
+
 		readfile($zipFile);
 
-		// Remove the zip file from the server after download
 		unlink($zipFile);
+		exit;
 	}
 
 	function release(Controller $ctl) {
@@ -72,7 +84,7 @@ class release {
 				unlink($zipFile);
 			}
 		}
-		$ctl->show_multi_dialog("upgrade2", "release_confirm.tpl", $ctl->t("release.dialog.upgrade"), 600, true, true);
+		$ctl->show_multi_dialog("upgrade", "release_confirm.tpl", $ctl->t("release.dialog.upgrade"), 600, true, true);
 	}
 
 	function release_exe(Controller $ctl) {
@@ -87,7 +99,7 @@ class release {
 			$ctl->assign("fail", $e->getMessage());
 		}
 		
-		$ctl->show_multi_dialog("upgrade2", "release_done.tpl", $ctl->t("release.dialog.upgrade"), 600, true, true);
+		$ctl->show_multi_dialog("upgrade", "release_done.tpl", $ctl->t("release.dialog.upgrade"), 600, true, true);
 	}
 
 	function reload(Controller $ctl) {

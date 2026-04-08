@@ -206,7 +206,10 @@
 						</tr>
 						<tr>
 							<td>{t key="setting.mail_password"}</td>
-							<td><input type="password" name="smtp_password" value="" placeholder="{$masked_setting.smtp_password}"></td>
+							<td>
+								<input type="text" name="smtp_password_dummy" value="" autocomplete="username" style="display:none;">
+								<input type="text" name="smtp_password_web" value="" placeholder="{$masked_setting.smtp_password}" autocomplete="off" data-lpignore="true" data-1p-ignore="true" spellcheck="false">
+							</td>
 						</tr>
 						<tr>
 							<td>{t key="setting.smtp_secure"}</td>
@@ -356,6 +359,15 @@
 						<tr>
 							<td>{t key="setting.api_secret"}</td>
 							<td><input type="text" name="api_secret" value="{$setting.api_secret}" readonly onclick="this.select();"></td>
+						</tr>
+						<tr>
+							<th rowspan="2">{t key="setting.release_api_hmac"}</th>
+							<td>{t key="setting.release_api_key"}</td>
+							<td><input type="text" name="release_api_key" value="" placeholder="{$masked_setting.release_api_key}" autocomplete="off" spellcheck="false"></td>
+						</tr>
+						<tr>
+							<td>{t key="setting.release_api_secret"}</td>
+							<td><input type="text" name="release_api_secret" value="" placeholder="{$masked_setting.release_api_secret}" autocomplete="off" spellcheck="false"></td>
 						</tr>
 					</table>
 				</div>

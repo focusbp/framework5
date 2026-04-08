@@ -13,16 +13,20 @@ class release_api {
 
 	function upload(Controller $ctl) {
 		$setting = $ctl->get_setting();
-		if (empty($setting["api_key"]) || empty($setting["api_secret"])) {
+		$release_api_key = (string) ($setting["release_api_key"] ?? "");
+		$release_api_secret = (string) ($setting["release_api_secret"] ?? "");
+		$generic_api_key = (string) ($setting["api_key"] ?? "");
+		$generic_api_secret = (string) ($setting["api_secret"] ?? "");
+		if (($release_api_key === "" || $release_api_secret === "") && ($generic_api_key === "" || $generic_api_secret === "")) {
 			http_response_code(422);
 			$this->respond_json([
 				"ok" => false,
 				"error_code" => "hmac_not_configured",
-				"error" => "HMAC API key/secret is not configured on the target server.",
+				"error" => "Release API key/secret is not configured on the target server.",
 			]);
 		}
 
-		if ($ctl->verify_api_request() !== true) {
+		if ($ctl->verify_release_api_request() !== true) {
 			exit;
 		}
 

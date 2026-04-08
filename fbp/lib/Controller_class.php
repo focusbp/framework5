@@ -1623,8 +1623,178 @@ class Controller_class implements Controller {
 		return $setting;
 	}
 
+	function get_release_api_credentials() {
+		$setting = $this->get_setting();
+		if (!is_array($setting)) {
+			$setting = [];
+		}
+		return [
+			"api_key" => (string) ($setting["release_api_key"] ?? ""),
+			"api_secret" => (string) ($setting["release_api_secret"] ?? ""),
+		];
+	}
+
 	function verify_api_request() {
 		$setting = $this->generate_api_credentials();
+		return $this->verify_hmac_request(
+			(string) ($setting["api_key"] ?? ""),
+			(string) ($setting["api_secret"] ?? "")
+		);
+	}
+
+	function verify_release_api_request() {
+		$cred = $this->get_release_api_credentials();
+		if ($cred["api_key"] !== "" && $cred["api_secret"] !== "") {
+			return $this->verify_hmac_request($cred["api_key"], $cred["api_secret"]);
+		}
+		return $this->verify_api_request();
+	}
+
+	function get_server_error_report_settings() {
+		$settings = [
+			"url" => $this->get_env_value("FBP_SERVER_ERROR_REPORT_URL"),
+			"api_key" => $this->get_env_value("FBP_SERVER_ERROR_API_KEY"),
+			"api_secret" => $this->get_env_value("FBP_SERVER_ERROR_API_SECRET"),
+		];
+		$settings["configured"] = ($settings["url"] !== "" && $settings["api_key"] !== "" && $settings["api_secret"] !== "");
+		return $settings;
+	}
+
+	function verify_server_error_report_request() {
+		$settings = $this->get_server_error_report_settings();
+		return $this->verify_hmac_request(
+			(string) ($settings["api_key"] ?? ""),
+			(string) ($settings["api_secret"] ?? "")
+		);
+	}
+
+	function report_server_error(Throwable $e) {
+		try {
+			$settings = $this->get_server_error_report_settings();
+			$report_url = (string) ($settings["url"] ?? "");
+			$api_key = (string) ($settings["api_key"] ?? "");
+			$api_secret = (string) ($settings["api_secret"] ?? "");
+			if ($report_url === "" || $api_key === "" || $api_secret === "") {
+				return [
+					"configured" => false,
+					"reported" => false,
+					"id" => null,
+					"public_url" => "",
+				];
+			}
+			if (!empty($_SERVER["HTTP_X_FBP_ERROR_REPORT"])) {
+				return [
+					"configured" => true,
+					"reported" => false,
+					"id" => null,
+					"public_url" => "",
+				];
+			}
+			if (($this->GET("class") ?? $this->POST("class")) === "server_error_api"
+				&& ($this->GET("function") ?? $this->POST("function")) === "report") {
+				return [
+					"configured" => true,
+					"reported" => false,
+					"id" => null,
+					"public_url" => "",
+				];
+			}
+
+			$payload = [
+				"occurred_at" => date("Y-m-d H:i:s"),
+				"app_name" => basename((string) $this->dirs->basedir),
+				"app_code" => (string) $this->get_appcode(),
+				"http_host" => (string) ($_SERVER["HTTP_HOST"] ?? ""),
+				"request_uri" => (string) ($_SERVER["REQUEST_URI"] ?? ""),
+				"request_method" => (string) ($_SERVER["REQUEST_METHOD"] ?? ""),
+				"class_name" => (string) ($this->GET("class") ?? $this->POST("class") ?? ""),
+				"function_name" => (string) ($this->GET("function") ?? $this->POST("function") ?? ""),
+				"exception_class" => get_class($e),
+				"message" => (string) $e->getMessage(),
+				"file_path" => (string) $e->getFile(),
+				"line_no" => (int) $e->getLine(),
+				"trace_text" => (string) $e->getTraceAsString(),
+				"post" => $this->sanitize_server_error_value($_POST),
+				"get" => $this->sanitize_server_error_value($_GET),
+				"session_user_id" => $this->sanitize_server_error_value($this->get_login_user_id()),
+				"session_login_id" => $this->sanitize_server_error_value($this->get_login_id()),
+				"remote_addr" => (string) ($_SERVER["REMOTE_ADDR"] ?? ""),
+				"user_agent" => (string) ($_SERVER["HTTP_USER_AGENT"] ?? ""),
+			];
+			$payload["error_hash"] = hash(
+				"sha256",
+				implode("\n", [
+					(string) $payload["app_name"],
+					(string) $payload["class_name"],
+					(string) $payload["function_name"],
+					(string) $payload["exception_class"],
+					(string) $payload["message"],
+					(string) $payload["file_path"],
+					(string) $payload["line_no"],
+				])
+			);
+
+			$json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+			if ($json === false) {
+				return [
+					"configured" => true,
+					"reported" => false,
+					"id" => null,
+					"public_url" => "",
+				];
+			}
+
+			$api_ts = (string) time();
+			$path = (string) parse_url($report_url, PHP_URL_PATH);
+			$query = (string) parse_url($report_url, PHP_URL_QUERY);
+			$canonical = "POST\n" . $path . "\n" . $query . "\n" . $api_ts;
+			$api_sign = hash_hmac("sha256", $canonical, $api_secret);
+
+			$curl = curl_init();
+			curl_setopt($curl, CURLOPT_URL, $report_url);
+			curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($curl, CURLOPT_POST, true);
+			curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
+			curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 2);
+			curl_setopt($curl, CURLOPT_TIMEOUT, 3);
+			curl_setopt($curl, CURLOPT_HTTPHEADER, [
+				"Content-Type: application/json",
+				"Content-Length: " . strlen($json),
+				"X-API-KEY: " . $api_key,
+				"X-API-TS: " . $api_ts,
+				"X-API-SIGN: " . $api_sign,
+				"X-FBP-ERROR-REPORT: 1",
+			]);
+
+			$host = (string) parse_url($report_url, PHP_URL_HOST);
+			if ($host === "localhost" || $host === "127.0.0.1") {
+				curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+				curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
+			}
+
+			$response = curl_exec($curl);
+			curl_close($curl);
+			$response_data = json_decode((string) $response, true);
+			return [
+				"configured" => true,
+				"reported" => is_array($response_data) && !empty($response_data["ok"]),
+				"id" => isset($response_data["id"]) ? (int) $response_data["id"] : null,
+				"public_url" => is_array($response_data) ? (string) ($response_data["public_url"] ?? "") : "",
+			];
+		} catch (Throwable $report_error) {
+			return [
+				"configured" => true,
+				"reported" => false,
+				"id" => null,
+				"public_url" => "",
+			];
+		}
+	}
+
+	private function verify_hmac_request($expected_api_key, $expected_api_secret) {
+		if ($expected_api_key === "" || $expected_api_secret === "") {
+			return $this->res_unauthorized_api_request();
+		}
 
 		$api_key = isset($_SERVER["HTTP_X_API_KEY"]) ? trim($_SERVER["HTTP_X_API_KEY"]) : "";
 		$api_ts = isset($_SERVER["HTTP_X_API_TS"]) ? trim($_SERVER["HTTP_X_API_TS"]) : "";
@@ -1634,7 +1804,7 @@ class Controller_class implements Controller {
 			return $this->res_unauthorized_api_request();
 		}
 
-		if (empty($setting["api_key"]) || !hash_equals((string) $setting["api_key"], $api_key)) {
+		if (!hash_equals((string) $expected_api_key, $api_key)) {
 			return $this->res_unauthorized_api_request();
 		}
 
@@ -1653,13 +1823,52 @@ class Controller_class implements Controller {
 		$query = isset($_SERVER["QUERY_STRING"]) ? $_SERVER["QUERY_STRING"] : "";
 
 		$canonical = $method . "\n" . $path . "\n" . $query . "\n" . $api_ts;
-		$expected_sign = hash_hmac("sha256", $canonical, (string) $setting["api_secret"]);
+		$expected_sign = hash_hmac("sha256", $canonical, (string) $expected_api_secret);
 
 		if (!hash_equals($expected_sign, $api_sign)) {
 			return $this->res_unauthorized_api_request();
 		}
 
 		return true;
+	}
+
+	private function get_env_value($name) {
+		$value = $_SERVER[$name] ?? getenv($name);
+		if (!is_string($value)) {
+			return "";
+		}
+		return trim($value);
+	}
+
+	private function sanitize_server_error_value($value, $key = "", $depth = 0) {
+		if ($depth > 5) {
+			return "[depth_limit]";
+		}
+		$key_lower = strtolower((string) $key);
+		$mask_words = ["password", "passwd", "pwd", "secret", "token", "api_key", "api_secret", "authorization"];
+		foreach ($mask_words as $word) {
+			if ($key_lower !== "" && strpos($key_lower, $word) !== false) {
+				return "[masked]";
+			}
+		}
+		if (is_array($value)) {
+			$res = [];
+			foreach ($value as $child_key => $child_value) {
+				$res[$child_key] = $this->sanitize_server_error_value($child_value, (string) $child_key, $depth + 1);
+			}
+			return $res;
+		}
+		if (is_object($value)) {
+			return "[object " . get_class($value) . "]";
+		}
+		if (is_bool($value) || is_int($value) || is_float($value) || $value === null) {
+			return $value;
+		}
+		$text = (string) $value;
+		if (strlen($text) > 5000) {
+			$text = substr($text, 0, 5000) . "...[truncated]";
+		}
+		return $text;
 	}
 
 	private function generate_secure_hex($length) {
@@ -2028,17 +2237,17 @@ class Controller_class implements Controller {
 		}
 	}
 
-	function send_mail($from, $to, $subject, $template, $attachment_files = null) {
+	function send_mail($from, $to, $subject, $template, $attachment_files = null, $throw_on_error = false) {
 		$body = $this->smarty->fetch($template);
 		$this->console_log("Template:" . $this->class . "/" . $template, "#CE5C00");
-		$this->send_mail_string($from, $to, $subject, $body, $attachment_files);
+		$this->send_mail_string($from, $to, $subject, $body, $attachment_files, $throw_on_error);
 	}
 
-	function send_mail_text($to, $subject, $body, $attachment_files = null) {
-		$this->send_mail_string(null, $to, $subject, $body, $attachment_files);
+	function send_mail_text($to, $subject, $body, $attachment_files = null, $throw_on_error = false) {
+		$this->send_mail_string(null, $to, $subject, $body, $attachment_files, $throw_on_error);
 	}
 
-	function send_mail_string($from, $to, $subject, $body, $attachment_files = null) {
+	function send_mail_string($from, $to, $subject, $body, $attachment_files = null, $throw_on_error = false) {
 
 		$this->console_log("### MAIL ###");
 		$this->console_log("To:" . $to);
@@ -2099,7 +2308,19 @@ class Controller_class implements Controller {
 
 			$email->Send();
 		} catch (\PHPMailer\PHPMailer\Exception $e) {
-			if ($this->testserver()) {
+			if ($this->testserver() || $throw_on_error) {
+				$details = [
+					$e->getMessage(),
+					"PHPMailer ErrorInfo: " . (string) $email->ErrorInfo,
+					"SMTP host: " . (string) ($setting["smtp_server"] ?? ""),
+					"SMTP port: " . (string) ($setting["smtp_port"] ?? ""),
+					"SMTP secure: " . (string) ($setting["smtp_secure"] ?? ""),
+					"SMTP user: " . (string) ($setting["smtp_user"] ?? ""),
+				];
+				throw new Exception(implode("\n", array_filter($details)));
+			}
+		} catch (\Throwable $e) {
+			if ($this->testserver() || $throw_on_error) {
 				throw $e;
 			}
 		}

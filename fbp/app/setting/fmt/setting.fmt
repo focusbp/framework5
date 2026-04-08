@@ -59,6 +59,8 @@ openai_logfile,255,T
 max_vs,24,N
 api_key,255,T
 api_secret,255,T
+release_api_key,255,T
+release_api_secret,255,T
 show_developer_panel,1,N
 source_code_dir,255,T
 website_url,255,T

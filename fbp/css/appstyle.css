@@ -111,7 +111,7 @@ button,.button, input[type="submit"], .search-btn {
 	font-size:16px;
 }
 
-button:hover,
+button:hover:not(.fbp-original-select-option),
 a.button:hover,
 input[type="submit"]:hover,
 .search-btn:hover
@@ -928,6 +928,14 @@ section {
 	box-sizing: border-box;
 }
 
+.fbp-original-select-button:hover,
+button.fbp-original-select-button:hover,
+.ui-button.fbp-original-select-button:hover {
+	background: #fff;
+	color: #000;
+	border-color: #dfdfdf;
+}
+
 .fbp-original-select-button:disabled {
 	background: #f8fafc;
 	color: #94a3b8;
@@ -989,6 +997,7 @@ section {
 	margin-top: 0;
 	padding: 0 8px;
 	line-height: 1;
+	background:#CCC;
 }
 
 .fbp-original-select-options {
@@ -1021,6 +1030,14 @@ section {
 .fbp-original-select-option:hover,
 .fbp-original-select-option.is-selected {
 	background: #dbeafe;
+	color: #0f172a;
+}
+
+button.fbp-original-select-option:hover,
+.ui-button.fbp-original-select-option:hover {
+	background: #dbeafe;
+	color: #0f172a;
+	border-color: #bfdbfe;
 }
 
 .fbp-original-select-option:disabled {

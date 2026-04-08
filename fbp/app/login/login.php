@@ -31,6 +31,8 @@ class login {
 		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? "en"));
 		$locale_code = $this->normalize_locale_code($pending["locale_code"] ?? "", $framework_language_code);
 		$project_release_code = trim((string) ($pending["project_release_code"] ?? ""));
+		$release_api_key = trim((string) ($pending["release_api_key"] ?? ""));
+		$release_api_secret = trim((string) ($pending["release_api_secret"] ?? ""));
 		$smtp_from = trim((string) ($pending["smtp_from"] ?? ""));
 		$smtp_server = trim((string) ($pending["smtp_server"] ?? ""));
 		$smtp_port = trim((string) ($pending["smtp_port"] ?? ""));
@@ -58,6 +60,8 @@ class login {
 		$setting["framework_language_code"] = $framework_language_code;
 		$setting["locale_code"] = $locale_code;
 		$setting["project_release_code"] = $project_release_code;
+		$setting["release_api_key"] = $release_api_key;
+		$setting["release_api_secret"] = $release_api_secret;
 		$setting["smtp_from"] = $smtp_from;
 		$setting["smtp_server"] = $smtp_server;
 		$setting["smtp_port"] = $smtp_port;
@@ -151,7 +155,7 @@ class login {
 		$ctl->show_multi_dialog("new_account", "new_account_project_release_code.tpl", $ctl->t("setting.project_release_code", [], $framework_language_code));
 	}
 
-	function make_new_account_mail_server(Controller $ctl){
+	function make_new_account_release_api(Controller $ctl){
 		$pending = $ctl->get_session($this->pending_account_session_key);
 		if (!is_array($pending) || empty($pending["login_id"]) || empty($pending["password"])) {
 			$ctl->res_error_message("project_release_code", $ctl->t("login.validation.initial_account_session_expired"));
@@ -164,6 +168,45 @@ class login {
 		if($ctl->count_res_error_message()>0){
 			return;
 		}
+		$ctl->set_session($this->pending_account_session_key, $pending);
+
+		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? "en"));
+		$setting = $ctl->get_setting();
+		if (!is_array($setting)) {
+			$setting = [];
+		}
+		$ctl->assign("dialog_lang", $framework_language_code);
+		$ctl->assign("release_api_key", (string) ($pending["release_api_key"] ?? ($setting["release_api_key"] ?? "")));
+		$ctl->assign("release_api_secret", (string) ($pending["release_api_secret"] ?? ($setting["release_api_secret"] ?? "")));
+		$ctl->show_multi_dialog("new_account", "new_account_release_api.tpl", $ctl->t("setting.release_api_hmac", [], $framework_language_code));
+	}
+
+	function make_new_account_mail_server(Controller $ctl){
+		$pending = $ctl->get_session($this->pending_account_session_key);
+		if (!is_array($pending) || empty($pending["login_id"]) || empty($pending["password"])) {
+			$ctl->res_error_message("release_api_key", $ctl->t("login.validation.initial_account_session_expired"));
+			return;
+		}
+
+		$post = $ctl->POST();
+		$pending["release_api_key"] = trim((string) ($post["release_api_key"] ?? ""));
+		$pending["release_api_secret"] = trim((string) ($post["release_api_secret"] ?? ""));
+		$ctl->set_session($this->pending_account_session_key, $pending);
+
+		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? "en"));
+		$this->assign_mail_server_dialog($ctl, $pending, $framework_language_code);
+		$ctl->show_multi_dialog("new_account", "new_account_mail_server.tpl", $ctl->t("login.mail_server_setting_title", [], $framework_language_code));
+	}
+
+	function make_new_account_skip_release_api(Controller $ctl){
+		$pending = $ctl->get_session($this->pending_account_session_key);
+		if (!is_array($pending) || empty($pending["login_id"]) || empty($pending["password"])) {
+			$ctl->show_notification_text($ctl->t("login.validation.initial_account_session_expired"));
+			return;
+		}
+
+		$pending["release_api_key"] = "";
+		$pending["release_api_secret"] = "";
 		$ctl->set_session($this->pending_account_session_key, $pending);
 
 		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? "en"));
@@ -255,6 +298,20 @@ class login {
 	function make_new_account_mail_server_back(Controller $ctl){
 		$pending = $ctl->get_session($this->pending_account_session_key);
 		if (!is_array($pending) || empty($pending["login_id"]) || empty($pending["password"])) {
+			$ctl->show_notification_text($ctl->t("login.validation.initial_account_session_expired"));
+			return;
+		}
+
+		$framework_language_code = $this->normalize_framework_language_code((string) ($pending["framework_language_code"] ?? "en"));
+		$ctl->assign("dialog_lang", $framework_language_code);
+		$ctl->assign("release_api_key", (string) ($pending["release_api_key"] ?? ""));
+		$ctl->assign("release_api_secret", (string) ($pending["release_api_secret"] ?? ""));
+		$ctl->show_multi_dialog("new_account", "new_account_release_api.tpl", $ctl->t("setting.release_api_hmac", [], $framework_language_code));
+	}
+
+	function make_new_account_release_api_back(Controller $ctl){
+		$pending = $ctl->get_session($this->pending_account_session_key);
+		if (!is_array($pending) || empty($pending["framework_language_code"]) || empty($pending["locale_code"])) {
 			$ctl->show_notification_text($ctl->t("login.validation.initial_account_session_expired"));
 			return;
 		}
@@ -568,6 +625,8 @@ class login {
 			["label_key" => "setting.framework_language_code", "value" => $language_options[$framework_language_code] ?? $framework_language_code],
 			["label_key" => "setting.locale_code", "value" => $locale_options[$pending["locale_code"] ?? ""] ?? (string) ($pending["locale_code"] ?? "")],
 			["label_key" => "setting.project_release_code", "value" => (string) ($pending["project_release_code"] ?? "")],
+			["label_key" => "setting.release_api_key", "value" => ((string) ($pending["release_api_key"] ?? "") === "") ? "" : "********"],
+			["label_key" => "setting.release_api_secret", "value" => ((string) ($pending["release_api_secret"] ?? "") === "") ? "" : "********"],
 			["label_key" => "setting.mail_address_from", "value" => (string) ($pending["smtp_from"] ?? "")],
 			["label_key" => "setting.mail_server", "value" => (string) ($pending["smtp_server"] ?? "")],
 			["label_key" => "setting.mail_port", "value" => (string) ($pending["smtp_port"] ?? "")],

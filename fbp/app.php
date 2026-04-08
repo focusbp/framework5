@@ -4,6 +4,16 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL & ~E_NOTICE);
 mb_internal_encoding("UTF-8");
 
+set_error_handler(function ($severity, $message, $file, $line) {
+	if (!(error_reporting() & $severity)) {
+		return false;
+	}
+	if (in_array($severity, [E_WARNING, E_USER_WARNING, E_RECOVERABLE_ERROR], true)) {
+		throw new ErrorException($message, 0, $severity, $file, $line);
+	}
+	return false;
+});
+
 // ブラウザによる途中中断禁止
 ignore_user_abort(true);
 
@@ -199,6 +209,7 @@ $smarty->assign("testserver",$testserver);
 $framework_language_code = I18nSimple::get_language_code_from_setting($setting);
 $locale_code = I18nSimple::get_locale_code_from_setting($setting);
 $legacy_lang_default = I18nSimple::get_legacy_lang_code_from_setting($setting);
+$GLOBALS["fbp_system_error_lang"] = $framework_language_code;
 $smarty->assign("lang", $framework_language_code);
 $smarty->assign("arr_lang",["en"=>"English","jp"=>"Japanese"]);
 $smarty->assign("framework_language_code", $framework_language_code);
@@ -206,19 +217,25 @@ $smarty->assign("locale_code", $locale_code);
 $smarty->assign("legacy_lang_default", $legacy_lang_default);
 $smarty->assign("setting",$setting);
 
-//コントローラーを作成
-if(startsWith($class, "_")){
-	$ctl = new Controller_class();
-}else{
-	// クラスファイルのディレクトリ決定
-	$ctl = new Controller_class($class,$smarty);
-	
-	// smartyにControllerをアサインしておく（自作プラグインで使用する）
-	$smarty->assign("_ctl",$ctl);
+if (!startsWith($class, "_") && !is_appcon_request() && !class_file_exists($class, $dir)) {
+	respond_not_found();
+	exit;
 }
+
+$ctl = null;
 
 
 try{
+	//コントローラーを作成
+	if(startsWith($class, "_")){
+		$ctl = new Controller_class();
+	}else{
+		// クラスファイルのディレクトリ決定
+		$ctl = new Controller_class($class,$smarty);
+		
+		// smartyにControllerをアサインしておく（自作プラグインで使用する）
+		$smarty->assign("_ctl",$ctl);
+	}
 
 	// Windowcodeの生成
 	if(!empty($_COOKIE["windowID"])){
@@ -305,7 +322,14 @@ try{
 	//クラスを読み込み
 	$appobj = getClassObject($ctl,$class,$dir);
 	if($appobj == null){
-		$ctl->res();
+		if (is_appcon_request()) {
+			$ctl->report_server_error(new Exception(
+				"Class \"$class\" was not found."
+			));
+			$ctl->res();
+		}else{
+			respond_not_found();
+		}
 		exit;
 	}
 
@@ -353,8 +377,13 @@ try{
 				}
 				$appobj->$function($ctl);
 			}else{
-				if(($_POST["_call_from"] ?? "") != "appcon"){
-					header("HTTP/1.1 404 " . "Class \"$class\" does not have a function \"$function\" in $class/$class.php.");
+				if (is_appcon_request()) {
+					$ctl->report_server_error(new Exception(
+						"Class \"$class\" does not have a function \"$function\"."
+					));
+				}else{
+					respond_not_found();
+					exit;
 				}
 			}
 			if($ctl->stop_res == false){
@@ -366,6 +395,15 @@ try{
 		//ログイン不要の場合
 		if(method_exists($appobj, $function)){
 			$appobj->$function($ctl);
+		}else{
+			if (is_appcon_request()) {
+				$ctl->report_server_error(new Exception(
+					"Class \"$class\" does not have a function \"$function\"."
+				));
+			}else{
+				respond_not_found();
+				exit;
+			}
 		}
 		if(!$ctl->display_flg){
 			$ctl->res();
@@ -374,26 +412,32 @@ try{
 	
 	exit;
 	
-}catch(Exception $e){
-	$trace = $e->getTraceAsString();
-	$trace_lines = explode("\n", $trace);  // 改行でスタックトレースを分割
-	$formatted_trace = '';
-
-	foreach ($trace_lines as $line) {
-	    $formatted_trace .= "<p style=\"margin-top:10px;\">" . htmlspecialchars($line) . "</p>";  // 各行に<p>を追加
+}catch(Throwable $e){
+	$report_result = [
+		"configured" => false,
+		"reported" => false,
+		"id" => null,
+		"public_url" => "",
+	];
+	if (isset($ctl) && $ctl instanceof Controller_class) {
+		$report_result = $ctl->report_server_error($e);
+	}else{
+		$report_result = report_bootstrap_error($e, $class, $function);
 	}
-	
-	$error = $e->getMessage() . "\n" . $formatted_trace;
-	
-	show_error($error);
+
+	$error = format_exception_for_display($e);
+	$error_text = format_exception_for_text($e);
+	show_error($error, $report_result, get_server_error_public_url(), $error_text);
 }
 
-function show_error($error){
+function show_error($error, $report_result = [], $public_url = "", $error_text = ""){
+	$html = build_system_error_html($error, $report_result, $public_url, $error_text);
 	if(($_POST["_call_from"] ?? "") == "appcon"){
 		$md = [];
-		$md["dialog_name"] = "Exception";
-		$md["html"] = "<div class=\"error\">" . $error . "</div>";
-		$md["title"] = "Exception";
+		$md["dialog_name"] = system_error_t("system_error.dialog_title");
+		$md["html"] = $html;
+		$md["title"] = system_error_t("system_error.dialog_title");
+		$md["width"] = 800;
 		//$md["testserver"] = $ctl->get_session("testserver");
 		$md["post"] = $_POST;
 		$md["multi_dialog_zindex"] = $_POST["multi_dialog_zindex"] ?? null;
@@ -404,9 +448,211 @@ function show_error($error){
 		exit;
 	}else{
 		header("HTTP/1.1 404 ");
-		echo $error;
+		echo $html;
 		exit;
 	}	
+}
+
+function build_system_error_html($error, $report_result = [], $public_url = "", $error_text = "") {
+	$configured = !empty($report_result["configured"]);
+	$reported = !empty($report_result["reported"]);
+	$report_id = isset($report_result["id"]) ? (int) $report_result["id"] : null;
+	$dialog_public_url = (string) ($report_result["public_url"] ?? "");
+	if ($dialog_public_url === "") {
+		$dialog_public_url = $public_url;
+	}
+	$detail = system_error_t("system_error.detail.failed");
+	if (!$configured) {
+		$detail = system_error_t("system_error.detail.unconfigured");
+	}
+	if ($reported) {
+		$detail = system_error_t("system_error.detail.reported");
+	}
+	if ($configured) {
+		$detail .= system_error_t("system_error.detail.tail");
+	}
+
+	$text = $error_text !== "" ? $error_text : trim(strip_tags($error));
+	$html = "<div class=\"error\" style=\"line-height:1.8;padding:12px 8px 4px;\">";
+	$html .= "<div style=\"padding-top:18px;\">";
+	$html .= "<div style=\"display:flex;align-items:flex-start;gap:28px;\">";
+	$html .= "<div style=\"flex:0 0 220px;padding-left:8px;\">";
+	$html .= "<img src=\"css/images/server_error.png\" alt=\"system error\" style=\"display:block;width:200px;height:auto;float:right;\">";
+	$html .= "</div>";
+	$html .= "<div style=\"flex:1 1 auto;padding-right:18px;\">";
+	$html .= "<p style=\"margin:0 0 20px;color:#d92d20;font-size:14px;font-weight:700;line-height:1.75;\">" . htmlspecialchars($detail) . "</p>";
+	$html .= "<div style=\"display:flex;align-items:center;justify-content:space-between;gap:20px;\">";
+	if ($configured && $report_id !== null) {
+		$html .= "<div>";
+		$html .= "<span style=\"display:inline-block;font-size:44px;font-weight:700;line-height:1;color:#000;vertical-align:middle;\">#" . $report_id . "</span>";
+		$html .= "</div>";
+	}
+	if ($configured && $dialog_public_url !== "") {
+		$link = htmlspecialchars($dialog_public_url);
+		$html .= "<div style=\"clear:both;text-align:center;\">";
+		$html .= "<a href=\"" . $link . "\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"display:inline-block;padding:14px 30px;border-radius:999px;background:#bf2518;color:#fff;text-decoration:none;font-size:16px;font-weight:700;white-space:nowrap;\">" . htmlspecialchars(system_error_t("system_error.progress_link")) . "</a>";
+		$html .= "</div>";
+	}
+	$html .= "</div>";
+	$html .= "<div style=\"margin-top:" . ($configured ? "20px" : "6px") . ";\">";
+	if ($configured) {
+		$toggle_show = htmlspecialchars(system_error_t("system_error.detail_toggle_show"));
+		$toggle_hide = htmlspecialchars(system_error_t("system_error.detail_toggle_hide"));
+		$html .= "<button type=\"button\" onclick=\"var box=this.nextElementSibling; if(box){ var open=(box.style.display==='block'); box.style.display=open?'none':'block'; this.innerText=open?'".$toggle_show."':'".$toggle_hide."'; }\" style=\"padding:0;border:none;background:none;color:#475467;font-size:12px;cursor:pointer;text-decoration:underline;\">" . $toggle_show . "</button>";
+		$html .= "<textarea readonly style=\"display:none;width:100%;min-height:180px;margin-top:12px;font-size:10px;line-height:1.5;box-sizing:border-box;\">" . htmlspecialchars($text) . "</textarea>";
+	} else {
+		$html .= "<textarea readonly style=\"display:block;width:100%;min-height:180px;margin-top:0;font-size:10px;line-height:1.5;box-sizing:border-box;\">" . htmlspecialchars($text) . "</textarea>";
+	}
+	$html .= "</div>";
+	$html .= "</div>";
+	$html .= "</div>";
+	$html .= "</div>";
+	$html .= "</div>";
+	return $html;
+}
+
+function format_exception_for_display(Throwable $e) {
+	$trace = $e->getTraceAsString();
+	$trace_lines = explode("\n", $trace);
+	$formatted_trace = "";
+
+	foreach ($trace_lines as $line) {
+		$formatted_trace .= "<p style=\"margin-top:10px;\">" . htmlspecialchars($line) . "</p>";
+	}
+
+	$message = htmlspecialchars($e->getMessage()) . "<br />";
+	$message .= "<p><strong>" . htmlspecialchars(get_class($e)) . "</strong></p>";
+	$message .= "<p>" . htmlspecialchars($e->getFile()) . ":" . (int) $e->getLine() . "</p>";
+	return $message . $formatted_trace;
+}
+
+function format_exception_for_text(Throwable $e) {
+	$text = (string) $e->getMessage() . "\n";
+	$text .= get_class($e) . "\n";
+	$text .= $e->getFile() . ":" . (int) $e->getLine() . "\n";
+	$text .= $e->getTraceAsString();
+	return trim($text);
+}
+
+function report_bootstrap_error(Throwable $e, $class, $function) {
+	$report_url = trim((string) ($_SERVER["FBP_SERVER_ERROR_REPORT_URL"] ?? getenv("FBP_SERVER_ERROR_REPORT_URL")));
+	$api_key = trim((string) ($_SERVER["FBP_SERVER_ERROR_API_KEY"] ?? getenv("FBP_SERVER_ERROR_API_KEY")));
+	$api_secret = trim((string) ($_SERVER["FBP_SERVER_ERROR_API_SECRET"] ?? getenv("FBP_SERVER_ERROR_API_SECRET")));
+	if ($report_url === "" || $api_key === "" || $api_secret === "") {
+		return [
+			"configured" => false,
+			"reported" => false,
+			"id" => null,
+			"public_url" => "",
+		];
+	}
+
+	$payload = [
+		"occurred_at" => date("Y-m-d H:i:s"),
+		"app_name" => basename(dirname(__FILE__)),
+		"app_code" => "",
+		"http_host" => (string) ($_SERVER["HTTP_HOST"] ?? ""),
+		"request_uri" => (string) ($_SERVER["REQUEST_URI"] ?? ""),
+		"request_method" => (string) ($_SERVER["REQUEST_METHOD"] ?? ""),
+		"class_name" => (string) $class,
+		"function_name" => (string) $function,
+		"exception_class" => get_class($e),
+		"message" => (string) $e->getMessage(),
+		"file_path" => (string) $e->getFile(),
+		"line_no" => (int) $e->getLine(),
+		"trace_text" => (string) $e->getTraceAsString(),
+		"post" => $_POST,
+		"get" => $_GET,
+		"session_user_id" => "",
+		"session_login_id" => "",
+		"remote_addr" => (string) ($_SERVER["REMOTE_ADDR"] ?? ""),
+		"user_agent" => (string) ($_SERVER["HTTP_USER_AGENT"] ?? ""),
+	];
+	$payload["error_hash"] = hash("sha256", implode("\n", [
+		(string) $payload["app_name"],
+		(string) $payload["class_name"],
+		(string) $payload["function_name"],
+		(string) $payload["exception_class"],
+		(string) $payload["message"],
+		(string) $payload["file_path"],
+		(string) $payload["line_no"],
+	]));
+
+	$json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+	if ($json === false) {
+		return [
+			"configured" => true,
+			"reported" => false,
+			"id" => null,
+			"public_url" => "",
+		];
+	}
+
+	$api_ts = (string) time();
+	$path = (string) parse_url($report_url, PHP_URL_PATH);
+	$query = (string) parse_url($report_url, PHP_URL_QUERY);
+	$canonical = "POST\n" . $path . "\n" . $query . "\n" . $api_ts;
+	$api_sign = hash_hmac("sha256", $canonical, $api_secret);
+
+	$curl = curl_init();
+	curl_setopt($curl, CURLOPT_URL, $report_url);
+	curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($curl, CURLOPT_POST, true);
+	curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
+	curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 2);
+	curl_setopt($curl, CURLOPT_TIMEOUT, 3);
+	curl_setopt($curl, CURLOPT_HTTPHEADER, [
+		"Content-Type: application/json",
+		"Content-Length: " . strlen($json),
+		"X-API-KEY: " . $api_key,
+		"X-API-TS: " . $api_ts,
+		"X-API-SIGN: " . $api_sign,
+		"X-FBP-ERROR-REPORT: 1",
+	]);
+	$host = (string) parse_url($report_url, PHP_URL_HOST);
+	if ($host === "localhost" || $host === "127.0.0.1") {
+		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
+	}
+	$response = curl_exec($curl);
+	curl_close($curl);
+	$response_data = json_decode((string) $response, true);
+	return [
+		"configured" => true,
+		"reported" => is_array($response_data) && !empty($response_data["ok"]),
+		"id" => isset($response_data["id"]) ? (int) $response_data["id"] : null,
+		"public_url" => is_array($response_data) ? (string) ($response_data["public_url"] ?? "") : "",
+	];
+}
+
+function get_server_error_public_url() {
+	return trim((string) ($_SERVER["FBP_SERVER_ERROR_PUBLIC_URL"] ?? getenv("FBP_SERVER_ERROR_PUBLIC_URL")));
+}
+
+function system_error_t($key, $params = []) {
+	static $messages_cache = [];
+	$lang = (string) ($GLOBALS["fbp_system_error_lang"] ?? "ja");
+	if (!isset($messages_cache[$lang])) {
+		$file = dirname(__FILE__) . "/app/lang/json/lang_" . $lang . ".json";
+		if (!is_file($file)) {
+			$file = dirname(__FILE__) . "/app/lang/json/lang_ja.json";
+		}
+		$json = @file_get_contents($file);
+		$messages_cache[$lang] = is_string($json) ? (json_decode($json, true) ?: []) : [];
+	}
+	$text = $messages_cache[$lang][$key] ?? null;
+	if (!is_string($text) || $text === "") {
+		$fallback_file = dirname(__FILE__) . "/app/lang/json/lang_ja.json";
+		if (!isset($messages_cache["ja"])) {
+			$json = @file_get_contents($fallback_file);
+			$messages_cache["ja"] = is_string($json) ? (json_decode($json, true) ?: []) : [];
+		}
+		$text = $messages_cache["ja"][$key] ?? $key;
+	}
+	foreach ($params as $name => $value) {
+		$text = str_replace("{" . $name . "}", (string) $value, $text);
+	}
+	return $text;
 }
 
 
@@ -447,6 +693,25 @@ function getClassObject(Controller $ctl,$class,Dirs $dir){
 
 	return $appobj;
 
+}
+
+function is_appcon_request(): bool {
+	return (($_POST["_call_from"] ?? "") === "appcon");
+}
+
+function class_file_exists(string $class, Dirs $dir): bool {
+	try {
+		$dir->get_class_dir($class);
+		return true;
+	} catch (Throwable $e) {
+		return false;
+	}
+}
+
+function respond_not_found(): void {
+	header("HTTP/1.1 404 Not Found");
+	header("Content-Type: text/plain; charset=UTF-8");
+	echo "Not Found";
 }
 
 function check_url_windowcode(){

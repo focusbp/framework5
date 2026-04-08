@@ -21,6 +21,8 @@ class setting {
 		"square_access_token",
 		"vimeo_access_token",
 		"vimeo_client_secret",
+		"release_api_key",
+		"release_api_secret",
 	];
 	private $arr_display_errors = [0 => "On Console", 1 => "Display to Window"];
 	private $arr_smtp_secure = [0 => "false", 1 => "tls", 2 => "ssl"];
@@ -78,6 +80,9 @@ class setting {
 			$this->ffm->insert($setting);
 		}
 		foreach ($ctl->POST() as $key => $val) {
+			if ($key === "smtp_password_web") {
+				$key = "smtp_password";
+			}
 			if (in_array($key, $this->sensitive_keys, true) && trim((string) $val) === "") {
 				continue;
 			}
@@ -173,7 +178,14 @@ class setting {
 			$setting = $this->ffm->get(1);
 			$ctl->set_session("setting", $setting);
 			$to = $setting["smtp_email_test"];
-			$ctl->send_mail_string($setting["smtp_from"], $to, "TEST", "This is test mail from setting.\n" . $_SERVER["HTTP_HOST"]);
+			try {
+				$ctl->send_mail_string($setting["smtp_from"], $to, "TEST", "This is test mail from setting.\n" . $_SERVER["HTTP_HOST"], null, true);
+				$ctl->show_notification_text("Success!");
+				return;
+			} catch (Throwable $e) {
+				$ctl->show_notification_text($e->getMessage(), 8, "#D14343", "#FFF", 16, 920);
+				return;
+			}
 		}
 
 		$ctl->show_notification_text($ctl->t("setting.notification.saved"));

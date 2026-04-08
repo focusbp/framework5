@@ -2,7 +2,7 @@
 
 <form id="new_account_project_release_code_form" style="height:220px;" onsubmit="return false;">
 	<input type="hidden" name="class" value="login">
-	<input type="hidden" name="function" value="make_new_account_mail_server">
+	<input type="hidden" name="function" value="make_new_account_release_api">
 	<div class="form-wrap form-wrap-validation has-error">
 		<p>{t key="setting.project_release_code" lang=$dialog_lang}</p>
 		<input type="text" name="project_release_code" value="{$project_release_code|escape}">
