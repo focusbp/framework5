@@ -432,7 +432,6 @@ class Controller_class implements Controller {
 	}
 
 	function display($template) {
-		$template = $this->resolve_template_fallback($template);
 		$this->arr["class"] = $this->class;
 		$_SESSION["_DISPLAY_ARR"] = $this->arr;
 
