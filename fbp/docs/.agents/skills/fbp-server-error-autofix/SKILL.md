@@ -1,6 +1,6 @@
 ---
 name: fbp-server-error-autofix
-description: Use when handling server_error_autofix tasks that claim one server error, repair it in NetBeansProjects, sync to web, run only the minimum necessary verification, and return a single JSON result without drifting into extra exploration.
+description: Use when handling server_error_autofix tasks that claim one server error as an anchor, inspect related server-error reports yourself, repair the real root cause in NetBeansProjects, sync to web, run only the minimum necessary verification, and return a single JSON result.
 ---
 
 # fbp-server-error-autofix
@@ -11,11 +11,12 @@ description: Use when handling server_error_autofix tasks that claim one server 
 - `file_path` / `http_host` だけでは framework か app かを決めきれず、修正実態ベースで `app_name` を決めたい
 
 ## workflow
-1. まず `file_path`, `class_name`, `function_name`, `message` から、直接対応するローカル実装を特定する。
-2. `NetBeansProjects` 側だけを編集する。`web/*` を編集元にしない。
-3. framework と app のどちらを直したかは、`実際に変更したコード` で判断する。
-4. 修正後は対象に応じて `copy_to_web_framework.sh` または `copy_to_web.sh` を必ず実行する。
-5. 検証は最小限に留める。完了条件を満たしたら追加探索せずに JSON を返す。
+1. claim 済み 1 件は起点にすぎない。`/home/nakama/scripts/server_error.sh list|get|search|raw_get` を使って related errors を自分で集め、同根原因かどうかを判断する。
+2. まず `file_path`, `class_name`, `function_name`, `message` から、直接対応するローカル実装を特定する。
+3. `NetBeansProjects` 側だけを編集する。`web/*` を編集元にしない。
+4. framework 修正は複数プロジェクト共通の欠陥と説明できる場合だけ選ぶ。単一 app の欠落や構成差は app 側で直す。
+5. 修正後は対象に応じて `copy_to_web_framework.sh` または `copy_to_web.sh` を必ず実行する。
+6. 検証は最小限に留める。完了条件を満たしたら追加探索せずに JSON を返す。
 
 ## completion rules
 - 基本の終了条件は `修正 -> web反映 -> 最小検証1回 -> JSON返却`
@@ -35,10 +36,11 @@ description: Use when handling server_error_autofix tasks that claim one server 
 - 形式:
 
 ```json
-{"result_status":"release_waiting|failed|hold","memo":"...","copy_script":"copy_to_web.sh|copy_to_web_framework.sh|none","app_name":"app-xxx|Framework|app-xxx, Framework"}
+{"result_status":"release_waiting|failed|hold","memo":"...","copy_script":"copy_to_web.sh|copy_to_web_framework.sh|none","app_name":"app-xxx|Framework|app-xxx, Framework","resolved_error_ids":[1,2],"hold_error_ids":[3],"unrelated_error_ids":[4],"root_cause_summary":"..."}
 ```
 
 ## hold guidance
 - 既に修正済みでコード変更が不要なら `hold`
 - 再現しない、または修正方法を確定できずコード変更で対応できない場合も `hold`
 - `memo` には原因・変更内容・検証結果・未実施事項だけを簡潔に残す
+- claim 済み id は `resolved_error_ids` か `hold_error_ids` のどちらかに必ず含める
