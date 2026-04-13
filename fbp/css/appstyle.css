@@ -114,14 +114,16 @@ button,.button, input[type="submit"], .search-btn {
 button:hover:not(.fbp-original-select-option),
 a.button:hover,
 input[type="submit"]:hover,
-.search-btn:hover
-{
-    color: white;
-	background: #FECA40;
+.search-btn:hover {
+	filter: brightness(1.08);
 }
 
 .search-btn {
 	margin-top:28px;
+}
+
+button:hover .material-symbols-outlined {
+	color:#4ba3ff;
 }
 
 
