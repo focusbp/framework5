@@ -429,6 +429,14 @@ section {
     white-space: pre;
 }
 
+.download_error_message {
+	min-height: 100px;
+	white-space: normal;
+	overflow-x: hidden;
+	word-break: break-word;
+	overflow-wrap: anywhere;
+}
+
 .release_button {
 	cursor: pointer;
     border-radius: 3px;

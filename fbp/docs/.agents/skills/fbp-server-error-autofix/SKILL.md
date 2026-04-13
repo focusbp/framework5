@@ -15,19 +15,21 @@ description: Use when handling server_error_autofix tasks that claim one server 
 2. まず `file_path`, `class_name`, `function_name`, `message` から、直接対応するローカル実装を特定する。
 3. `NetBeansProjects` 側だけを編集する。`web/*` を編集元にしない。
 4. framework 修正は複数プロジェクト共通の欠陥と説明できる場合だけ選ぶ。単一 app の欠落や構成差は app 側で直す。
-5. 修正後は対象に応じて `copy_to_web_framework.sh` または `copy_to_web.sh` を必ず実行する。
+5. 修正後は `copy_to_web.sh` を必ず実行する。framework 修正は `copy_to_web.sh app-framework5` を使う。
 6. 検証は最小限に留める。完了条件を満たしたら追加探索せずに JSON を返す。
 
 ## completion rules
 - 基本の終了条件は `修正 -> web反映 -> 最小検証1回 -> JSON返却`
 - `ParseError` / `syntax error` は、原則 `php -l` を主検証にする
-- 必要なら軽い `app_call` または `app_check` を 1 回だけ行う
+- `public_pages` の単発不具合は、原則として対象 URL の `curl` 1 回を主検証にする
+- template 欠落・Smarty 例外・画面 1 枚で閉じる不具合は、広い CLI 確認に広げない
+- `app_call` / `app_check` は、その不具合の性質上どうしても必要な場合だけ 1 回に限って使う
 - 関連 CLI や探索を広げすぎない
 - `release_fw5.sh` や `release_project.sh` は自分では実行しない
 
 ## app_name rules
 - `file_path` や `http_host` はヒントであって決定条件ではない
-- 最終的な `app_name` は、実際に修正したコードと実行した `copy_to_web*` に合わせて決める
+- 最終的な `app_name` は、実際に修正したコードと実行した `copy_to_web.sh` に合わせて決める
 - 返却値は `Framework` / `app-xxx` / `app-xxx, Framework`
 - コード変更が不要なら `app_name` は空でもよい
 
@@ -36,7 +38,7 @@ description: Use when handling server_error_autofix tasks that claim one server 
 - 形式:
 
 ```json
-{"result_status":"release_waiting|failed|hold","memo":"...","copy_script":"copy_to_web.sh|copy_to_web_framework.sh|none","app_name":"app-xxx|Framework|app-xxx, Framework","resolved_error_ids":[1,2],"hold_error_ids":[3],"unrelated_error_ids":[4],"root_cause_summary":"..."}
+{"result_status":"release_waiting|failed|hold","memo":"...","copy_script":"copy_to_web.sh|none","app_name":"app-xxx|Framework|app-xxx, Framework","resolved_error_ids":[1,2],"hold_error_ids":[3],"unrelated_error_ids":[4],"root_cause_summary":"..."}
 ```
 
 ## hold guidance

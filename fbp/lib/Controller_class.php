@@ -140,8 +140,8 @@ class Controller_class implements Controller {
 			$this->smarty->setTemplateDir($this->dirs->get_class_dir($class) . "/Templates/");
 			$this->smarty->setCompileDir($this->dirs->datadir . "/templates_c/" . "$class" . "/");
 			$compile_dir = $this->smarty->getCompileDir();
-			if (!is_dir($compile_dir)) {
-				mkdir($compile_dir, 0777, true);
+			if (!is_dir($compile_dir) && !@mkdir($compile_dir, 0777, true) && !is_dir($compile_dir)) {
+				throw new RuntimeException("Failed to create Smarty compile dir: " . $compile_dir);
 			}
 		}
 	}
@@ -1163,14 +1163,31 @@ class Controller_class implements Controller {
 		//error_reporting(~E_ALL);
 
 		$filepath = $this->dirs->datadir . "/upload/$filename";
+		if (!is_file($filepath) || !is_readable($filepath)) {
+			$this->respond_download_error(
+				$this->t("common.download_error_title"),
+				$this->t("common.download_file_not_found")
+			);
+			return;
+		}
 
 		$fp = fopen($filepath, "rb");
 		if ($fp === false) {
+			$this->respond_download_error(
+				$this->t("common.download_error_title"),
+				$this->t("common.download_file_open_failed", ["file" => basename((string) $filename)])
+			);
 			return;
 		}
 
 		$mimeType = 'application/octet-stream';
+		$download_name = basename((string) $filename);
+		$ascii_name = preg_replace('/[^A-Za-z0-9._-]/', '_', $download_name);
+		if ($ascii_name === "" || $ascii_name === null) {
+			$ascii_name = "download";
+		}
 		header('Content-Type: ' . $mimeType);
+		header('Content-Disposition: attachment; filename="' . addcslashes($ascii_name, '"\\') . '"; filename*=UTF-8\'\'' . rawurlencode($download_name));
 		header('Content-Length: ' . filesize($filepath));
 
 		while (!feof($fp)) {
@@ -1178,6 +1195,44 @@ class Controller_class implements Controller {
 			echo $contents;
 		}
 		fclose($fp);
+		exit();
+	}
+
+	private function respond_download_error($title, $message) {
+		$title = (string) $title;
+		$message = (string) $message;
+		$download_mode = strtolower(trim((string) ($_REQUEST["_download_mode"] ?? "")));
+		http_response_code(404);
+		header("X-FBP-Download-Error: 1");
+		header("X-FBP-Download-Error-Title: " . rawurlencode($title));
+		if ($download_mode === "open_new_tab") {
+			header("Content-Type: text/html; charset=UTF-8");
+			echo $this->build_download_error_html($title, $message);
+			exit();
+		}
+
+		header("Content-Type: application/json; charset=UTF-8");
+		echo json_encode([
+			"title" => $title,
+			"message" => $message,
+		], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+		exit();
+	}
+
+	private function build_download_error_html($title, $message) {
+		$title = htmlspecialchars((string) $title, ENT_QUOTES, "UTF-8");
+		$message = nl2br(htmlspecialchars((string) $message, ENT_QUOTES, "UTF-8"));
+		return '<!DOCTYPE html>'
+			. '<html lang="en"><head><meta charset="UTF-8">'
+			. '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+			. '<title>' . $title . '</title>'
+			. '<style>'
+			. 'body{margin:0;font-family:sans-serif;background:#f8fafc;color:#0f172a;}'
+			. '.wrap{max-width:720px;margin:48px auto;padding:0 20px;}'
+			. '.panel{background:#fff;border:1px solid #cbd5e1;border-radius:12px;padding:24px;box-shadow:0 10px 30px rgba(15,23,42,0.08);}'
+			. 'h1{margin:0 0 12px;font-size:24px;}'
+			. 'p{margin:0;line-height:1.7;}'
+			. '</style></head><body><div class="wrap"><div class="panel"><h1>' . $title . '</h1><p>' . $message . '</p></div></div></body></html>';
 	}
 
 	function remove_saved_file($filename) {

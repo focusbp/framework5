@@ -3225,6 +3225,7 @@ $("body").on("click", ".download-link", function (e) {
 
 	var v = ($(this).attr('data-open_new_tab') || '').toString().toLowerCase();
 	var open_new_tab = (v === 'true' || v === '1' || v === 'yes');
+	fd.append("_download_mode", open_new_tab ? "open_new_tab" : "xhr");
 
 	var url = $(this).data("url");
 	if (url == undefined) {
@@ -3304,6 +3305,58 @@ function modal_download(url, fd, fileName, open_new_tab = false) { // CHANGE: å¼
 	xhr.responseType = 'arraybuffer';
 
 	xhr.onload = function () {
+		function decodeDownloadErrorPayload() {
+			var fallbackTitle = xhr.getResponseHeader("X-FBP-Download-Error-Title") || "Download Error";
+			try {
+				fallbackTitle = decodeURIComponent(fallbackTitle);
+			} catch (e) {
+			}
+
+			if (!xhr.response) {
+				return {title: fallbackTitle, message: "Download failed."};
+			}
+
+			var text = "";
+			try {
+				text = new TextDecoder("utf-8", {fatal: false}).decode(new Uint8Array(xhr.response));
+			} catch (e) {
+				text = "";
+			}
+
+			if (text !== "") {
+				try {
+					var parsed = JSON.parse(text);
+					return {
+						title: parsed.title || fallbackTitle,
+						message: parsed.message || text
+					};
+				} catch (e) {
+				}
+			}
+
+			return {title: fallbackTitle, message: text || "Download failed."};
+		}
+
+		function showDownloadErrorDialog(title, message) {
+			var dialogTitle = title || "Download Error";
+			var dialogMessage = message || "Download failed.";
+			var html = "<div class=\"error download_error_message\"><div style=\"font-weight:bold;margin-bottom:8px;\">"
+					+ escapeHtml(dialogTitle)
+					+ "</div><div style=\"white-space:pre-wrap;word-break:break-word;\">"
+					+ escapeHtml(dialogMessage)
+					+ "</div></div>";
+			multi_dialog("error", html, dialogTitle, 600, "error", $("#testserver").html() == "true", multi_dialog_zindex);
+			multi_dialog_zindex++;
+		}
+
+		var hasDownloadError = xhr.status >= 400 || (xhr.getResponseHeader("X-FBP-Download-Error") || "") === "1";
+		if (hasDownloadError) {
+			var errorPayload = decodeDownloadErrorPayload();
+			showDownloadErrorDialog(errorPayload.title, errorPayload.message);
+			$("#download_view").hide();
+			$('#download_progress').css({'width': '0%'});
+			return;
+		}
 
 		var bytes = new Uint8Array(this.response);
 		var resolvedFileName = (function () {
