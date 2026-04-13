@@ -1460,7 +1460,7 @@ form p {
 	border-radius: 10px;
 	overflow: hidden;
 	display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
 }
 
 .search_form_flex {
