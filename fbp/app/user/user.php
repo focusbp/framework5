@@ -38,7 +38,10 @@ class user {
 	function append_exe(Controller $ctl) {
 		$c = $ctl->POST();
 		$c["status"] = 0;
-		$c["login_id"] = $c["login_id"];
+		$c["login_id"] = $c["login_id"] ?? "";
+		$c["email"] = $c["email"] ?? "";
+		$login_id = $c["login_id"];
+		$email = $c["email"];
 
 		$flg = true;
 
@@ -47,7 +50,7 @@ class user {
 			$ctl->assign("err_login_id", $ctl->t("user.validation.login_id_required"));
 		}
 
-		if (!filter_var($c['email'], FILTER_VALIDATE_EMAIL)) {
+		if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 			$flg = false;
 			$ctl->assign("err_email", $ctl->t("validation.email.invalid"));
 		}
@@ -57,7 +60,7 @@ class user {
 		if ($flg) {
 			$list = $this->ffm->getall();
 			foreach ($list as $d) {
-				if ($d["login_id"] == $c["login_id"]) {
+				if (($d["login_id"] ?? "") == $login_id) {
 					$flg = false;
 					$ctl->assign("err_login_id", $ctl->t("user.validation.login_id_unavailable"));
 				}
@@ -90,6 +93,8 @@ class user {
 
 	function edit_exe(Controller $ctl) {
 		$c = $ctl->POST();
+		$c["email"] = $c["email"] ?? "";
+		$email = $c["email"];
 		$flg = true;
 		$id = (int) $ctl->POST("id");
 		$data = $this->ffm->get($id);
@@ -98,8 +103,8 @@ class user {
 			$this->edit($ctl);
 			return;
 		}
-		if (!empty($c["email"])) {
-			if (!filter_var($c["email"], FILTER_VALIDATE_EMAIL)) {
+		if ($email !== "") {
+			if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 				$flg = false;
 				$ctl->assign("err_email", $ctl->t("validation.email.invalid"));
 			}
@@ -210,9 +215,19 @@ class user {
 
 	function password_reset(Controller $ctl) {
 		$id = (int) $ctl->POST("id");
-		$data = $this->ffm->get($id);
-		$ctl->assign("data", $data);
-		$ctl->show_multi_dialog("user_password_reset_" . $id, "reset_password.tpl", $ctl->t("user.dialog.reset_password"), 500, true, true);
+		try {
+			$this->show_account_invite_compose_dialog(
+				$ctl,
+				$id,
+				"user_password_reset_" . $id,
+				$ctl->t("user.dialog.reset_password"),
+				$ctl->t("user.notification.password_setup_link_sent")
+			);
+		} catch (Throwable $e) {
+			$data = $this->ffm->get($id);
+			$ctl->res_error_message("email", $this->get_account_invite_error_message($ctl, $e, is_array($data) ? $data : []));
+			return;
+		}
 	}
 
 	function password_reset_exe(Controller $ctl) {
@@ -254,13 +269,17 @@ class user {
 			return;
 		}
 		try {
-			$ctl->send_mail_text((string) $data["email"], (string) $post["subject"], (string) $post["body"], null, true);
+			$ctl->send_mail_text((string) $data["email"], (string) ($post["subject"] ?? ""), (string) ($post["body"] ?? ""), null, true);
 		} catch (Throwable $e) {
 			$ctl->res_error_message("body", $this->get_account_invite_error_message($ctl, $e, $data));
 			return;
 		}
 		if ($dialog_name !== "") {
 			$ctl->close_multi_dialog($dialog_name);
+		}
+		$notify_text = trim((string) ($post["notify_text"] ?? ""));
+		if ($notify_text !== "") {
+			$ctl->show_notification_text($notify_text);
 		}
 	}
 
@@ -289,14 +308,14 @@ class user {
 		$rand = rand(10000, 99999);
 		$body = "Please enter this code and click submit, $rand";
 		$subject = "Verify email";
-		$ctl->send_mail_string('noreply@focus-business-platform.com', $post['email'], $subject, $body);
+		$ctl->send_mail_string('noreply@focus-business-platform.com', (string) ($post['email'] ?? ''), $subject, $body);
 		echo json_encode(['key' => $ctl->encrypt($rand)]);
 	}
 
 	function fr_verification_mail_verify(Controller $ctl) {
 		$post = $ctl->POST();
-		$dkey = $ctl->decrypt($post['key']);
-		if ($post['code'] == $dkey) {
+		$dkey = $ctl->decrypt((string) ($post['key'] ?? ''));
+		if ((string) ($post['code'] ?? '') == $dkey) {
 			echo json_encode(['status' => 1]);
 		} else {
 			echo json_encode(['status' => 0]);
@@ -349,7 +368,7 @@ class user {
 		$first = true;
 		$list = [];
 		$next_flg=true;
-		while ($row = fgetcsv($fp)){
+		while (($row = fgetcsv($fp, 0, ",", "\"", "")) !== false){
 			
 			$errors = [];
 			
@@ -399,7 +418,7 @@ class user {
 	
 	function upload_csv_exe(Controller $ctl) {
 		
-		
+		$formatter = $ctl->create_ValueFormatter();
 		$list = $ctl->get_session("userlist");
 
 		foreach($list as $rec){
@@ -448,15 +467,21 @@ class user {
 		$ctl->send_mail_text((string) $mail["email"], (string) $mail["subject"], (string) $mail["body"], null, true);
 	}
 
-	private function show_account_invite_compose_dialog(Controller $ctl, int $id): void {
+	private function show_account_invite_compose_dialog(Controller $ctl, int $id, string $dialog_name = "", string $dialog_title = "", string $notify_text = ""): void {
 		$mail = $this->build_account_invite_mail($ctl, $id);
-		$dialog_name = "user_account_invite_" . $id;
+		if ($dialog_name === "") {
+			$dialog_name = "user_account_invite_" . $id;
+		}
+		if ($dialog_title === "") {
+			$dialog_title = $ctl->t("user.dialog.account_invite_compose");
+		}
 		$ctl->assign("dialog_name", $dialog_name);
+		$ctl->assign("notify_text", $notify_text);
 		$ctl->assign("data", $mail["data"]);
 		$ctl->assign("send_to_email", $mail["email"]);
 		$ctl->assign("subject", $mail["subject"]);
 		$ctl->assign("body", $mail["body"]);
-		$ctl->show_multi_dialog($dialog_name, "account_invite_compose.tpl", $ctl->t("user.dialog.account_invite_compose"), 800, true, true);
+		$ctl->show_multi_dialog($dialog_name, "account_invite_compose.tpl", $dialog_title, 800, true, true);
 	}
 
 	private function build_account_invite_mail(Controller $ctl, int $id): array {
@@ -482,7 +507,8 @@ class user {
 		$setting = $ctl->get_setting();
 		$ctl->assign("data", $mail_data);
 		$ctl->assign("setting", $setting);
-		$template_path = $ctl->get_class_dir("user") . "/Templates/default_account_invite.tpl";
+		$dirs = new Dirs();
+		$template_path = $dirs->get_class_dir("user") . "/Templates/default_account_invite.tpl";
 
 		return [
 			"data" => $mail_data,

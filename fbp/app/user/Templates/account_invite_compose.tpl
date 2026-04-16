@@ -1,6 +1,7 @@
 <form id="user_account_invite_compose_form">
 	<input type="hidden" name="id" value="{$data.id}">
 	<input type="hidden" name="dialog_name" value="{$dialog_name}">
+	<input type="hidden" name="notify_text" value="{$notify_text|escape}">
 
 	<p>&lt;&lt;{$send_to_email|escape}&gt;&gt; {t key="user.account_invite.send_to_suffix"}</p>
 	<p>{t key="user.account_invite.delivery_notice"}</p>
