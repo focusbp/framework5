@@ -2,6 +2,14 @@
 
 class sample_sort_original_management
 {
+    private function rememberMainArea(Controller $ctl) {
+        $ctl->set_session("__AUTO_LOAD_MAIN_AREA", [
+            "class" => __CLASS__,
+            "function" => "run",
+            "parameters" => [],
+        ]);
+    }
+
     private function tableName() {
         return "sample_sort_master";
     }
@@ -35,6 +43,7 @@ class sample_sort_original_management
     }
 
     function run(Controller $ctl) {
+        $this->rememberMainArea($ctl);
         $this->assignList($ctl);
         $ctl->show_main_area("list.tpl", "Sample Original Sort");
     }

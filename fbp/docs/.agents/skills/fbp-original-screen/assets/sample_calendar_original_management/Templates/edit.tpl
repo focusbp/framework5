@@ -8,7 +8,7 @@
     <p class="error_message error_travel_before"></p>
     <p class="error_message error_travel_after"></p>
 
-    <div style="margin-top:18px;text-align:right;">
+    <div class="original_screen_dialog_actions">
         <button type="button" class="ajax-link button_link" data-class="sample_calendar_original_management" data-function="edit_save" data-form="sample_calendar_original_management_edit_form">更新</button>
     </div>
 </form>

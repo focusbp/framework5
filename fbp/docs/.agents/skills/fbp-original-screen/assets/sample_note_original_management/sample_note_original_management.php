@@ -2,6 +2,14 @@
 
 class sample_note_original_management
 {
+    private function rememberMainArea(Controller $ctl) {
+        $ctl->set_session("__AUTO_LOAD_MAIN_AREA", [
+            "class" => __CLASS__,
+            "function" => "run",
+            "parameters" => [],
+        ]);
+    }
+
     private function tableName() {
         return "sample_note";
     }
@@ -60,6 +68,7 @@ class sample_note_original_management
     }
 
     function run(Controller $ctl) {
+        $this->rememberMainArea($ctl);
         $filter = $this->currentFilter($ctl);
         $ctl->assign("filter", $filter);
         $ctl->assign("status_options", $ctl->get_constant_array("table/sample_note/status", true));

@@ -1,5 +1,5 @@
-<div style="padding:16px;">
-    <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:12px;">
+<div class="original_screen_page">
+    <div class="original_screen_toolbar original_screen_toolbar_end">
         <button type="button" class="ajax-link button_link" data-class="minimal_sort_original_management" data-function="add_dialog">追加</button>
     </div>
 

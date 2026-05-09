@@ -2,6 +2,14 @@
 
 class sample_calendar_original_management
 {
+    private function rememberMainArea(Controller $ctl) {
+        $ctl->set_session("__AUTO_LOAD_MAIN_AREA", [
+            "class" => __CLASS__,
+            "function" => "run",
+            "parameters" => [],
+        ]);
+    }
+
     private function tableName() {
         return "sample_schedule";
     }
@@ -110,14 +118,14 @@ class sample_calendar_original_management
             $startHourTs = $slotTime;
             $endHourTs = ceil($endTs / 3600) * 3600;
             for ($i = $startHourTs; $i < $endHourTs; $i += 3600) {
-                $occupied[$i] = "occupied";
+                $occupied[$i] = "original_calendar_box_occupied";
             }
 
             if ($travelBefore > 0) {
                 $travelBeforeStartHour = $travelStartTs - ($travelStartTs % 3600);
                 $travelBeforeEndHour = ceil($startTs / 3600) * 3600;
                 for ($i = $travelBeforeStartHour; $i < $travelBeforeEndHour; $i += 3600) {
-                    $occupiedTravel[$i] = "occupied_travel";
+                    $occupiedTravel[$i] = "original_calendar_box_occupied_travel";
                 }
                 $assignedTravel[$travelBeforeStartHour][] = [
                     "type" => "before",
@@ -129,7 +137,7 @@ class sample_calendar_original_management
                 $travelAfterStartHour = $endTs - ($endTs % 3600);
                 $travelAfterEndHour = ceil($travelEndTs / 3600) * 3600;
                 for ($i = $travelAfterStartHour; $i < $travelAfterEndHour; $i += 3600) {
-                    $occupiedTravel[$i] = "occupied_travel";
+                    $occupiedTravel[$i] = "original_calendar_box_occupied_travel";
                 }
                 $assignedTravel[$travelAfterStartHour][] = [
                     "type" => "after",
@@ -237,6 +245,7 @@ class sample_calendar_original_management
     }
 
     function run(Controller $ctl) {
+        $this->rememberMainArea($ctl);
         $weekStart = $this->currentWeekStart($ctl);
         $this->assignCalendarArea($ctl, $weekStart);
         $ctl->show_main_area("calendar.tpl", $this->title());

@@ -34,6 +34,10 @@ description: Build custom note management screens as the default FBP approach by
 - エラー時に `show_multi_dialog()` 再実行や `reload_work_area()` をしない
 - 一覧の Ajax 更新は、必要な領域だけ `reload_area()` する
 - `fields_form_direct` / `fields_form_original` / `fields_view_direct` を優先する
+- Original Screen では原則 `style.css` を作らない
+- 画面専用 CSS が必要な場合は、対象 tpl に直接 `<style>` を書く
+- CSS を framework 共通へ上げるのは、再利用目的が明確なときだけに限定する
+- ブラウザ再起動なしで反映確認したい要件を優先し、案件画面の初回実装は tpl 内 `<style>` を正本とする
 
 ## references
 - Standard からの移行手順: `references/migration-standard-to-original.md`

@@ -39,7 +39,8 @@ classes/app/<tb_name>_original_management/
 - `calendar.tpl` には余計な検索エリアを置かず、必要な場合だけ後から足す
 - 予定カードは `row_style` を使い、編集・削除は右上アイコンに寄せる
 - 期間表示は `date_format`、日ごとの見出しは `month_day_format` を使う
-- カレンダー見た目は専用 `style.css` を持ち、`db_exe` の週カレンダー相当をベースにする
+- カレンダー見た目は原則 tpl 内の `<style>` に置き、専用 `style.css` は作らない
+- 週カレンダーの骨格は `db_exe` 相当をベースにしてよいが、案件初回は tpl 内 `<style>` へ閉じる
 - 標準カレンダーの UI をそのまま再現するより、業務に必要な情報を見せることを優先する
 
 ## recommended first scope

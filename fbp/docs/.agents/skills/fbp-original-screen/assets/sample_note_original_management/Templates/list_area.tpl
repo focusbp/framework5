@@ -1,6 +1,6 @@
 <div id="sample_note_original_management_list_area">
-    <p style="margin:0 0 16px 0;color:#475569;">Sample Original Management の一覧です。表示件数: {$count}</p>
-    <table style="margin-top:10px;width:100%;">
+    <p class="original_screen_toolbar_note">Sample Original Management の一覧です。表示件数: {$count}</p>
+    <table class="original_screen_table">
     <tbody>
         {foreach $rows as $row}
             <tr class="active_indicator">
@@ -16,11 +16,11 @@
                     <span class="row_title">ステータス</span>
                     <span class="row_value"><p>{fields_view_direct db="sample_note" fields="status" data=$row}</p></span>
                 </td>
-                <td class="row_style" style="padding:10px;display: flex;flex-direction: row-reverse;">
-                    <button type="button" class="ajax-link listbutton" data-class="sample_note_original_management" data-function="delete_confirm" data-id="{$row.id}" style="float:right;color:#dc2626;margin-right:5px;">
+                <td class="row_style original_screen_action_cell">
+                    <button type="button" class="ajax-link listbutton original_screen_action_delete" data-class="sample_note_original_management" data-function="delete_confirm" data-id="{$row.id}">
                         <span class="material-symbols-outlined">delete</span>
                     </button>
-                    <button type="button" class="ajax-link listbutton" data-class="sample_note_original_management" data-function="edit_dialog" data-id="{$row.id}" style="float:right;color:#2d2d2d;">
+                    <button type="button" class="ajax-link listbutton original_screen_action_edit" data-class="sample_note_original_management" data-function="edit_dialog" data-id="{$row.id}">
                         <span class="material-symbols-outlined">edit_square</span>
                     </button>
                 </td>
@@ -28,7 +28,7 @@
         {/foreach}
         {if count($rows) === 0}
             <tr>
-                <td colspan="4" style="text-align:center;color:#64748b;padding:12px;">データはありません。</td>
+                <td colspan="4" class="original_screen_empty_row">データはありません。</td>
             </tr>
         {/if}
     </tbody>

@@ -2,6 +2,14 @@
 
 class minimal_calendar_original_management
 {
+    private function rememberMainArea(Controller $ctl) {
+        $ctl->set_session("__AUTO_LOAD_MAIN_AREA", [
+            "class" => __CLASS__,
+            "function" => "run",
+            "parameters" => [],
+        ]);
+    }
+
     private function tableName() {
         return "sample_schedule";
     }
@@ -68,6 +76,7 @@ class minimal_calendar_original_management
     }
 
     function run(Controller $ctl) {
+        $this->rememberMainArea($ctl);
         $weekStart = $this->currentWeekStart($ctl);
         $this->assignCalendarArea($ctl, $weekStart);
         $ctl->show_main_area("calendar.tpl", "Minimal Original Calendar");

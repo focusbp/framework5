@@ -1,10 +1,10 @@
 <div id="sample_sort_original_management_list_area">
-    <table style="margin-top:10px;width:100%;">
+    <table class="original_screen_table">
         <tbody id="sample_sort_original_management_sortable">
             {foreach $rows as $row}
                 <tr id="{$row.id}" class="active_indicator">
-                    <td style="width:46px;text-align:center;">
-                        <span class="material-symbols-outlined handle" style="cursor:move;color:#64748b;">swap_vert</span>
+                    <td class="original_screen_sort_handle_cell">
+                        <span class="material-symbols-outlined handle original_screen_sort_handle">swap_vert</span>
                     </td>
                     <td class="row_style" style="width:90px;">
                         <span class="row_title">順番</span>
@@ -18,11 +18,11 @@
                         <span class="row_title">メモ</span>
                         <span class="row_value"><p>{$row.note|escape}</p></span>
                     </td>
-                    <td class="row_style" style="padding:10px;display:flex;flex-direction:row-reverse;">
-                        <button type="button" class="ajax-link listbutton" data-class="sample_sort_original_management" data-function="delete_confirm" data-id="{$row.id}" style="float:right;color:#dc2626;margin-right:5px;">
+                    <td class="row_style original_screen_action_cell">
+                        <button type="button" class="ajax-link listbutton original_screen_action_delete" data-class="sample_sort_original_management" data-function="delete_confirm" data-id="{$row.id}">
                             <span class="material-symbols-outlined">delete</span>
                         </button>
-                        <button type="button" class="ajax-link listbutton" data-class="sample_sort_original_management" data-function="edit_dialog" data-id="{$row.id}" style="float:right;color:#2d2d2d;">
+                        <button type="button" class="ajax-link listbutton original_screen_action_edit" data-class="sample_sort_original_management" data-function="edit_dialog" data-id="{$row.id}">
                             <span class="material-symbols-outlined">edit_square</span>
                         </button>
                     </td>
@@ -30,7 +30,7 @@
             {/foreach}
             {if count($rows) === 0}
                 <tr>
-                    <td colspan="5" style="text-align:center;color:#64748b;padding:12px;">データはありません。</td>
+                    <td colspan="5" class="original_screen_empty_row">データはありません。</td>
                 </tr>
             {/if}
         </tbody>

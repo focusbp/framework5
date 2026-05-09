@@ -2,6 +2,14 @@
 
 class minimal_note_original_management
 {
+    private function rememberMainArea(Controller $ctl) {
+        $ctl->set_session("__AUTO_LOAD_MAIN_AREA", [
+            "class" => __CLASS__,
+            "function" => "run",
+            "parameters" => [],
+        ]);
+    }
+
     private function tableName() {
         return "sample_note";
     }
@@ -11,6 +19,7 @@ class minimal_note_original_management
     }
 
     function run(Controller $ctl) {
+        $this->rememberMainArea($ctl);
         $rows = $ctl->db($this->tableName())->getall("id", SORT_DESC);
         $ctl->assign("rows", $rows);
         $ctl->show_main_area("list.tpl", "Minimal Original CRUD");

@@ -1,11 +1,11 @@
-<div style="padding:16px;">
-    <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:12px;">
+<div class="original_screen_page">
+    <div class="original_screen_toolbar original_screen_toolbar_end">
         <button type="button" class="ajax-link button_link" data-class="sample_note_original_management" data-function="add_dialog">追加</button>
     </div>
 
-    <div class="search_box" style="margin:8px 0 14px 0;padding:25px 14px 5px 14px;border:1px solid #d7deea;border-radius:0px;background:#f8fafc;position: relative;">
-        <p style="line-height:1.2;font-weight:bold;color:#334155;font-size:12px;position:absolute;top:7px;left:18px;">検索条件</p>
-        <div style="display:flex;flex-direction:column;justify-content:center;width:100%;">
+    <div class="search_box original_search_panel">
+        <p class="original_search_panel_title">検索条件</p>
+        <div class="original_search_panel_body">
             <div class="search_left">
                 <form id="sample_note_original_management_filter_form" class="search_form_flex">
                     <div class="search_form_item field_type_dropdown">
@@ -14,7 +14,7 @@
                     <div class="search_form_item field_type_text">
                         {fields_form_original name="keyword" type="text" value=$filter.keyword title="キーワード" item_margin_top="0px"}
                     </div>
-                    <button type="button" class="ajax-link" data-class="sample_note_original_management" data-function="apply_filter" data-form="sample_note_original_management_filter_form" style="display:none;" id="sample_note_original_management_filter_trigger"></button>
+                    <button type="button" class="ajax-link original_screen_hidden_trigger" data-class="sample_note_original_management" data-function="apply_filter" data-form="sample_note_original_management_filter_form" id="sample_note_original_management_filter_trigger"></button>
                 </form>
             </div>
         </div>
