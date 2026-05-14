@@ -1,5 +1,7 @@
 # FBP Codex Booster
 
+![Generated customer management demo](docs/images/customer-demo.png)
+
 > Get Codex building structured PHP business apps in minutes.
 
 FBP Codex Booster is a ready-to-run PHP app base for Codex. Instead of asking
@@ -80,8 +82,6 @@ Verify the CRUD screen, seed data, CSV export, and PDF output with the FBP CLI.
 
 After the prompt above, Codex creates a customer management demo with CRUD, CSV
 import/export, and PDF output.
-
-![Generated customer management demo](docs/images/customer-demo.png)
 
 ![Generated customer PDF output](docs/images/customer-demo-pdf.png)
 
