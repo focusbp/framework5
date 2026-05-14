@@ -7,28 +7,22 @@
   "constant_values": {
     "schedule_appointment_status": [
       {
-        "key": "available",
-        "value": "Available",
-        "color": "#16a34a",
-        "sort": 1
-      },
-      {
         "key": "booked",
         "value": "Booked",
         "color": "#2563eb",
-        "sort": 2
+        "sort": 1
       },
       {
         "key": "blocked",
         "value": "Blocked",
         "color": "#64748b",
-        "sort": 3
+        "sort": 2
       },
       {
         "key": "cancelled",
         "value": "Cancelled",
         "color": "#dc2626",
-        "sort": 4
+        "sort": 3
       }
     ]
   },
@@ -38,7 +32,7 @@
       "menu_name": "Schedule Appointment Slots",
       "sort": 5,
       "parent_tb_id": 0,
-      "description": "User-scoped bookable slots for the Schedule Appointment sample",
+      "description": "User-scoped booked or blocked schedule rows for the Schedule Appointment sample",
       "show_menu": 1,
       "menu_visibility": 0,
       "sortkey": "starts_at",
@@ -106,7 +100,7 @@
         "parameter_title": "Status",
         "type": "dropdown",
         "constant_array_name": "schedule_appointment_status",
-        "default_value": "available",
+        "default_value": "booked",
         "length": 24,
         "validation": 1,
         "sort": 5
@@ -168,26 +162,26 @@
       "date_offset_days": 3,
       "start_time": "10:00",
       "duration_minutes": 30,
-      "status": "available",
+      "status": "booked",
       "customer_name": "",
       "customer_email": "",
       "customer_phone": "",
       "customer_message": "",
       "booked_at": "",
-      "internal_note": "Seed slot"
+      "internal_note": "Seed busy schedule"
     },
     {
       "title": "Project Meeting",
       "date_offset_days": 4,
       "start_time": "14:00",
       "duration_minutes": 60,
-      "status": "available",
+      "status": "blocked",
       "customer_name": "",
       "customer_email": "",
       "customer_phone": "",
       "customer_message": "",
       "booked_at": "",
-      "internal_note": "Seed slot"
+      "internal_note": "Seed blocked schedule"
     },
     {
       "title": "Booked Consultation",

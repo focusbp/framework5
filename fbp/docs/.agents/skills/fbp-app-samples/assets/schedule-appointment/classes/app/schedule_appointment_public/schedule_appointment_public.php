@@ -29,19 +29,20 @@ class schedule_appointment_public {
 
 	function book(Controller $ctl): void {
 		$context = $this->publicUserContext($ctl, (string) ($ctl->GET("user") ?? $ctl->POST("user") ?? ""));
-		$slot = $this->slotFromKey($ctl, (string) ($ctl->GET("slot") ?? $ctl->POST("slot") ?? ""), (int) ($context["id"] ?? 0));
-		if (empty($context) || empty($slot) || !$this->isBookable($slot)) {
-			$this->showError($ctl, "This appointment slot is no longer available.");
+		$startsAt = $this->startFromKey($ctl, (string) ($ctl->GET("start") ?? $ctl->POST("start") ?? ""));
+		if (empty($context) || !$this->isStartBookable($ctl, (int) ($context["id"] ?? 0), $startsAt)) {
+			$this->showError($ctl, "This appointment time is no longer available.");
 			return;
 		}
+		$slot = $this->emptySlot($context, $startsAt);
 		$this->showBookingForm($ctl, $context, $slot, $this->emptyBooking(), []);
 	}
 
 	function save(Controller $ctl): void {
 		$context = $this->publicUserContext($ctl, (string) ($ctl->POST("user") ?? ""));
-		$slot = $this->slotFromKey($ctl, (string) ($ctl->POST("slot") ?? ""), (int) ($context["id"] ?? 0));
-		if (empty($context) || empty($slot) || !$this->isBookable($slot)) {
-			$this->showError($ctl, "This appointment slot is no longer available.");
+		$startsAt = $this->startFromKey($ctl, (string) ($ctl->POST("start") ?? ""));
+		if (empty($context) || !$this->isStartBookable($ctl, (int) ($context["id"] ?? 0), $startsAt)) {
+			$this->showError($ctl, "This appointment time is no longer available.");
 			return;
 		}
 
@@ -53,17 +54,22 @@ class schedule_appointment_public {
 		];
 		$errors = $this->validateBooking($row);
 		if ($errors !== []) {
-			$this->showBookingForm($ctl, $context, $slot, $row, $errors);
+			$this->showBookingForm($ctl, $context, $this->emptySlot($context, $startsAt), $row, $errors);
 			return;
 		}
 
-		$slot["status"] = "booked";
+		$slot = $this->emptySlot($context, $startsAt);
+		$slot["title"] = "Appointment";
+		if ($row["customer_name"] !== "") {
+			$slot["title"] = "Appointment: " . $row["customer_name"];
+		}
 		$slot["customer_name"] = $row["customer_name"];
 		$slot["customer_email"] = $row["customer_email"];
 		$slot["customer_phone"] = $row["customer_phone"];
 		$slot["customer_message"] = $row["customer_message"];
 		$slot["booked_at"] = time();
-		$ctl->db($this->tableName())->update($slot);
+		$slotId = (int) ($ctl->db($this->tableName())->insert($slot) ?? 0);
+		$slot["id"] = $slotId;
 
 		$this->assignFrame($ctl, "Appointment Complete", $context);
 		$ctl->assign("slot", $this->decorateSlot($ctl, $slot));
@@ -130,10 +136,7 @@ class schedule_appointment_public {
 	}
 
 	private function assignCalendar(Controller $ctl, array $context, int $weekStart): void {
-		$slotsByTime = [];
-		foreach ($this->bookableSlots($ctl, (int) $context["id"], $weekStart) as $slot) {
-			$slotsByTime[(int) ($slot["starts_at"] ?? 0)] = $this->decorateSlot($ctl, $slot);
-		}
+		$occupiedByTime = $this->occupiedSlotsByTime($ctl, (int) $context["id"], $weekStart);
 
 		$calendarDays = [];
 		$dayKeys = ["Mon", "Tue", "Wed", "Thu", "Fri"];
@@ -141,16 +144,19 @@ class schedule_appointment_public {
 			$dayStart = strtotime("+" . $i . " day", $weekStart);
 			$times = [];
 			for ($time = strtotime(date("Y-m-d 10:00:00", $dayStart)); $time <= strtotime(date("Y-m-d 17:00:00", $dayStart)); $time += 1800) {
-				$slot = $slotsByTime[$time] ?? [];
-				if ($slot !== []) {
-					$slot["book_url"] = $ctl->get_APP_URL("schedule_appointment_public", "book", [
+				$slot = $occupiedByTime[$time] ?? [];
+				$bookUrl = "";
+				if ($slot === [] && $this->isGridTime($time) && $time > time()) {
+					$bookUrl = $ctl->get_APP_URL("schedule_appointment_public", "book", [
 						"user" => $context["key"],
-						"slot" => $ctl->encrypt((string) ($slot["id"] ?? 0)),
+						"start" => $ctl->encrypt((string) $time),
 					]);
 				}
 				$times[] = [
 					"label" => date("H:i", $time),
 					"slot" => $slot,
+					"book_url" => $bookUrl,
+					"is_selectable" => $bookUrl !== "",
 				];
 			}
 			$calendarDays[] = [
@@ -174,13 +180,31 @@ class schedule_appointment_public {
 		return $ctl->get_APP_URL("schedule_appointment_public", "calendar", $params);
 	}
 
-	private function bookableSlots(Controller $ctl, int $userId, int $weekStart): array {
+	private function occupiedSlotsByTime(Controller $ctl, int $userId, int $weekStart): array {
+		$slotsByTime = [];
+		foreach ($this->occupiedSlots($ctl, $userId, $weekStart) as $slot) {
+			$decorated = $this->decorateSlot($ctl, $slot);
+			$startsAt = (int) ($slot["starts_at"] ?? 0);
+			$duration = max(15, (int) ($slot["duration_minutes"] ?? 30));
+			$endsAt = $startsAt + ($duration * 60);
+			$gridStart = $startsAt - ($startsAt % 1800);
+			for ($time = $gridStart; $time < $endsAt; $time += 1800) {
+				if (($time + 1800) > $startsAt && $time < $endsAt) {
+					$slotsByTime[$time] = $decorated;
+				}
+			}
+		}
+		return $slotsByTime;
+	}
+
+	private function occupiedSlots(Controller $ctl, int $userId, int $weekStart): array {
 		$weekEnd = strtotime("+5 day", $weekStart);
 		$rows = $ctl->db($this->tableName())->select("user_id", $userId, true, "AND", "starts_at", SORT_ASC);
 		$result = [];
 		foreach ($rows as $row) {
 			$startsAt = (int) ($row["starts_at"] ?? 0);
-			if ($startsAt < $weekStart || $startsAt >= $weekEnd || !$this->isBookable($row)) {
+			$endsAt = $startsAt + (max(15, (int) ($row["duration_minutes"] ?? 30)) * 60);
+			if ($endsAt <= $weekStart || $startsAt >= $weekEnd || !$this->isOccupied($row)) {
 				continue;
 			}
 			$result[] = $row;
@@ -188,26 +212,60 @@ class schedule_appointment_public {
 		return $result;
 	}
 
-	private function slotFromKey(Controller $ctl, string $slotKey, int $userId): array {
-		if ($userId <= 0) {
-			return [];
-		}
-		$slotId = (int) $ctl->decrypt(trim($slotKey));
-		if ($slotId <= 0) {
-			return [];
-		}
-		$slot = $ctl->db($this->tableName())->get($slotId);
-		if (!is_array($slot) || empty($slot) || (int) ($slot["user_id"] ?? 0) !== $userId) {
-			return [];
-		}
-		return $slot;
+	private function startFromKey(Controller $ctl, string $startKey): int {
+		$start = (int) $ctl->decrypt(trim($startKey));
+		return $start > 0 ? $start : 0;
 	}
 
-	private function isBookable(array $slot): bool {
-		if ((string) ($slot["status"] ?? "") !== "available") {
+	private function isStartBookable(Controller $ctl, int $userId, int $startsAt): bool {
+		if ($userId <= 0 || !$this->isGridTime($startsAt) || $startsAt <= time()) {
 			return false;
 		}
-		return (int) ($slot["starts_at"] ?? 0) > time();
+		return !$this->hasOverlap($ctl, $userId, $startsAt, 30);
+	}
+
+	private function isGridTime(int $startsAt): bool {
+		if ($startsAt <= 0 || (int) date("N", $startsAt) > 5) {
+			return false;
+		}
+		$minutes = ((int) date("G", $startsAt) * 60) + (int) date("i", $startsAt);
+		return $minutes >= 600 && $minutes <= 1020 && ($minutes % 30) === 0;
+	}
+
+	private function hasOverlap(Controller $ctl, int $userId, int $startsAt, int $durationMinutes): bool {
+		$endsAt = $startsAt + (max(15, $durationMinutes) * 60);
+		$rows = $ctl->db($this->tableName())->select("user_id", $userId, true, "AND", "starts_at", SORT_ASC);
+		foreach ($rows as $row) {
+			if (!$this->isOccupied($row)) {
+				continue;
+			}
+			$rowStart = (int) ($row["starts_at"] ?? 0);
+			$rowEnd = $rowStart + (max(15, (int) ($row["duration_minutes"] ?? 30)) * 60);
+			if ($startsAt < $rowEnd && $endsAt > $rowStart) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private function isOccupied(array $slot): bool {
+		return (string) ($slot["status"] ?? "") !== "cancelled";
+	}
+
+	private function emptySlot(array $context, int $startsAt): array {
+		return [
+			"user_id" => (int) ($context["id"] ?? 0),
+			"title" => "Appointment",
+			"starts_at" => $startsAt,
+			"duration_minutes" => 30,
+			"status" => "booked",
+			"customer_name" => "",
+			"customer_email" => "",
+			"customer_phone" => "",
+			"customer_message" => "",
+			"booked_at" => "",
+			"internal_note" => "",
+		];
 	}
 
 	private function decorateSlot(Controller $ctl, array $slot): array {
@@ -215,7 +273,7 @@ class schedule_appointment_public {
 		$duration = max(15, (int) ($slot["duration_minutes"] ?? 30));
 		$slot["_date_label"] = $startsAt > 0 ? date("Y/m/d", $startsAt) : "";
 		$slot["_time_label"] = $startsAt > 0 ? date("H:i", $startsAt) . " - " . date("H:i", $startsAt + ($duration * 60)) : "";
-		$slot["_slot_key"] = $ctl->encrypt((string) ($slot["id"] ?? 0));
+		$slot["_start_key"] = $ctl->encrypt((string) $startsAt);
 		return $slot;
 	}
 
@@ -249,7 +307,7 @@ class schedule_appointment_public {
 		$ctl->assign("row", array_merge($this->emptyBooking(), $row));
 		$ctl->assign("errors", $errors);
 		$ctl->assign("user_key", (string) ($context["key"] ?? ""));
-		$ctl->assign("slot_key", (string) ($slot["_slot_key"] ?? ""));
+		$ctl->assign("start_key", (string) ($slot["_start_key"] ?? ""));
 		$ctl->assign("save_url", $ctl->get_APP_URL("schedule_appointment_public", "save"));
 		$ctl->assign("calendar_url", $this->calendarUrl($ctl, $context));
 		$ctl->show_public_pages("book.tpl", "_site_head.tpl", "_site_header.tpl", "_site_footer.tpl");

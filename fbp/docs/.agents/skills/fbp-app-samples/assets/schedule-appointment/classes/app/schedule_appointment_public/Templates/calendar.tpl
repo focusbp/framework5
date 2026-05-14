@@ -23,8 +23,10 @@
 							{assign var=day_time value=$day.times[$smarty.foreach.time_loop.index]}
 							<td>
 								<div class="schedule-appointment-cell">
-									{if is_array($day_time.slot) && $day_time.slot.id != ""}
-										<a class="schedule-appointment-select" href="{$day_time.slot.book_url|escape}">Select</a>
+									{if $day_time.is_selectable}
+										<a class="schedule-appointment-select" href="{$day_time.book_url|escape}">Select</a>
+									{elseif is_array($day_time.slot) && $day_time.slot.id != ""}
+										<span class="schedule-appointment-busy">Busy</span>
 									{else}
 										<span class="schedule-appointment-empty">-</span>
 									{/if}

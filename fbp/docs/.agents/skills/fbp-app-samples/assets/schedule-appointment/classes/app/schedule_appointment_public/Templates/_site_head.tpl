@@ -84,6 +84,14 @@
 		color: #94a3b8;
 		font-weight: 700;
 	}
+	.schedule-appointment-busy {
+		background: #e2e8f0;
+		border-radius: 8px;
+		color: #64748b;
+		display: block;
+		font-weight: 800;
+		padding: 13px 10px;
+	}
 	.schedule-appointment-select {
 		background: #1f669b;
 		border: 0;

@@ -6,7 +6,7 @@
 
 		<form method="post" action="{$save_url|escape}">
 			<input type="hidden" name="user" value="{$user_key|escape}">
-			<input type="hidden" name="slot" value="{$slot_key|escape}">
+			<input type="hidden" name="start" value="{$start_key|escape}">
 
 			<div class="schedule-appointment-field">
 				<label for="customer_name">Name</label>

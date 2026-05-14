@@ -6,7 +6,7 @@ This sample uses one new note/table.
 
 ### `schedule_appointment_slots`
 
-Purpose: stores both admin-created appointment availability and the public booking result.
+Purpose: stores admin-created busy schedule rows and public booking results.
 
 Recommended table settings:
 
@@ -26,7 +26,7 @@ Fields:
 | `title` | text | yes | Internal/public slot label. |
 | `starts_at` | datetime | yes | Slot start timestamp. |
 | `duration_minutes` | number | yes | Slot length. Public calendar assumes 30-minute grid rows, but longer slots are allowed. |
-| `status` | dropdown `schedule_appointment_status` | yes | `available`, `booked`, `blocked`, `cancelled`. |
+| `status` | dropdown `schedule_appointment_status` | yes | `booked`, `blocked`, `cancelled`. |
 | `customer_name` | text | no | Filled by public booking. |
 | `customer_email` | text | no | Filled by public booking. |
 | `customer_phone` | text | no | Filled by public booking. |
@@ -40,7 +40,6 @@ Fields:
 
 | Key | Value | Use |
 | --- | --- | --- |
-| `available` | Available | Publicly selectable. |
 | `booked` | Booked | Reserved by public booking or admin. |
 | `blocked` | Blocked | Admin-held time, not public. |
 | `cancelled` | Cancelled | Historical/cancelled slot, not public. |
@@ -49,6 +48,7 @@ Fields:
 
 - Admin create/edit always sets `user_id` from the current login session.
 - Public URLs carry encrypted `user.id`, never a plain user ID.
-- Public booking only updates future rows where `status = available`.
-- Public booking does not create a second table; it updates the selected slot row.
+- Public booking only allows future empty 30-minute cells.
+- Public booking does not create a second table; it inserts a new `booked` row in this table.
 - Public pages do not expose slots for other users.
+- Existing non-cancelled rows block public booking for overlapping times.

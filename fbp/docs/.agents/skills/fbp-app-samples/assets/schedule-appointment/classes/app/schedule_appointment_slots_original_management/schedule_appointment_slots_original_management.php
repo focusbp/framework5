@@ -41,7 +41,7 @@ class schedule_appointment_slots_original_management {
 			"title" => "Appointment",
 			"starts_at" => $startsAt,
 			"duration_minutes" => 30,
-			"status" => "available",
+			"status" => "booked",
 			"customer_name" => "",
 			"customer_email" => "",
 			"customer_phone" => "",
@@ -263,7 +263,7 @@ class schedule_appointment_slots_original_management {
 		$row["starts_at"] = $this->normalizeTimestamp($row["starts_at"] ?? "");
 		$row["duration_minutes"] = (int) ($row["duration_minutes"] ?? 0);
 		if ((string) ($row["status"] ?? "") === "") {
-			$row["status"] = "available";
+			$row["status"] = "booked";
 		}
 		return $row;
 	}

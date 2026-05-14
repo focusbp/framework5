@@ -97,6 +97,20 @@ Do not add project linkage, public registration history, public cancellation, ex
 Verify the admin screen, public registration URL dialog, public registration page, DB schema, seed data, and PHP syntax with the FBP CLI.
 ```
 
+### Schedule Appointment
+
+Copy the whole block below and paste it into Codex:
+
+```text
+Read README.md, fbp/docs/.agents/skills/fbp-app-samples/SKILL.md, fbp/docs/.agents/skills/fbp-app-samples/references/schedule-appointment.md, and fbp/docs/.agents/skills/fbp-app-samples/references/schedule-appointment-db.md.
+Create the Schedule Appointment sample.
+Run the bundled installer: php fbp/docs/.agents/skills/fbp-app-samples/scripts/install_schedule_appointment.php.
+Install the schedule_appointment_slots DB, booked/blocked/cancelled appointment status options, logged-in-user scoped weekly admin schedule screen, per-user public URL dialog, and public appointment calendar.
+Public Select buttons should appear only on empty future 30-minute cells; existing non-cancelled schedule rows should appear as Busy.
+Do not add external calendar sync, email sending, payment, public cancellation, customer login, or credentials.
+Verify the admin calendar, public URL dialog, public calendar, empty-cell booking flow, DB schema, seed data, and PHP syntax with the FBP CLI.
+```
+
 ### LINE Bot Basic
 
 Copy the whole block below and paste it into Codex:
@@ -108,19 +122,6 @@ Run the bundled installer: php fbp/docs/.agents/skills/fbp-app-samples/scripts/i
 Install the line_member DB, member_type options, line_webhook receiver, basic webhook_rule action classes, public profile page, and LINE member management screen.
 Do not add LINE secrets or tokens to code.
 Verify the LINE member management screen, webhook_rule list, DB schema, and PHP syntax with the FBP CLI.
-```
-
-### Schedule Appointment
-
-Copy the whole block below and paste it into Codex:
-
-```text
-Read README.md, fbp/docs/.agents/skills/fbp-app-samples/SKILL.md, fbp/docs/.agents/skills/fbp-app-samples/references/schedule-appointment.md, and fbp/docs/.agents/skills/fbp-app-samples/references/schedule-appointment-db.md.
-Create the Schedule Appointment sample.
-Run the bundled installer: php fbp/docs/.agents/skills/fbp-app-samples/scripts/install_schedule_appointment.php.
-Install the schedule_appointment_slots DB, appointment status options, logged-in-user scoped weekly admin screen, per-user public URL dialog, and public appointment calendar.
-Do not add external calendar sync, email sending, payment, public cancellation, customer login, or credentials.
-Verify the admin calendar, public URL dialog, public calendar, DB schema, seed data, and PHP syntax with the FBP CLI.
 ```
 
 ## Generated Customer Demo
@@ -143,6 +144,19 @@ The public registration path is:
 /event_registration_public*page
 ```
 
+## Generated Schedule Appointment Sample
+
+After the Schedule Appointment prompt above, Codex creates a one-note appointment
+booking demo with `schedule_appointment_slots`, a weekly admin schedule calendar scoped to the
+logged-in user, a public URL dialog with encrypted `user.id`, and a public booking calendar where
+empty future cells can be selected and existing non-cancelled schedules are shown as busy.
+
+The public appointment path is:
+
+```text
+/schedule_appointment_public*calendar&user=<encrypted-user-id>
+```
+
 ## Generated LINE Bot Basic Sample
 
 After the LINE Bot Basic prompt above, Codex creates a minimal LINE Bot base
@@ -154,18 +168,6 @@ webhook path to:
 
 ```text
 /line_webhook*receive
-```
-
-## Generated Schedule Appointment Sample
-
-After the Schedule Appointment prompt above, Codex creates a one-note appointment
-booking demo with `schedule_appointment_slots`, a weekly admin slot calendar scoped to the
-logged-in user, a public URL dialog with encrypted `user.id`, and a public booking calendar.
-
-The public appointment path is:
-
-```text
-/schedule_appointment_public*calendar?user=<encrypted-user-id>
 ```
 
 ## Deploy To Apache

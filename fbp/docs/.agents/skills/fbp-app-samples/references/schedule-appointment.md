@@ -13,7 +13,7 @@ It includes:
 - Admin public appointment URL button and dialog.
 - Public appointment calendar that displays the target user's name at the top.
 - Encrypted `user.id` in the public URL.
-- Public booking form that reserves one available slot.
+- Public booking form that creates a booking in an empty calendar cell.
 - Dynamic seed slots for active users.
 
 It excludes:
@@ -68,13 +68,16 @@ The public calendar:
 - Shows the target user's display name at the top.
 - Shows weekdays from Monday to Friday.
 - Shows 30-minute rows from 10:00 to 17:00.
-- Displays `Select` only for future slots with `status = available`.
+- Displays `Select` only for future empty 30-minute cells.
+- Displays existing non-cancelled schedule rows as busy time.
 
-Visitors select a slot, open `schedule_appointment_public::book`, enter name/email/phone/message, and submit to `schedule_appointment_public::save`.
+Visitors select an empty time, open `schedule_appointment_public::book`, enter name/email/phone/message, and submit to `schedule_appointment_public::save`.
 
-On save, the same `schedule_appointment_slots` row is updated:
+On save, a new `schedule_appointment_slots` row is inserted:
 
 - `status = booked`
+- `starts_at` is the selected empty time
+- `duration_minutes = 30`
 - `customer_name`
 - `customer_email`
 - `customer_phone`
@@ -95,7 +98,7 @@ Options:
 - `--keep-data`: keep existing `schedule_appointment_slots` data.
 - `--no-copy`: update DB/constant data without copying code.
 
-The default installer copies code, upserts constants/tables/fields, resets sample slot data, and inserts future seed slots for active users.
+The default installer copies code, upserts constants/tables/fields, resets sample schedule data, and inserts future booked/blocked seed rows for active users.
 
 ## Verification
 
@@ -108,4 +111,4 @@ php fbp/cli.php app_call --json='{"class":"schedule_appointment_slots_original_m
 php fbp/cli.php data_list --json='{"table":"schedule_appointment_slots","max":20}'
 ```
 
-To test a public booking end to end, open the generated public URL, select an available slot, submit the booking form, and confirm the selected row changes to `booked` in `data_list`.
+To test a public booking end to end, open the generated public URL, select an empty future cell, submit the booking form, and confirm a new `booked` row appears in `data_list`.
