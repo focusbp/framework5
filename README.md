@@ -19,7 +19,6 @@ Requirements:
 
 - PHP 8+
 - Git
-- Windows users: use WSL2 for the smoothest local setup.
 
 Run:
 
@@ -41,6 +40,20 @@ If port `8000` is already in use:
 
 ```bash
 php -S 127.0.0.1:8001 router.php
+```
+
+### Windows / WSL2
+
+On Windows, use WSL2 for the best Codex CLI experience.
+
+```bash
+sudo apt update
+sudo apt install php-cli git nodejs npm
+npm install -g @openai/codex
+
+git clone https://github.com/focusbp/fbp-codex-booster.git
+cd fbp-codex-booster
+php -S 127.0.0.1:8000 router.php
 ```
 
 ## Start Codex
