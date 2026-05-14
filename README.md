@@ -51,24 +51,11 @@ codex
 Then paste a request like this:
 
 ```text
-Read README.md and fbp/docs/.agents/skills/fbp-original-screen/SKILL.md.
-Create a simple customer management screen using the existing FBP patterns.
-Verify the result with php fbp/cli.php app_call.
-```
-
-For a public form:
-
-```text
-Read fbp/docs/.agents/skills/fbp-public-pages/SKILL.md.
-Create a public contact form with validation and a completion page.
-Run it locally with the PHP built-in server.
-```
-
-For a scheduled job:
-
-```text
-Read fbp/docs/.agents/skills/fbp-cron/SKILL.md.
-Add a cron task that processes pending records and verify it with the FBP CLI.
+Read README.md and fbp/docs/.agents/skills/fbp-customer-demo/SKILL.md.
+Create the default customer management demo.
+Use the fixed customer fields from the skill.
+Build it in stages: CRUD first, then seed data, then CSV, then PDF.
+Verify each stage with the FBP CLI.
 ```
 
 ## Route Convention
