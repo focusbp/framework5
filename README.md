@@ -79,8 +79,8 @@ Create a business app in minutes:
 ## Quick Start
 
 ```bash
-git clone https://github.com/focusbp/framework5-codex.git
-cd framework5-codex
+git clone https://github.com/focusbp/fbp-codex-booster.git
+cd fbp-codex-booster
 php -S 127.0.0.1:8000 router.php
 ```
 
